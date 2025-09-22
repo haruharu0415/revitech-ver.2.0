@@ -1,5 +1,14 @@
 package com.example.revitech.repository;
 
-public interface TeacherRepository {
+import java.util.List;
+
+import org.springframework.data.repository.CrudRepository;
+import org.springframework.stereotype.Repository;
+
+import com.example.revitech.entity.Teacher;
+
+@Repository
+public interface TeacherRepository extends CrudRepository<Teacher, Integer>{
+	public List<Teacher> findAll();
 
 }
