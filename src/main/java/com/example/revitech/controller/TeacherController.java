@@ -6,7 +6,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import com.example.revitech.service.TeacherService;
-//commitsimasu
+//commitsimasune
 @Controller
 public class TeacherController {
 	 private final TeacherService teacherService;
