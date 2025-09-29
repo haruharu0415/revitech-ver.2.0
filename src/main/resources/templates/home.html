@@ -1,10 +1,71 @@
 <!DOCTYPE html>
-<html>
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
-<meta charset="UTF-8">
-<title>Insert title here</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ホーム</title>
+    <link th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" rel="stylesheet" />
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css}">
+    <style>
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .main-content {
+            padding: 1rem;
+        }
+        .info-box {
+            border: 1px solid #dee2e6;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 0.25rem;
+        }
+    </style>
 </head>
 <body>
+    <!-- ヘッダー -->
+    <header class="header bg-light">
+        <h1 class="h4 mb-0">タイトル</h1>
+        <!-- オプション画面へのリンクとなるハンバーガーメニュー -->
+        <a th:href="@{/option}" class="btn btn-light">
+            <i class="bi bi-list fs-3"></i>
+        </a>
+    </header>
 
+    <!-- メインコンテンツ -->
+    <main class="main-content">
+        <div class="info-box text-center">
+            <h4>学校からのお知らせ</h4>
+        </div>
+
+        <div class="d-flex justify-content-around mb-3">
+            <button class="btn btn-secondary">教員一覧</button>
+            <button class="btn btn-secondary">グループ</button>
+            <button class="btn btn-secondary">DM</button>
+        </div>
+
+        <div class="row">
+            <div class="col-6">
+                <h6>通知が来ているグループ</h6>
+                <div class="list-group">
+                    <a href="#" class="list-group-item list-group-item-action">グループA</a>
+                    <a href="#" class="list-group-item list-group-item-action">グループB</a>
+                    <a href="#" class="list-group-item list-group-item-action">グループC</a>
+                </div>
+            </div>
+            <div class="col-6">
+                <h6>未読のDM</h6>
+                <div class="list-group">
+                     <a href="#" class="list-group-item list-group-item-action">田中先生</a>
+                     <a href="#" class="list-group-item list-group-item-action">鈴木さん</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"></script>
 </body>
 </html>

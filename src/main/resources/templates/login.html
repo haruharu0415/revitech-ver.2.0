@@ -1,43 +1,54 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ログイン</title>
     <link th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" rel="stylesheet" />
-    <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css}">
-    <link th:href="@{/css/menu.css}" rel="stylesheet" />
-    <title>メニュー</title>
+    <style>
+        .login-container {
+            max-width: 400px;
+            margin-top: 100px;
+        }
+    </style>
 </head>
-<body>
-    <div class="d-flex align-items-center">
-        <a href="#" class="text-primary me-4"> <i class="bi bi-arrow-left back-arrow"></i>
-        </a>
+<body class="bg-light">
+    <div class="container login-container">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title text-center mb-4">ログイン</h2>
 
-        <div class="menu-container text-center">
-            <div class="user-icon rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3">
-                アイコン
-            </div>
-
-            <div class="login-info mx-auto mb-4 fw-bold fs-5">
-                <div sec:authorize="isAnonymous()">
-                    <a th:href="@{/login}" class="text-decoration-none text-dark">ログイン</a>
+                <!-- ログイン失敗時のエラーメッセージ -->
+                <div th:if="${param.error}" class="alert alert-danger" role="alert">
+                    ユーザー名またはパスワードが正しくありません。
                 </div>
-               
-            </div>
 
-            <div class="d-flex justify-content-center">
-                <i class="bi bi-brightness-high-fill text-primary fs-2 mt-2 me-3"></i>
-                <div>
-                    <a href="#" class="menu-link text-start">設定</a>
-                    <a href="#" class="menu-link text-start">規約</a>
-                    <a href="#" class="menu-link text-start">ヘルプ</a>
+                <!-- ★★★ ログアウト成功時のメッセージを追加 ★★★ -->
+                <div th:if="${param.logout}" class="alert alert-success" role="alert">
+                    ログアウトしました。
+                </div>
+
+                <form th:action="@{/login}" method="post">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">ユーザー名</label>
+                        <input type="text" id="username" name="username" class="form-control" required autofocus>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">パスワード</label>
+                        <input type="password" id="password" name="password" class="form-control" required>
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">ログイン</button>
+                    </div>
+                </form>
+
+                <div class="text-center mt-3">
+                    <a th:href="@{/signup}" class="btn btn-link">新規アカウント作成</a>
                 </div>
             </div>
-
         </div>
     </div>
-
     <script th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"></script>
 </body>
 </html>
+

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新規アカウント作成</title>
+    <link th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" rel="stylesheet" />
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f8f9fa;
+        }
+        .signup-card {
+            width: 100%;
+            max-width: 420px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card signup-card shadow-sm">
+        <div class="card-body p-4">
+            <h2 class="card-title text-center mb-4">新規アカウント作成</h2>
+
+            <form th:action="@{/signup}" th:object="${signupForm}" method="post">
+                <div class="mb-3">
+                    <label for="username" class="form-label">ユーザー名</label>
+                    <input type="text" class="form-control" id="username" name="username" required>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">パスワード</label>
+                    <input type="password" class="form-control" id="password" name="password" required>
+                </div>
+                <div class="mb-3">
+                    <label for="password-confirm" class="form-label">パスワード（確認用）</label>
+                    <input type="password" class="form-control" id="password-confirm" name="passwordConfirm" required>
+                </div>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-success">登録する</button>
+                </div>
+            </form>
+
+            <hr class="my-4">
+
+            <div class="text-center">
+                <p>すでにアカウントをお持ちですか？</p>
+                <a th:href="@{/login}" class="btn btn-outline-primary">ログインはこちら</a>
+            </div>
+        </div>
+    </div>
+    <script th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"></script>
+</body>
+</html>
+
