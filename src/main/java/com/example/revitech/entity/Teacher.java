@@ -17,6 +17,8 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class Teacher {
+
+
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	
@@ -35,7 +37,8 @@ public class Teacher {
 	@DateTimeFormat(pattern = "yyyy-MM-dd")
 	private LocalDate create_at;
 	
-	private LocalDate update_at;
-	
-	
+
+	@DateTimeFormat(pattern = "yyyy-MM-dd")
+	private LocalDate udpate_at;
+
 }
