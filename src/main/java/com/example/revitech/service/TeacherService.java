@@ -16,7 +16,7 @@ public class TeacherService {
 	    public TeacherService(TeacherRepository teacherRepository) {
 	        this.teacherRepository = teacherRepository;
 	    }
-
+//laa
 	    public List<Teacher> findAll() {
 	        return teacherRepository.findAll();
 	    }
