@@ -15,7 +15,7 @@ public class TeacherController {
 	    public TeacherController(TeacherService teacherService) {
 	        this.teacherService = teacherService;
 	    }
-
+//dddd
 	    @GetMapping("/home")
 	    public String getArtists(Model model) {
 	        var homes = teacherService.findAll();
