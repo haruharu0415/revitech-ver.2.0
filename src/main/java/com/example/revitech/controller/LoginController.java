@@ -9,7 +9,7 @@ import com.example.revitech.form.SignupForm;
 
 @Controller
 public class LoginController {
-
+//a
     @GetMapping("/login")
     public String showLogin() { 
         return "login";
