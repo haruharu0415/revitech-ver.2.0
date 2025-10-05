@@ -22,5 +22,12 @@ public class TeacherController {
 	        model.addAttribute("home",homes);
 	        return "home";
 	    }
-
+	    @GetMapping("/teacher-list")
+	    public String teacherList() {
+	        return "teacher-list"; 
+	    }
+	    @GetMapping("/terms")
+	    public String terms() {
+	        return "terms"; 
+	    }
 }
