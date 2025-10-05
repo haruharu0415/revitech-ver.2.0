@@ -23,19 +23,47 @@
             margin-bottom: 1rem;
             border-radius: 0.25rem;
         }
+        /* ハンバーガーメニューのスタイル */
+        #humberger {
+          position: relative;
+          height: 22px; /* 高さを少し調整 */
+          width: 28px;
+          display: inline-block;
+          box-sizing: border-box;
+        }
+        #humberger div {
+          position: absolute;
+          left: 0;
+          height: 2px;
+          width: 28px;
+          background-color: #444;
+          border-radius: 2px;
+          display: inline-block;
+          box-sizing: border-box;
+        }
+        #humberger div:nth-of-type(1) {
+          top: 0; /* bottomからtopに変更して配置を調整 */
+        }
+        #humberger div:nth-of-type(2) {
+          top: 10px; /* bottomからtopに変更して配置を調整 */
+        }
+        #humberger div:nth-of-type(3) {
+          bottom: 0;
+        }
     </style>
 </head>
 <body>
-    <!-- ヘッダー -->
     <header class="header bg-light">
         <h1 class="h4 mb-0">タイトル</h1>
-        <!-- オプション画面へのリンクとなるハンバーガーメニュー -->
-        <a th:href="@{/option}" class="btn btn-light">
-            <i class="bi bi-list fs-3"></i>
+        <a th:href="@{/option}">
+            <div id="humberger">
+                <div></div>
+                <div></div>
+                <div></div>
+            </div>
         </a>
     </header>
-//s
-    <!-- メインコンテンツ -->
+
     <main class="main-content">
         <div class="info-box text-center">
             <h4>学校からのお知らせ</h4>
