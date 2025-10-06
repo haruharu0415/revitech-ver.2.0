@@ -13,32 +13,28 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "home")
+@Table(name = "teacher")
 @Data
 @NoArgsConstructor
 public class Teacher {
 //aiueo
 
-	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	
-	private Integer id;
-	
-	private String name;
-	
-	private String email;
-	
-	private String password;
-	
-	private String status;
-	
-	private String role;
-	
-	@DateTimeFormat(pattern = "yyyy-MM-dd")
-	private LocalDate create_at;
-	
 
-	@DateTimeFormat(pattern = "yyyy-MM-dd")
-	private LocalDate udpate_at;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    private String username; // ← これを追加！
+    private String name;
+    private String email;
+    private String password;
+    private String status;
+    private String role;
+
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    private LocalDate create_at;
+
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    private LocalDate update_at;
 
 }
