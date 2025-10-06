@@ -1,4 +1,3 @@
-// com/example/revitech/config/SecurityConfig.java
 package com.example.revitech.config;
 
 import org.springframework.context.annotation.Bean;
@@ -18,18 +17,21 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
-
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/css/**", "/js/**", "/webjars/**").permitAll()
-                .requestMatchers("/", "/option", "/login", "/signup").permitAll()
+
+                .requestMatchers("/css/**", "/js/**", "/webjars/**", "/images/**").permitAll()
+                // ★★★ ここに "/terms" を追加 ★★★
+                .requestMatchers("/", "/option", "/login", "/signup", "/teacher-list", "/terms").permitAll()
+
+
                 .anyRequest().authenticated()
             )
             .formLogin(login -> login
                 .loginPage("/login")
-                .defaultSuccessUrl("/option", true)
+                .defaultSuccessUrl("/home", true) // ← ここを /option → /home に変更
                 .permitAll()
             )
             .logout(logout -> logout

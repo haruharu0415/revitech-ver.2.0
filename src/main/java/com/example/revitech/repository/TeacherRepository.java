@@ -1,3 +1,4 @@
+// TeacherRepository.java
 package com.example.revitech.repository;
 
 import java.util.List;
@@ -10,6 +11,6 @@ import com.example.revitech.entity.Teacher;
 
 @Repository
 public interface TeacherRepository extends CrudRepository<Teacher, Integer> {
-    public List<Teacher> findAll();
-    public Optional<Teacher> findByName(String name);
+    List<Teacher> findAll();
+    Optional<Teacher> findByUsername(String username);
 }

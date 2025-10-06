@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- home.html-->
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
@@ -23,29 +24,65 @@
             margin-bottom: 1rem;
             border-radius: 0.25rem;
         }
+        /* ハンバーガーメニューのスタイル */
+        #humberger {
+          position: relative;
+          height: 22px; /* 高さを少し調整 */
+          width: 28px;
+          display: inline-block;
+          box-sizing: border-box;
+        }
+        #humberger div {
+          position: absolute;
+          left: 0;
+          height: 2px;
+          width: 28px;
+          background-color: #444;
+          border-radius: 2px;
+          display: inline-block;
+          box-sizing: border-box;
+        }
+        #humberger div:nth-of-type(1) {
+          top: 0; /* bottomからtopに変更して配置を調整 */
+        }
+        #humberger div:nth-of-type(2) {
+          top: 10px; /* bottomからtopに変更して配置を調整 */
+        }
+        #humberger div:nth-of-type(3) {
+          bottom: 0;
+        }
+        .header-icon {
+            width: 360px;   /* 幅を固定 */
+            height: 70px;  /* 高さを固定 */
+            margin-right: 0.4rem; 
+        }
     </style>
 </head>
 <body>
-	//aaaa
-    <!-- ヘッダー -->
     <header class="header bg-light">
-        <h1 class="h4 mb-0">タイトル</h1>
-        <!-- オプション画面へのリンクとなるハンバーガーメニュー -->
-        <a th:href="@{/option}" class="btn btn-light">
-            <i class="bi bi-list fs-3"></i>
+        <h1 class="h4 mb-0">
+			 <img th:src="@{/image/logo.png}" alt="企業アイコン" class="header-icon">
+			 revitech_ver.2.0
+		</h1>
+        <a th:href="@{/option}">
+            <div id="humberger">
+                <div></div>
+                <div></div>
+                <div></div>
+            </div>
         </a>
     </header>
 
-    <!-- メインコンテンツ -->
     <main class="main-content">
         <div class="info-box text-center">
             <h4>学校からのお知らせ</h4>
         </div>
 
         <div class="d-flex justify-content-around mb-3">
-            <button class="btn btn-secondary">教員一覧</button>
-            <button class="btn btn-secondary">グループ</button>
-            <button class="btn btn-secondary">DM</button>
+            <a th:href="@{/teacher-list}" role="button" class="btn btn-secondary">教員一覧</a>
+            
+            <a th:href="@{/group}" role="button"button class="btn btn-secondary">グループ</a>
+            <a th:href="@{/dm}" role="button"button class="btn btn-secondary">DM</a>
         </div>
 
         <div class="row">
@@ -66,7 +103,7 @@
             </div>
         </div>
     </main>
-
+//aa
     <script th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"></script>
 </body>
 </html>
