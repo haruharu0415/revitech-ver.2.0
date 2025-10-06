@@ -1,56 +1,190 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" rel="stylesheet" />
-    <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css}">
-    <link th:href="@{/css/menu.css}" rel="stylesheet" />
-    <title>オプション</title>
+    <title>教員一覧</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <style>
+        /* ページ全体の背景色 */
+        body {
+            background-color: #f8f9fa;
+        }
+
+        /* 検索バーのスタイル */
+        .search-bar .form-control {
+            border-right: none;
+        }
+        .search-bar .input-group-text {
+            background-color: white;
+            border-left: none;
+        }
+        
+        /* ハンバーガーメニューのようなアイコン */
+        .menu-icon {
+            font-size: 1.5rem;
+            color: #6c757d;
+        }
+        
+        /* リンク用にスタイルを追加 */
+        .teacher-card-link {
+            text-decoration: none;
+            color: inherit; /* 文字色を親要素から継承 */
+            display: block; /* aタグをブロック要素にする */
+            margin-bottom: 1rem;
+        }
+        .teacher-card-link:hover .teacher-card {
+             background-color: #f8f9fa; /* ホバー時に少し色を変える */
+        }
+
+        /* 教員カードのスタイル */
+        .teacher-card {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            background-color: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 0.25rem;
+            transition: background-color 0.2s; /* ホバー時のアニメーション */
+        }
+        
+        /* 教員アイコン画像 */
+        .teacher-icon {
+            width: 65px;
+            height: 65px;
+            object-fit: cover;
+            border-radius: 50%; /* アイコンを丸くする */
+            margin-right: 1rem;
+        }
+        
+        .teacher-info {
+            flex-grow: 1;
+        }
+        /* 教員名用のスタイルを追加 */
+        .teacher-name {
+            font-weight: bold;
+            font-size: 1.2rem;
+            margin-bottom: 0.25rem;
+        }
+
+        /* 評価（星）のスタイル */
+        .star-rating .bi {
+            color: #ffc107; /* 星の色を黄色に */
+            font-size: 1.5rem; /* 星のサイズを少し大きく */
+            margin-right: 2px;
+        }
+
+        /* 「評価」ボタンのコンテナ */
+        .rating-container {
+            border-left: 1px solid #dee2e6;
+            padding-left: 1rem;
+            margin-left: 1rem;
+            text-align: center;
+        }
+        .rating-container .btn-rating {
+            font-size: 1.2rem;
+            font-weight: bold;
+            border: none;
+            background: none;
+            color: #6c757d;
+            padding: 0;
+        }
+        
+        /* カテゴリ検索ボックスのスタイル */
+        .category-box {
+            border: 1px solid #0d6efd; /* 青い枠線 */
+            padding: 1rem;
+            border-radius: 0.25rem;
+            background-color: #fff;
+            display: none; 
+            position: absolute;
+            z-index: 10;
+            top: 100%; 
+            left: 0;
+            right: 0;
+            margin-top: 0.25rem; /* 検索バーとの間に少し隙間を空ける */
+        }
+        .category-box p {
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        .category-box a {
+            display: block; /* 縦に並べる */
+            text-decoration: none;
+            color: #212529;
+            padding: 0.25rem 0;
+        }
+        .category-box a:hover {
+            color: #0d6efd;
+        }
+    </style>
 </head>
 <body>
-   <div class="d-flex pt-3">
-        <a th:href="@{/}" class="text-primary me-4"> <i class="bi bi-arrow-left back-arrow"></i>
-        </a>
-        <div class="menu-container text-center">
-            <div class="user-icon rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3">
-                アイコン
-            </div>
 
-            <div class="login-info mx-auto mb-4 fw-bold fs-5">
-                <!-- ================================== -->
-                <!-- ★ 未ログイン時の表示ブロック ★ -->
-                <!-- ================================== -->
-                <div sec:authorize="isAnonymous()">
-                    <a th:href="@{/login}" class="text-decoration-none text-dark">ログイン</a>
-                </div>
-                
-                <!-- ================================== -->
-                <!-- ★ ログイン済みの時の表示ブロック ★ -->
-                <!-- ================================== -->
-                <div sec:authorize="isAuthenticated()">
-                    <!-- ユーザー名を表示 -->
-                    <div class="mb-3">
-                        <span sec:authentication="name"></span>
+    <main class="container p-3">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 col-md-10">
+                <div class="d-flex align-items-center mb-3">
+                    <i class="bi bi-arrow-left-short fs-1 me-2"></i>
+                    <div class="flex-grow-1 position-relative" id="categorySearchContainer">
+                        <div class="input-group search-bar">
+                            <input type="text" class="form-control" id="categorySearchInput" placeholder="教員名またはカテゴリで検索">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        </div>
+                        
+                        <div id="categoryBox" class="category-box">
+                            <a href="#">#情報処理</a>
+                            <a href="#">#ゲーム制作科</a>
+                            <a href="#">#高度AI科</a>
+                        </div>
                     </div>
-                    <!-- ログアウトボタン -->
-                    <form th:action="@{/logout}" method="post" class="d-inline">
-                        <button type="submit" class="btn btn-sm btn-outline-danger">ログアウト</button>
-                    </form>
+                    <i class="bi bi-list menu-icon ms-2"></i>
                 </div>
-            </div>
 
-            <div class="d-flex justify-content-center">
-                <i class="bi bi-brightness-high-fill text-primary fs-2 mt-2 me-3"></i>
-                <div>
-                    <!-- ★★★ ボタンのクラスを変更してサイズを調整 ★★★ -->
-                    <a th:href="@{/terms}" class="btn btn-sm btn-outline-secondary">利用規約</a>
+                <a th:each="teacher : ${teachers}" th:href="@{/teachers/{id}(id=${teacher.id})}" class="teacher-card-link">
+                    <div class="teacher-card">
+                        <img src="https://placehold.co/150x150/EFEFEF/AAAAAA&text=icon" alt="教員アイコン" class="teacher-icon">
+                        <div class="teacher-info">
+                            <div class="teacher-name" th:text="${teacher.name}">教員名</div>
+                            <div class="star-rating">
+                                <i class="bi bi-star"></i>
+                                <i class="bi bi-star"></i>
+                                <i class="bi bi-star"></i>
+                                <i class="bi bi-star"></i>
+                                <i class="bi bi-star"></i>
+                            </div>
+                        </div>
+                        <div class="rating-container">
+                            <button class="btn-rating">評価</button>
+                        </div>
+                    </div>
+                </a>
+                
+                <div th:if="${#lists.isEmpty(teachers)}">
+                    <p class="text-center">登録されている教員がいません。</p>
                 </div>
+
             </div>
         </div>
-    </div>
-    <script th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"></script>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const searchContainer = document.getElementById('categorySearchContainer');
+        const searchInput = document.getElementById('categorySearchInput');
+        const categoryBox = document.getElementById('categoryBox');
+
+        searchInput.addEventListener('focus', () => {
+            categoryBox.style.display = 'block';
+        });
+
+        document.addEventListener('mousedown', (event) => {
+            if (!searchContainer.contains(event.target)) {
+                categoryBox.style.display = 'none';
+            }
+        });
+    </script>
 </body>
 </html>
-

@@ -1,4 +1,3 @@
-// TeacherService.java
 package com.example.revitech.service;
 
 import java.util.List;
@@ -26,6 +25,14 @@ public class TeacherService {
     public List<Teacher> findAll() {
         return teacherRepository.findAll();
     }
+
+    // ======================================================
+    // ★★★ このメソッドを新規追加 ★★★
+    // ======================================================
+    public Optional<Teacher> findById(Integer id) {
+        return teacherRepository.findById(id);
+    }
+    // ======================================================
 
     public Teacher save(Teacher teacher) {
         teacher.setPassword(passwordEncoder.encode(teacher.getPassword()));

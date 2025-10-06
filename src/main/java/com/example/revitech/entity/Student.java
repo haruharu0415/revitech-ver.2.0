@@ -1,6 +1,7 @@
 package com.example.revitech.entity;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -48,5 +49,5 @@ public class Student {
 	
 	@OneToMany(cascade = CascadeType.ALL)
 	@JoinColumn(name="id", insertable=false, updatable=false)
-	private Student students;
+	List<Student> students;
 }
