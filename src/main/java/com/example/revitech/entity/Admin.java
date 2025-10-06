@@ -19,16 +19,16 @@ import lombok.NoArgsConstructor;
 @Table(name = "home")
 @Data
 @NoArgsConstructor
-public class Teacher {
-
+public class Admin {
+	
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	
-	private Integer id;
+    private Integer id;
 	
-	private String name;
+	private String name ;
 	
-	private String email;
+    private String email;
 	
 	private String password;
 	
@@ -42,7 +42,12 @@ public class Teacher {
 	@DateTimeFormat(pattern = "yyyy-MM-dd")
 	private LocalDate udpate_at;
 	
+	
+	//adminテーブル
+    	
+	
 	@OneToMany(cascade = CascadeType.ALL)
 	@JoinColumn(name = "id",insertable=false ,updatable = false)
-	Teacher teachers;
+	private Admin admins;
+	
 }

@@ -5,10 +5,9 @@ import java.util.List;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
-import com.example.revitech.entity.Teacher;
+import com.example.revitech.entity.Admin;
 
 @Repository
-public interface TeacherRepository extends CrudRepository<Teacher, Integer>{
-	public List<Teacher> findAll();
-
+public interface AdminRepository extends CrudRepository<Admin,Integer>{
+public List<Admin> findALL();
 }
