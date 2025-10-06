@@ -17,7 +17,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class Teacher {
-
+//aiueo
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
