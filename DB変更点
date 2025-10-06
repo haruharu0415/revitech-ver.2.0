@@ -1,5 +1,5 @@
 担当科目は科目テーブル作って外部キーで紐づける　　　OneToMany
-BIGINT UNSIGNEDはSQLserverで使えないので、考える
+--BIGINT UNSIGNEDはSQLserverで使えないので、INTに直した。
 
 生徒テーブルも同じく学年と所属を分けてカテゴリ別に分けて別のテーブルを作って外部キーで紐づける　OneToMany
 
