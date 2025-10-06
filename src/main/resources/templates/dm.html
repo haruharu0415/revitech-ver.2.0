@@ -1,0 +1,122 @@
+<!-- src/main/resources/templates/dm.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>DMチャット（LINE風）</title>
+    <style>
+        body {
+            font-family: 'Helvetica', 'Arial', sans-serif;
+            background-color: #e5ddd5;
+            margin: 0;
+            padding: 0;
+        }
+
+        .chat-container {
+            max-width: 600px;
+            margin: 30px auto;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            height: 80vh;
+            overflow: hidden;
+        }
+
+        .chat-box {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .message {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 15px;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+
+        .message.left {
+            align-self: flex-start;
+            background-color: #f1f0f0;
+            border-top-left-radius: 0;
+        }
+
+        .message.right {
+            align-self: flex-end;
+            background-color: #9fe8a4;
+            border-top-right-radius: 0;
+        }
+
+        .message-meta {
+            font-size: 0.7em;
+            color: #888;
+            margin-top: 3px;
+            text-align: right;
+        }
+
+        .chat-input {
+            display: flex;
+            padding: 15px;
+            background-color: #f8f8f8;
+            border-top: 1px solid #ccc;
+        }
+
+        .chat-input input[type="text"],
+        .chat-input input[type="number"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            outline: none;
+            margin-right: 10px;
+        }
+
+        .chat-input button {
+            padding: 10px 20px;
+            background-color: #00b900;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+
+        .chat-input button:hover {
+            background-color: #009d00;
+        }
+
+        h2 {
+            text-align: center;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="chat-container">
+    <h2>ダイレクトメッセージ</h2>
+
+    <div class="chat-box" id="chat-box">
+        <div th:each="msg : ${messages}">
+            <div th:class="'message ' + (${msg.senderStudentId} == 1 ? 'right' : 'left')">
+                <p th:text="${msg.content}">メッセージ</p>
+                <div class="message-meta" th:text="'From: ' + ${msg.senderStudentId}"></div>
+            </div>
+        </div>
+    </div>
+
+    <form class="chat-input" th:action="@{/dm/send}" method="post">
+        <input type="hidden" name="senderStudentId" value="1" />
+        <input type="number" name="receiverStudentId" placeholder="受信者ID" required>
+        <input type="text" name="content" placeholder="メッセージを入力..." required>
+        <button type="submit">送信</button>
+    </form>
+</div>
+
+</body>
+</html>
