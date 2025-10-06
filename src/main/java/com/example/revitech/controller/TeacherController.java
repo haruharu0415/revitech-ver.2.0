@@ -30,4 +30,9 @@ public class TeacherController {
 	    public String terms() {
 	        return "terms"; 
 	    }
+	    
+	    /*@GetMapping("/teacher-list/review")
+	    public String showReview() {
+	    	return "review";
+	    }*/
 }
