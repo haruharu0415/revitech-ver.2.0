@@ -21,8 +21,12 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/css/**", "/js/**", "/webjars/**").permitAll()
-                .requestMatchers("/login", "/signup").permitAll()
+
+                .requestMatchers("/css/**", "/js/**", "/webjars/**", "/images/**").permitAll()
+                // ★★★ ここに "/terms" を追加 ★★★
+                .requestMatchers("/", "/option", "/login", "/signup", "/teacher-list", "/terms").permitAll()
+
+
                 .anyRequest().authenticated()
             )
             .formLogin(login -> login

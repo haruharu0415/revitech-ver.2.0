@@ -15,12 +15,19 @@ public class TeacherController {
 	    public TeacherController(TeacherService teacherService) {
 	        this.teacherService = teacherService;
 	    }
-
+//dddd
 	    @GetMapping("/home")
 	    public String getArtists(Model model) {
 	        var homes = teacherService.findAll();
 	        model.addAttribute("home",homes);
 	        return "home";
 	    }
-
+	    @GetMapping("/teacher-list")
+	    public String teacherList() {
+	        return "teacher-list"; 
+	    }
+	    @GetMapping("/terms")
+	    public String terms() {
+	        return "terms"; 
+	    }
 }
