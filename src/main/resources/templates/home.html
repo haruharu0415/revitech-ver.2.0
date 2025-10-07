@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!-- home.html-->
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
@@ -7,14 +6,11 @@
     <title>ホーム</title>
     <link th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" rel="stylesheet" />
     <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css}">
+    
+    <th:block th:insert="~{header :: header-styles}"></th:block>
+
     <style>
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.5rem 1rem;
-            border-bottom: 1px solid #dee2e6;
-        }
+        /* メインコンテンツに必要なスタイルのみをここに残します */
         .main-content {
             padding: 1rem;
         }
@@ -24,57 +20,21 @@
             margin-bottom: 1rem;
             border-radius: 0.25rem;
         }
-        /* ハンバーガーメニューのスタイル */
-        #humberger {
-          position: relative;
-          height: 22px; /* 高さを少し調整 */
-          width: 28px;
-          display: inline-block;
-          box-sizing: border-box;
-        }
-        #humberger div {
-          position: absolute;
-          left: 0;
-          height: 2px;
-          width: 28px;
-          background-color: #444;
-          border-radius: 2px;
-          display: inline-block;
-          box-sizing: border-box;
-        }
-        #humberger div:nth-of-type(1) {
-          top: 0; /* bottomからtopに変更して配置を調整 */
-        }
-        #humberger div:nth-of-type(2) {
-          top: 10px; /* bottomからtopに変更して配置を調整 */
-        }
-        #humberger div:nth-of-type(3) {
-          bottom: 0;
-        }
     </style>
 </head>
 <body>
-    <header class="header bg-light">
-        <h1 class="h4 mb-0">タイトル</h1>
-        <a th:href="@{/option}">
-            <div id="humberger">
-                <div></div>
-                <div></div>
-                <div></div>
-            </div>
-        </a>
-    </header>
+    <div th:replace="~{header :: header-fragment}"></div>
 
     <main class="main-content">
         <div class="info-box text-center">
             <h4>学校からのお知らせ</h4>
         </div>
 
-<div class="d-flex justify-content-around mb-3">
-    <a th:href="@{/teacher-list}" class="btn btn-secondary">教員一覧</a>
-    <a th:href="@{/group}" class="btn btn-secondary">グループ</a>
-    <a th:href="@{/dm}" class="btn btn-secondary">DM</a>
-</div>
+        <div class="d-flex justify-content-around mb-3">
+            <a th:href="@{/teacher-list}" class="btn btn-secondary">教員一覧</a>
+            <a th:href="@{/group}" class="btn btn-secondary">グループ</a>
+            <a th:href="@{/dm}" class="btn btn-secondary">DM</a>
+        </div>
 
         <div class="row">
             <div class="col-6">
@@ -88,8 +48,8 @@
             <div class="col-6">
                 <h6>未読のDM</h6>
                 <div class="list-group">
-                     <a href="#" class="list-group-item list-group-item-action">田中先生</a>
-                     <a href="#" class="list-group-item list-group-item-action">鈴木さん</a>
+                    <a href="#" class="list-group-item list-group-item-action">田中先生</a>
+                    <a href="#" class="list-group-item list-group-item-action">鈴木さん</a>
                 </div>
             </div>
         </div>
