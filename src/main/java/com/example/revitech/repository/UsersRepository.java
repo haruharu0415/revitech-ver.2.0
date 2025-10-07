@@ -5,9 +5,10 @@ import java.util.List;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
 
-import com.example.revitech.entity.Admin;
+import com.example.revitech.entity.Users;
+
 
 @Repository
-public interface AddminRepository extends CrudRepository<Admin,Integer>{
-public List<Admin> findALL();
+public interface UsersRepository extends CrudRepository<Users, Integer> {
+public List<Users>findALL();
 }
