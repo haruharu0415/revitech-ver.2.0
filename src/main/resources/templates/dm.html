@@ -1,9 +1,13 @@
-<!-- src/main/resources/templates/dm.html -->
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <title>DMチャット（LINE風）</title>
+    
+    <link th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" rel="stylesheet" />
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css}">
+    
+    <th:block th:insert="~{header :: header-styles}"></th:block>
     <style>
         body {
             font-family: 'Helvetica', 'Arial', sans-serif;
@@ -20,7 +24,8 @@
             box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
             display: flex;
             flex-direction: column;
-            height: 80vh;
+            /* 画面サイズに合わせて高さを調整 */
+            height: calc(100vh - 60px); 
             overflow: hidden;
         }
 
@@ -41,14 +46,16 @@
             word-wrap: break-word;
         }
 
+        /* 他人のコメント: 左寄せ、薄いグレーの背景 */
         .message.left {
-            align-self: flex-start;
+            align-self: flex-start; 
             background-color: #f1f0f0;
             border-top-left-radius: 0;
         }
 
+        /* 自分のコメント: 右寄せ、緑色の背景 */
         .message.right {
-            align-self: flex-end;
+            align-self: flex-end; 
             background-color: #9fe8a4;
             border-top-right-radius: 0;
         }
@@ -66,17 +73,26 @@
             background-color: #f8f8f8;
             border-top: 1px solid #ccc;
         }
+        
+        /* 入力フォームの幅を調整 */
+        .chat-input input[type="number"] {
+            width: 80px; 
+            flex: none; 
+        }
+
+        .chat-input input[type="text"] {
+            flex: 1; 
+        }
 
         .chat-input input[type="text"],
         .chat-input input[type="number"] {
-            flex: 1;
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 20px;
             outline: none;
             margin-right: 10px;
         }
-
+        
         .chat-input button {
             padding: 10px 20px;
             background-color: #00b900;
@@ -97,6 +113,7 @@
     </style>
 </head>
 <body>
+	<div th:replace="~{header :: header-fragment}"></div>
 
 <div class="chat-container">
     <h2>ダイレクトメッセージ</h2>
@@ -112,11 +129,13 @@
 
     <form class="chat-input" th:action="@{/dm/send}" method="post">
         <input type="hidden" name="senderStudentId" value="1" />
+        
         <input type="number" name="receiverStudentId" placeholder="受信者ID" required>
         <input type="text" name="content" placeholder="メッセージを入力..." required>
         <button type="submit">送信</button>
     </form>
 </div>
 
+<script th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"></script>
 </body>
 </html>

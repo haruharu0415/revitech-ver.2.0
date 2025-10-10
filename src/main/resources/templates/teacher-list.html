@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!--teacher-list.html-->
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
@@ -55,20 +56,33 @@
             margin-right: 2px;
         }
 
-        /* 「評価」ボタンのコンテナ */
+        /* 「コメント」リンクのコンテナ */
         .rating-container {
             border-left: 1px solid #dee2e6;
             padding-left: 1rem;
             margin-left: 1rem;
             text-align: center;
+            /* 子要素のz-indexを機能させるためにpositionを設定 */
+            position: relative; 
         }
-        .rating-container .btn-rating {
+        
+        /* コメントリンクのスタイル */
+        .rating-container .btn-rating { 
             font-size: 1.2rem;
             font-weight: bold;
             border: none;
             background: none;
             color: #6c757d;
             padding: 0;
+            text-decoration: none; /* aタグの下線を非表示にする */
+            display: block;
+            cursor: pointer;
+            /* リンクを確実にクリックさせるため */
+            position: relative;
+            z-index: 10;
+        }
+        .rating-container .btn-rating:hover {
+            color: #0d6efd; 
         }
         
         /* カテゴリ検索ボックスのスタイル */
@@ -94,6 +108,7 @@
             text-decoration: none;
             color: #212529;
             padding: 0.25rem 0;
+            cursor: pointer;
         }
         .category-box a:hover {
             color: #0d6efd;
@@ -118,12 +133,12 @@
                         </div>
                         
                         <div id="categoryBox" class="category-box">
-                            <a href="#">#情報処理</a>
-                            <a href="#">#ゲーム制作科</a>
-                            <a href="#">#高度AI科</a>
-                            <a href="#">#コンボボックス</a>
-                            <a href="#">#Zipファイル</a>
-                            <a href="#">#10分遅刻</a>
+                            <a href="#" class="hashtag-link">#情報処理</a>
+                            <a href="#" class="hashtag-link">#ゲーム制作科</a>
+                            <a href="#" class="hashtag-link">#高度AI科</a>
+                            <a href="#" class="hashtag-link">#コンボボックス</a>
+                            <a href="#" class="hashtag-link">#Zipファイル</a>
+                            <a href="#" class="hashtag-link">#10分遅刻</a>
                         </div>
                     </div>
                 </div>
@@ -141,7 +156,7 @@
                         </div>
                     </div>
                     <div class="rating-container">
-                        <button class="btn-rating">評価</button>
+                        <a th:href="@{/comment}" class="btn-rating">コメント</a>
                     </div>
                 </div>
 
@@ -157,7 +172,7 @@
                         </div>
                     </div>
                     <div class="rating-container">
-                        <button class="btn-rating">評価</button>
+                        <a th:href="@{/comment}" class="btn-rating">コメント</a>
                     </div>
                 </div>
                 
@@ -179,19 +194,40 @@
         const searchContainer = document.getElementById('categorySearchContainer');
         const searchInput = document.getElementById('categorySearchInput');
         const categoryBox = document.getElementById('categoryBox');
+        // ハッシュタグのリンク要素を取得
+        const hashtagLinks = document.querySelectorAll('.hashtag-link');
 
-        // 検索バーがフォーカスされた（クリックなどで選択された）時の処理
+        // 検索バーがフォーカスされた時の処理 (ボックス表示)
         searchInput.addEventListener('focus', () => {
-            // カテゴリボックスを表示する
             categoryBox.style.display = 'block';
         });
 
-        // ページ上のどこかでマウスボタンが押された時の処理
+        // ページ上のどこかでクリックされた時の処理 (ボックス非表示)
         document.addEventListener('mousedown', (event) => {
-            // クリックされた場所が、検索バーのコンテナ要素の外側である場合のみ、ボックスを非表示にします。
             if (!searchContainer.contains(event.target)) {
                 categoryBox.style.display = 'none';
             }
+        });
+        
+        // --- ハッシュタグ入力機能 ---
+        
+        // 各ハッシュタグリンクにクリックイベントリスナーを設定
+        hashtagLinks.forEach(link => {
+            link.addEventListener('click', (event) => {
+                // aタグのデフォルト動作（ページ遷移）をキャンセル
+                event.preventDefault(); 
+                
+                const hashtagText = link.textContent.trim();
+                
+                // 検索入力欄にハッシュタグのテキストを設定
+                searchInput.value = hashtagText;
+                
+                // カテゴリボックスを非表示
+                categoryBox.style.display = 'none';
+                
+                // 検索入力欄にフォーカス
+                searchInput.focus();
+            });
         });
     </script>
 
