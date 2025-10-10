@@ -32,4 +32,9 @@ public class UserController {
     public String terms() {
         return "terms"; 
     }
+    
+    @GetMapping("/group")
+    public String group() {
+    	return "group";
+    }
 }
