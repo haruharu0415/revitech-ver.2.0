@@ -1,6 +1,7 @@
 package com.example.revitech.controller;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -28,22 +29,44 @@ public class HomeController {
         this.usersRepository = usersRepository;
     }
 
-    // DM画面表示。receiverIdをクエリパラメータで受け取る想定
-    @GetMapping("/dm/chat")
-    public String dmView(@RequestParam(name = "receiverId", required = false) Long receiverId, Model model) {
-
-        // ログインユーザー取得
+    // ログインユーザーのホーム画面表示。roleで表示内容切り替え想定
+    @GetMapping("/home")
+    public String home(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String email = auth.getName();
-        Users sender = usersRepository.findByEmail(email);
+        Optional<Users> optionalUser = usersRepository.findByEmail(email);
+        if (optionalUser.isEmpty()) {
+            return "redirect:/login";
+        }
+        Users user = optionalUser.get();
 
-        // 受信者ユーザーも取得して名前表示用にセット（存在チェックも）
+        if ("TEACHER".equals(user.getRole())) {
+            return "home-teacher";
+        } else if ("STUDENT".equals(user.getRole())) {
+            return "home-student";
+        } else {
+            return "home";
+        }
+
+    }
+
+ // DM画面表示
+    @GetMapping("/dm/chat")
+    public String dmView(@RequestParam(name = "receiverId", required = false) Long receiverId, Model model) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = auth.getName();
+
+        Optional<Users> senderOpt = usersRepository.findByEmail(email);
+        if (senderOpt.isEmpty()) {
+            return "redirect:/login";
+        }
+        Users sender = senderOpt.get();
+
         Users receiver = null;
         if (receiverId != null) {
             receiver = usersRepository.findById(receiverId).orElse(null);
         }
 
-        // 送信者と受信者間のチャットメッセージ一覧取得（双方のメッセージを取得）
         List<ChatMessage> messages = chatMessageRepository.findChatBetweenUsers(sender.getId(), receiverId);
 
         model.addAttribute("sender", sender);
@@ -55,18 +78,19 @@ public class HomeController {
 
     // メッセージ送信処理
     @PostMapping("/send")
-    public String sendMessage(
-            @RequestParam("receiverStudentId") Long receiverId,
-            @RequestParam("content") String content) {
-
-        // ログインユーザー取得
+    public String sendMessage(@RequestParam("receiverStudentId") Long receiverId,
+                              @RequestParam("content") String content) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String email = auth.getName();
-        Users sender = usersRepository.findByEmail(email);
 
-        // 新規メッセージ保存
+        Optional<Users> senderOpt = usersRepository.findByEmail(email);
+        if (senderOpt.isEmpty()) {
+            return "redirect:/login";
+        }
+        Users sender = senderOpt.get();
+
         ChatMessage message = new ChatMessage();
-        message.setSenderStudentId(sender.getId());
+        message.setSenderStudentId(sender.getId()); // ここはIDを渡す
         message.setReceiverStudentId(receiverId);
         message.setContent(content);
         chatMessageRepository.save(message);

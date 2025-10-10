@@ -12,7 +12,7 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "chat_message")
 public class ChatMessage {
-
+//ss
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
