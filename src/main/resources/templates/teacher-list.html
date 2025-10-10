@@ -1,13 +1,14 @@
 <!DOCTYPE html>
+<!--teacher-list.html-->
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>教員一覧</title>
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <style th:replace="~{header :: header-styles}"></style>
     
     <style>
         /* ページ全体の背景色 */
@@ -22,12 +23,6 @@
         .search-bar .input-group-text {
             background-color: white;
             border-left: none;
-        }
-        
-        /* ハンバーガーメニューのようなアイコン */
-        .menu-icon {
-            font-size: 1.5rem;
-            color: #6c757d;
         }
         
         /* 教員カードのスタイル */
@@ -61,20 +56,33 @@
             margin-right: 2px;
         }
 
-        /* 「評価」ボタンのコンテナ */
+        /* 「コメント」リンクのコンテナ */
         .rating-container {
             border-left: 1px solid #dee2e6;
             padding-left: 1rem;
             margin-left: 1rem;
             text-align: center;
+            /* 子要素のz-indexを機能させるためにpositionを設定 */
+            position: relative; 
         }
-        .rating-container .btn-rating {
+        
+        /* コメントリンクのスタイル */
+        .rating-container .btn-rating { 
             font-size: 1.2rem;
             font-weight: bold;
             border: none;
             background: none;
             color: #6c757d;
             padding: 0;
+            text-decoration: none; /* aタグの下線を非表示にする */
+            display: block;
+            cursor: pointer;
+            /* リンクを確実にクリックさせるため */
+            position: relative;
+            z-index: 10;
+        }
+        .rating-container .btn-rating:hover {
+            color: #0d6efd; 
         }
         
         /* カテゴリ検索ボックスのスタイル */
@@ -86,21 +94,21 @@
             display: none; 
             position: absolute;
             z-index: 10;
-            /* ★★★ 検索バーの真下に表示されるように変更 ★★★ */
             top: 100%; 
             left: 0;
             right: 0;
-            margin-top: 0.25rem; /* 検索バーとの間に少し隙間を空ける */
+            margin-top: 0.25rem; 
         }
         .category-box p {
             font-size: 0.9rem;
             margin-bottom: 0.5rem;
         }
         .category-box a {
-            display: block; /* 縦に並べる */
+            display: block; 
             text-decoration: none;
             color: #212529;
             padding: 0.25rem 0;
+            cursor: pointer;
         }
         .category-box a:hover {
             color: #0d6efd;
@@ -108,37 +116,34 @@
     </style>
 </head>
 <body>
+    
+    <div th:replace="~{header :: header-fragment}"></div>
 
     <main class="container p-3">
-        <!-- rowで囲み、中のカラムを中央寄せにする -->
         <div class="row justify-content-center">
 
             <div class="col-lg-8 col-md-10">
-                <!-- ★★★ HTML構造を少し変更 ★★★ -->
                 <div class="d-flex align-items-center mb-3">
                     <i class="bi bi-arrow-left-short fs-1 me-2"></i>
-                    <!-- 検索バーとカテゴリボックスをコンテナで囲む -->
+                    
                     <div class="flex-grow-1 position-relative" id="categorySearchContainer">
                         <div class="input-group search-bar">
                             <input type="text" class="form-control" id="categorySearchInput" placeholder="教員名またはカテゴリで検索">
                             <span class="input-group-text"><i class="bi bi-search"></i></span>
                         </div>
                         
-                        <!-- カテゴリ検索ボックス -->
                         <div id="categoryBox" class="category-box">
-                            <a href="#">#情報処理</a>
-                            <a href="#">#ゲーム制作科</a>
-                            <a href="#">#高度AI科</a>
-                            <a href="#">#コンボボックス</a>
-                            <a href="#">#Zipファイル</a>
-                            <a href="#">#10分遅刻</a>
+                            <a href="#" class="hashtag-link">#情報処理</a>
+                            <a href="#" class="hashtag-link">#ゲーム制作科</a>
+                            <a href="#" class="hashtag-link">#高度AI科</a>
+                            <a href="#" class="hashtag-link">#コンボボックス</a>
+                            <a href="#" class="hashtag-link">#Zipファイル</a>
+                            <a href="#" class="hashtag-link">#10分遅刻</a>
                         </div>
                     </div>
-                    <i class="bi bi-list menu-icon ms-2"></i>
                 </div>
 
 
-                <!-- 教員カード 1 -->
                 <div class="teacher-card">
                     <img src="https://placehold.co/150x150/EFEFEF/AAAAAA&text=icon" alt="教員アイコン" class="teacher-icon">
                     <div class="teacher-info">
@@ -151,11 +156,10 @@
                         </div>
                     </div>
                     <div class="rating-container">
-                        <button class="btn-rating">評価</button>
+                        <a th:href="@{/comment}" class="btn-rating">コメント</a>
                     </div>
                 </div>
 
-                <!-- 教員カード 2 -->
                 <div class="teacher-card">
                     <img src="https://placehold.co/150x150/EFEFEF/AAAAAA&text=icon" alt="教員アイコン" class="teacher-icon">
                     <div class="teacher-info">
@@ -168,16 +172,14 @@
                         </div>
                     </div>
                     <div class="rating-container">
-                        <button class="btn-rating">評価</button>
+                        <a th:href="@{/comment}" class="btn-rating">コメント</a>
                     </div>
                 </div>
                 
-                <!-- 教員カード 3 -->
                 <div class="teacher-card">
                     <img src="https://placehold.co/150x150/EFEFEF/AAAAAA&text=icon" alt="教員アイコン" class="teacher-icon">
                 </div>
                 
-                <!-- 教員カード 4 -->
                 <div class="teacher-card">
                     <img src="https://placehold.co/150x150/EFEFEF/AAAAAA&text=icon" alt="教員アイコン" class="teacher-icon">
                 </div>
@@ -185,7 +187,6 @@
         </div>
     </main>
 
-    <!-- Bootstrap JS (必要であれば) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
@@ -193,23 +194,42 @@
         const searchContainer = document.getElementById('categorySearchContainer');
         const searchInput = document.getElementById('categorySearchInput');
         const categoryBox = document.getElementById('categoryBox');
+        // ハッシュタグのリンク要素を取得
+        const hashtagLinks = document.querySelectorAll('.hashtag-link');
 
-        // 検索バーがフォーカスされた（クリックなどで選択された）時の処理
+        // 検索バーがフォーカスされた時の処理 (ボックス表示)
         searchInput.addEventListener('focus', () => {
-            // カテゴリボックスを表示する
             categoryBox.style.display = 'block';
         });
 
-        // ページ上のどこかでマウスボタンが押された時の処理
+        // ページ上のどこかでクリックされた時の処理 (ボックス非表示)
         document.addEventListener('mousedown', (event) => {
-            // クリックされた場所が、検索バーのコンテナ要素の外側である場合のみ、ボックスを非表示にします。
             if (!searchContainer.contains(event.target)) {
                 categoryBox.style.display = 'none';
             }
+        });
+        
+        // --- ハッシュタグ入力機能 ---
+        
+        // 各ハッシュタグリンクにクリックイベントリスナーを設定
+        hashtagLinks.forEach(link => {
+            link.addEventListener('click', (event) => {
+                // aタグのデフォルト動作（ページ遷移）をキャンセル
+                event.preventDefault(); 
+                
+                const hashtagText = link.textContent.trim();
+                
+                // 検索入力欄にハッシュタグのテキストを設定
+                searchInput.value = hashtagText;
+                
+                // カテゴリボックスを非表示
+                categoryBox.style.display = 'none';
+                
+                // 検索入力欄にフォーカス
+                searchInput.focus();
+            });
         });
     </script>
 
 </body>
 </html>
-
-

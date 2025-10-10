@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<!--header.html-->
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <style th:fragment="header-styles">
+        /* ヘッダー全体のスタイル */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        /* アプリ名アイコンのリンクコンテナ */
+        .app-icon-link {
+            margin-bottom: 0;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: inherit;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        /* アプリのアイコン画像 */
+        .app-icon {
+            height: 70px;
+            width: 370px;
+            margin-right: 8px;
+        }
+
+        /* アプリのタイトルテキスト */
+        .app-title-text {
+            color: #007bff;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        /* ハンバーガーメニューのスタイル */
+        #humberger {
+          position: relative;
+          height: 22px;
+          width: 28px;
+          display: inline-block;
+          box-sizing: border-box;
+        }
+        #humberger div {
+          position: absolute;
+          left: 0;
+          height: 2px;
+          width: 28px;
+          background-color: #444;
+          border-radius: 2px;
+          display: inline-block;
+          box-sizing: border-box;
+        }
+        #humberger div:nth-of-type(1) {
+          top: 0;
+        }
+        #humberger div:nth-of-type(2) {
+          top: 10px;
+        }
+        #humberger div:nth-of-type(3) {
+          bottom: 0;
+        }
+    </style>
+</head>
+<body>
+    <header th:fragment="header-fragment" class="header bg-light">
+        <a th:href="@{/home}" class="app-icon-link">
+            <img th:src="@{/images/logo.png}" alt="アプリ名" class="app-icon" />
+            <span class="app-title-text">revitech_ver.2.0</span>
+        </a>
+
+        <a th:href="@{/option}">
+            <div id="humberger">
+                <div></div>
+                <div></div>
+                <div></div>
+            </div>
+        </a>
+    </header>
+</body>
+</html>
