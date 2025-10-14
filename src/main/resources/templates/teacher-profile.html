@@ -12,12 +12,12 @@
             <div class="card-header">
                 <h2>教員プロフィール</h2>
             </div>
-            <div class="card-body" th-object="${teacher}">
-                <h4 class="card-title" th:text="*{name}">教員の名前</h4>
+            <div class="card-body">
+                <h4 class="card-title">田中 太郎 (サンプル)</h4>
                 <hr>
-                <p><strong>ユーザー名:</strong> <span th:text="*{username}">username</span></p>
-                <p><strong>Email:</strong> <span th:text="*{email}">email@example.com</span></p>
-
+                <p><strong>ユーザー名:</strong> tanaka.taro</p>
+                <p><strong>Email:</strong> tanaka.taro@example.com</p>
+                <p><strong>担当科目:</strong> 情報処理 (サンプル)</p>
                 <div class="mt-4">
                     <a href="/teacher-list" class="btn btn-primary">一覧に戻る</a>
                 </div>
