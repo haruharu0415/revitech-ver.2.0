@@ -43,4 +43,10 @@ public class UserController {
     public String groupCreate() {
         return "group-create";
     }
+    
+    // 評価画面に遷移する
+    @GetMapping("/review")
+   public String  review() {
+    	return "review";
+    }
 }
