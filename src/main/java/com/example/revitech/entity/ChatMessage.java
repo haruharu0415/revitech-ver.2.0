@@ -2,6 +2,7 @@ package com.example.revitech.entity;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Column; // 【重要】追加
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -17,16 +18,20 @@ public class ChatMessage {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    // 【必須】ルームID
+    // 【必須】ルームID (デフォルトで 'room_id' にマッピングされる想定)
     private Long roomId; 
     
-    // 【必須】送信者ID (クライアントJSと合わせる)
+    // 【必須】送信者ID (デフォルトで 'sender_user_id' にマッピングされる想定)
     private Long senderUserId; 
     
-    // メッセージ内容 (列名エラーの原因となったフィールド)
+    // メッセージ内容 
+    // 【重要修正】DBの実際のカラム名 'body' にマッピング
+    @Column(name = "body", nullable = false) 
     private String content;
     
-    // 作成日時 (DB自動生成)
+    // 作成日時 
+    // 【重要修正】DBの実際のカラム名 'created_at' にマッピング
+    @Column(name = "created_at", nullable = false) 
     private LocalDateTime createdAt; 
     
     // デフォルトコンストラクタ (JPA/Jacksonで必須)
@@ -42,12 +47,13 @@ public class ChatMessage {
 
     @PrePersist
     protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
+        // DB自動生成ではなく、Java側で時刻を設定
+        this.createdAt = LocalDateTime.now(); 
     }
 
     // Getters and Setters
     public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; } // idのsetterを追加（Jacksonのデシリアライズ用）
+    public void setId(Long id) { this.id = id; } 
     
     public Long getRoomId() { return roomId; }
     public void setRoomId(Long roomId) { this.roomId = roomId; }
