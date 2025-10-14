@@ -18,54 +18,35 @@ public class ChatRoom {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = true, length = 255)
     private String name;
-
-    @Column(nullable = false, length = 50)
     private String type;
 
-    @Column(name = "creatar_user_id", nullable = false)
-    private Long creatarUserId; // typoをそのまま反映しています
-
-    @Column(name = "created_at", nullable = false, updatable = false,
-            columnDefinition = "DATETIME DEFAULT GETDATE()")
+    // 【重要】DB列名 'creatar_user_id' にマッピング
+    @Column(name = "creatar_user_id")
+    private Long creatarUserId; 
+    
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
+
+    // デフォルトコンストラクタ (JPA/Jacksonで必須)
+    public ChatRoom() {}
 
     @PrePersist
     protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
+        }
     }
 
-    // --- Getter / Setter ---
-    public Long getId() {
-        return id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public Long getCreatarUserId() {
-        return creatarUserId;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public void setType(String type) {
-        this.type = type;
-    }
-
-    public void setCreatarUserId(Long creatarUserId) {
-        this.creatarUserId = creatarUserId;
-    }
+    // Getters and Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    public String getType() { return type; }
+    public void setType(String type) { this.type = type; }
+    public Long getCreatarUserId() { return creatarUserId; }
+    public void setCreatarUserId(Long creatarUserId) { this.creatarUserId = creatarUserId; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

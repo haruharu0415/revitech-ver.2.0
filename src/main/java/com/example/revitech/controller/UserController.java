@@ -37,4 +37,10 @@ public class UserController {
     public String group() {
     	return "group";
     }
+
+    // 【新規追加】グループ作成画面の表示
+    @GetMapping("/group-create")
+    public String groupCreate() {
+        return "group-create";
+    }
 }

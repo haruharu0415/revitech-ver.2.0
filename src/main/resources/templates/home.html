@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!--home.html-->
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
@@ -34,7 +33,7 @@
         <div class="d-flex justify-content-around mb-3">
             <a th:href="@{/teacher-list}" class="btn btn-secondary">教員一覧</a>
             <a th:href="@{/group}" class="btn btn-secondary">グループ</a>
-            <a th:href="@{/dm}" class="btn btn-secondary">DM</a>
+            <a th:href="@{/user-search}" class="btn btn-secondary">DM</a>
         </div>
 
         <div class="row">
@@ -50,12 +49,13 @@
                 <h6>未読のDM</h6>
                 <div class="list-group">
                     <a href="#" class="list-group-item list-group-item-action">田中先生</a>
-                    <a href="#" class="list-group-item list-group-item-action">鈴木さん</a>
+                    <a href="#" class="list-group-item list-group-item-action">佐藤先生</a>
+                    <a href="#" class="list-group-item list-group-item-action">鈴木先生</a>
                 </div>
             </div>
         </div>
     </main>
-
+    
     <script th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"></script>
 </body>
 </html>

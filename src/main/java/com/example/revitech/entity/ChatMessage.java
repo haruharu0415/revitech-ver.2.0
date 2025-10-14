@@ -1,7 +1,10 @@
 package com.example.revitech.entity;
+
 import java.time.LocalDateTime;
 
-import jakarta.persistence.Column;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import jakarta.persistence.Column; // 【重要】追加
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -10,70 +13,61 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "chat_message")
+@Table(name = "chat_messages")
 public class ChatMessage {
-//ss
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(nullable = false)
+    
+    // 【必須】ルームID (デフォルトで 'room_id' にマッピングされる想定)
+    private Long roomId; 
+    
+    // 【修正】クライアントJSONのキー "senderId" を、Javaのフィールド senderUserId にマッピングする
+    @JsonProperty("senderId") // ★ この行を追加
+    private Long senderUserId; 
+    
+    // メッセージ内容 
+    // 【重要修正】DBの実際のカラム名 'body' にマッピング
+    @Column(name = "body", nullable = false) 
     private String content;
-
-    @Column(name = "receiver_student_id", nullable = false)
-    private Long receiverStudentId;
-
-    @Column(name = "sender_student_id", nullable = false)
-    private Long senderStudentId;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    public ChatMessage() {}
-
-    public ChatMessage(String content, Long receiverStudentId, Long senderStudentId) {
+    
+    // 作成日時 
+    // 【重要修正】DBの実際のカラム名 'created_at' にマッピング
+    @Column(name = "created_at", nullable = false) 
+    private LocalDateTime createdAt; 
+    
+    // デフォルトコンストラクタ (JPA/Jacksonで必須)
+    public ChatMessage() {} 
+    
+    // コンストラクタ (ChatServiceで利用)
+    public ChatMessage(Long roomId, Long senderUserId, String content) {
+        this.roomId = roomId;
+        this.senderUserId = senderUserId;
         this.content = content;
-        this.receiverStudentId = receiverStudentId;
-        this.senderStudentId = senderStudentId;
+        // createdAt は PrePersist で設定するためここでは設定しない
     }
 
-    // Before saving, set the createdAt timestamp
     @PrePersist
     protected void onCreate() {
-        this.createdAt = LocalDateTime.now();
+        // DB自動生成ではなく、Java側で時刻を設定
+        this.createdAt = LocalDateTime.now(); 
     }
 
     // Getters and Setters
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; } 
+    
+    public Long getRoomId() { return roomId; }
+    public void setRoomId(Long roomId) { this.roomId = roomId; }
 
-    public Long getId() {
-        return id;
-    }
+    public Long getSenderUserId() { return senderUserId; }
+    public void setSenderUserId(Long senderUserId) { this.senderUserId = senderUserId; }
 
-    public String getContent() {
-        return content;
-    }
+    public String getContent() { return content; }
+    public void setContent(String content) { this.content = content; }
+    
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; } 
 
-    public void setContent(String content) {
-        this.content = content;
-    }
-
-    public Long getReceiverStudentId() {
-        return receiverStudentId;
-    }
-
-    public void setReceiverStudentId(Long receiverStudentId) {
-        this.receiverStudentId = receiverStudentId;
-    }
-
-    public Long getSenderStudentId() {
-        return senderStudentId;
-    }
-
-    public void setSenderStudentId(Long senderStudentId) {
-        this.senderStudentId = senderStudentId;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
 }
