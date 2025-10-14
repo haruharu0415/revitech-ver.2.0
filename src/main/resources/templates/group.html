@@ -21,28 +21,63 @@
 <button id="createGroupBtn">＋</button>
 
 <script>
-  const myId = 1;
+  // 【TODO】認証ユーザーIDをThymeleafなどで設定することを想定
+  const myId = 1; 
   const chatRoomList = document.getElementById('chatRoomList');
+  const createGroupBtn = document.getElementById('createGroupBtn');
 
+  // アバターのテキストを生成
   function getAvatarText(name){ return name ? name.charAt(0).toUpperCase() : "?"; }
 
+  // チャットルーム一覧を取得
   async function fetchChatRooms(){
+    // 【TODO】実際にはログインユーザーに紐づくルームのみを取得するAPIに変更
+    // const res = await fetch(`/api/chat-rooms/user/${myId}`); 
     const res = await fetch('/api/chat-rooms');
     const rooms = await res.json();
     chatRoomList.innerHTML = '';
+    
     rooms.forEach(r=>{
       const div = document.createElement('div');
       div.className='chat-room';
-      div.dataset.id=r.id;
-      div.innerHTML=`<div class="avatar">${getAvatarText(r.name)}</div>
-                     <div class="chat-info"><div class="chat-name">${r.name}</div>
-                     <div class="chat-type">${r.type==='group'?'グループ':'DM'}</div></div>`;
+      
+      const avatar = document.createElement('div');
+      avatar.className = 'avatar';
+      // DMの場合は相手の名前、グループの場合はグループ名でアバターテキストを生成
+      avatar.textContent = getAvatarText(r.name); 
+      div.appendChild(avatar);
+
+      const info = document.createElement('div');
+      info.className = 'chat-info';
+      
+      const name = document.createElement('div');
+      name.className = 'chat-name';
+      name.textContent = r.name || (r.type === 'DM' ? 'DM相手' : 'グループ'); // 名前が空の場合はタイプを表示
+      info.appendChild(name);
+      
+      const type = document.createElement('div');
+      type.className = 'chat-type';
+      type.textContent = r.type === 'DM' ? 'ダイレクトメッセージ' : 'グループチャット';
+      info.appendChild(type);
+      
+      div.appendChild(info);
+
+      // クリックでルーム画面へ遷移
+      div.addEventListener('click', () => {
+        window.location.href = `/chat/room/${r.id}`; 
+      });
+
       chatRoomList.appendChild(div);
-      div.addEventListener('click',()=>alert(`チャットルーム「${r.name}」開きます`));
     });
   }
 
-  setInterval(fetchChatRooms, 3000);
+  // グループ作成画面への遷移
+  createGroupBtn.addEventListener('click', () => {
+    window.location.href = '/group-create'; 
+  });
+
+
+  document.addEventListener('DOMContentLoaded', fetchChatRooms);
 </script>
 </body>
 </html>

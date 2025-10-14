@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.revitech.dto.UserSearchDto; // ★新規作成を推奨
+import com.example.revitech.dto.UserSearchDto;
 import com.example.revitech.entity.Users;
 import com.example.revitech.service.UsersService;
 
@@ -22,23 +22,18 @@ public class UsersApiController {
         this.usersService = usersService;
     }
 
-    // 名前またはメールアドレスでユーザーを検索
+    /**
+     * 名前またはメールアドレスでユーザーを検索するAPI
+     * @param query 検索キーワード
+     * @return 該当するユーザーのリスト（UserSearchDto形式）
+     */
     @GetMapping("/search")
     public List<UserSearchDto> searchUsers(@RequestParam String query) {
-        // TODO: UsersRepository に findByNameContainingOrEmailContaining(query, query) 
-        // のようなメソッドを追加し、検索を行うのが最適です。
-        
-        // 暫定: 全ユーザーを取得してからフィルター
-        List<Users> allUsers = usersService.findAll();
-        
-        // 大文字小文字を区別しない検索
-        String lowerQuery = query.toLowerCase();
+        // 【修正】Service層の効率的な検索メソッドを利用
+        List<Users> searchResults = usersService.searchUsers(query);
 
-        return allUsers.stream()
-                .filter(user -> 
-                    user.getName().toLowerCase().contains(lowerQuery) || 
-                    user.getEmail().toLowerCase().contains(lowerQuery)
-                )
+        // 取得したUsersエンティティをDTOに変換して返す
+        return searchResults.stream()
                 .map(user -> new UserSearchDto(user.getId(), user.getName(), user.getEmail()))
                 .collect(Collectors.toList());
     }

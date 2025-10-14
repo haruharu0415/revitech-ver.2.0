@@ -1,7 +1,10 @@
 package com.example.revitech.controller;
 
 import java.util.List;
+import java.util.Optional;
 
+import org.springframework.security.core.Authentication; // 【追加】
+import org.springframework.security.core.context.SecurityContextHolder; // 【追加】
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,43 +13,74 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.example.revitech.entity.ChatRoom;
+import com.example.revitech.entity.Users; // 【追加】
 import com.example.revitech.service.ChatRoomService;
+import com.example.revitech.service.UsersService; // 【追加】
 
 @Controller
 public class ChatRoomController {
 
     private final ChatRoomService chatRoomService;
+    private final UsersService usersService; // 【追加】
 
-    public ChatRoomController(ChatRoomService chatRoomService) {
+    // 【修正】コンストラクタにUsersServiceを追加
+    public ChatRoomController(ChatRoomService chatRoomService, UsersService usersService) {
         this.chatRoomService = chatRoomService;
+        this.usersService = usersService; // 【追加】
     }
 
-    // ★【削除/非推奨】DMの画面表示ロジックはHomeController.dmViewに統合されたため、
-    // このクラスからDM関連の画面表示メソッド（/dm または /chat/room/dm/）は削除します。
-
-    // グループ作成（リダイレクト先は変更なし）
     @PostMapping("/chat-room/group/create")
-    public String createGroup(@RequestParam("creatorId") Long creatorId,
+    public String createGroup(
+                              // Long creatorId の @RequestParam を削除
                               @RequestParam("name") String name,
                               @RequestParam("memberIds") List<Long> memberIds,
                               Model model) {
+        
+        // 【最重要修正箇所】認証コンテキストからログインユーザーIDを取得
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Users creator = usersService.findByEmail(auth.getName())
+                            .orElseThrow(() -> new RuntimeException("ログインユーザーが見つかりません。"));
+
+        Long creatorId = creator.getId(); // 認証されたユーザーのIDを取得
+
+        // Serviceメソッドの呼び出し
         ChatRoom group = chatRoomService.createGroupRoom(creatorId, name, memberIds);
+        
         model.addAttribute("room", group);
         return "redirect:/chat/room/" + group.getId();
     }
 
-    // ルーム画面表示（グループチャット詳細として group.html を流用）
+
+    // ルーム画面表示（グループチャット詳細として group-chat.html を表示）
     @GetMapping("/chat/room/{roomId}")
     public String enterRoom(@PathVariable Long roomId, Model model) {
-        // ChatRoomServiceからroomを取得してmodelに追加する処理が必要ですが、
-        // 現状はroomIdのみを渡すシンプルな実装とします。
-        model.addAttribute("roomId", roomId);
-        return "group"; 
-    }
+        
+        // 1. ログインユーザー情報を取得
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = auth.getName();
+        Optional<Users> userOpt = usersService.findByEmail(email);
 
-    // 画面用の全ルーム一覧（グループチャット一覧として group.html を流用）
-    @GetMapping("/chat/rooms")
-    public String getChatRoomsPage(Model model) {
-        return "group"; // グループ一覧画面に遷移
+        if (userOpt.isPresent()) {
+            Users user = userOpt.get();
+            model.addAttribute("userId", user.getId()); 
+            model.addAttribute("userName", user.getName()); // 画面表示用の名前
+        } else {
+            // エラーハンドリング (通常は発生しないはず)
+            return "redirect:/login"; 
+        }
+
+        // 2. ChatRoom情報を取得
+        Optional<ChatRoom> roomOpt = chatRoomService.getRoomById(roomId);
+        if (roomOpt.isPresent()) {
+            ChatRoom room = roomOpt.get();
+            model.addAttribute("roomId", roomId); 
+            model.addAttribute("roomName", room.getName()); // ルーム名をModelに追加
+        } else {
+            // ルームが見つからない場合のエラーハンドリング
+            model.addAttribute("roomId", roomId);
+            model.addAttribute("roomName", "不明なチャットルーム");
+        }
+        
+        return "group-chat"; // group-chat.html がレンダリングされる
     }
 }
