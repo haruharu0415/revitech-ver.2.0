@@ -53,4 +53,8 @@ public class UsersService {
         // UsersRepositoryに定義されている効率的な検索メソッドを利用
         return usersRepository.findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(keyword, keyword);
     }
+ // 【新規追加】IDリストで複数のユーザーを取得するメソッド
+    public List<Users> findAllById(List<Long> ids) {
+        return usersRepository.findAllById(ids); // JpaRepository標準のメソッドを利用
+    }
 }

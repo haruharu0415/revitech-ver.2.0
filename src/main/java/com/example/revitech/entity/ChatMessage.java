@@ -2,6 +2,8 @@ package com.example.revitech.entity;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import jakarta.persistence.Column; // 【重要】追加
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -21,7 +23,8 @@ public class ChatMessage {
     // 【必須】ルームID (デフォルトで 'room_id' にマッピングされる想定)
     private Long roomId; 
     
-    // 【必須】送信者ID (デフォルトで 'sender_user_id' にマッピングされる想定)
+    // 【修正】クライアントJSONのキー "senderId" を、Javaのフィールド senderUserId にマッピングする
+    @JsonProperty("senderId") // ★ この行を追加
     private Long senderUserId; 
     
     // メッセージ内容 

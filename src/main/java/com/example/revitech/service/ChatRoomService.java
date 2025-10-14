@@ -11,9 +11,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.revitech.dto.UserSearchDto;
 import com.example.revitech.entity.ChatMember;
 import com.example.revitech.entity.ChatRoom;
-import com.example.revitech.entity.Users; // ★追加: findByIdの戻り値として必要
+import com.example.revitech.entity.Users;
 import com.example.revitech.repository.ChatMemberRepository;
 import com.example.revitech.repository.ChatRoomRepository;
 
@@ -26,16 +27,18 @@ public class ChatRoomService {
 
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMemberRepository chatMemberRepository;
-    private final UsersService usersService; // 【修正点 1/4】UsersServiceを定義
+    private final UsersService usersService; 
 
     @Autowired
     public ChatRoomService(ChatRoomRepository chatRoomRepository, 
                            ChatMemberRepository chatMemberRepository, 
-                           UsersService usersService) { // 【修正点 2/4】コンストラクタに追加
+                           UsersService usersService) {
         this.chatRoomRepository = chatRoomRepository;
         this.chatMemberRepository = chatMemberRepository;
-        this.usersService = usersService; // 【修正点 3/4】UsersServiceを保持
+        this.usersService = usersService; 
     }
+    
+    
 
     /**
      * 2人のユーザー間のDMルーム取得または作成
@@ -105,7 +108,7 @@ public class ChatRoomService {
             .collect(Collectors.toList());
             
         for (Long memberId : distinctMemberIds) {
-            // 【修正点 4/4】UsersServiceを使ってIDが有効かチェックし、存在するメンバーのみ追加
+            // UsersServiceを使ってIDが有効かチェックし、存在するメンバーのみ追加
             Optional<Users> user = usersService.findById(memberId);
             if (user.isPresent()) { 
                 chatMemberRepository.save(new ChatMember(savedGroup.getId(), memberId));
@@ -118,6 +121,29 @@ public class ChatRoomService {
         return savedGroup;
     }
     
+    /**
+     * 特定のルームIDのメンバーを検索用DTOとして取得する (★新規追加★)
+     * @param roomId ルームID
+     * @return メンバーのUserSearchDtoリスト
+     */
+    public List<UserSearchDto> getRoomMembers(Long roomId) { // メソッド名を修正
+        // 1. ルームIDに基づいてChatMemberを取得
+        List<ChatMember> members = chatMemberRepository.findByRoomId(roomId);
+
+        // 2. メンバーのユーザーIDリストを抽出
+        List<Long> userIds = members.stream()
+                .map(ChatMember::getUserId)
+                .collect(Collectors.toList());
+
+        // 3. ユーザーIDリストに基づいてUsersエンティティを取得
+        List<Users> users = usersService.findAllById(userIds);
+
+        // 4. UsersエンティティをUserSearchDtoに変換
+        return users.stream()
+                .map(user -> new UserSearchDto(user.getId(), user.getName(), user.getEmail()))
+                .collect(Collectors.toList());
+    }
+
     /**
      * 全チャットルームを取得する (管理者用など)
      * @return 全ChatRoomのリスト
