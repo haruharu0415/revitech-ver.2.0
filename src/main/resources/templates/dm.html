@@ -1,141 +1,182 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
-    <title>DMチャット（LINE風）</title>
-    
-    <link th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" rel="stylesheet" />
-    <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css}">
-    
-    <th:block th:insert="~{header :: header-styles}"></th:block>
-    <style>
-        body {
-            font-family: 'Helvetica', 'Arial', sans-serif;
-            background-color: #e5ddd5;
-            margin: 0;
-            padding: 0;
-        }
-
-        .chat-container {
-            max-width: 600px;
-            margin: 30px auto;
-            background-color: #fff;
-            border-radius: 10px;
-            box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
-            display: flex;
-            flex-direction: column;
-            /* 画面サイズに合わせて高さを調整 */
-            height: calc(100vh - 60px); 
-            overflow: hidden;
-        }
-
-        .chat-box {
-            flex: 1;
-            padding: 20px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .message {
-            max-width: 70%;
-            padding: 10px 15px;
-            border-radius: 15px;
-            line-height: 1.4;
-            word-wrap: break-word;
-        }
-
-        /* 他人のコメント: 左寄せ、薄いグレーの背景 */
-        .message.left {
-            align-self: flex-start; 
-            background-color: #f1f0f0;
-            border-top-left-radius: 0;
-        }
-
-        /* 自分のコメント: 右寄せ、緑色の背景 */
-        .message.right {
-            align-self: flex-end; 
-            background-color: #9fe8a4;
-            border-top-right-radius: 0;
-        }
-
-        .message-meta {
-            font-size: 0.7em;
-            color: #888;
-            margin-top: 3px;
-            text-align: right;
-        }
-
-        .chat-input {
-            display: flex;
-            padding: 15px;
-            background-color: #f8f8f8;
-            border-top: 1px solid #ccc;
-        }
-        
-        /* 入力フォームの幅を調整 */
-        .chat-input input[type="number"] {
-            width: 80px; 
-            flex: none; 
-        }
-
-        .chat-input input[type="text"] {
-            flex: 1; 
-        }
-
-        .chat-input input[type="text"],
-        .chat-input input[type="number"] {
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 20px;
-            outline: none;
-            margin-right: 10px;
-        }
-        
-        .chat-input button {
-            padding: 10px 20px;
-            background-color: #00b900;
-            color: white;
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-        }
-
-        .chat-input button:hover {
-            background-color: #009d00;
-        }
-
-        h2 {
-            text-align: center;
-            margin: 15px 0;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title th:text="${receiver != null} ? 'DMチャット - ' + ${receiver.name} : 'DMチャット'"></title>
+   <link th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" rel="stylesheet" />
+  <script th:src="@{/webjars/sockjs-client/1.5.1/sockjs.min.js}"></script>
+  <script th:src="@{/webjars/stomp-websocket/2.3.4/stomp.min.js}"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <style>
+    /* ... スタイルは前回と同じ ... */
+    body { font-family: 'Helvetica', 'Arial', sans-serif; background:#e5ddd5; margin:0; padding:0; }
+    .chat-container { max-width:600px; margin:0 auto; background:#fff; border-radius:0; display:flex; flex-direction:column; height:100vh; overflow:hidden; }
+    .chat-header { background:#075e54; color:white; padding:15px; font-size:18px; font-weight:bold; display:flex; align-items:center; }
+    .chat-header a { color:white; margin-right: 15px; text-decoration: none; }
+    .message-area { flex-grow:1; overflow-y:scroll; padding:15px; }
+    .message { display:flex; margin-bottom:10px; }
+    .my-message { justify-content:flex-end; }
+    .other-message { justify-content:flex-start; }
+    .message-content { padding:8px 12px; border-radius:15px; max-width:70%; word-wrap:break-word; }
+    .my-message .message-content { background:#dcf8c6; color:#000; border-bottom-right-radius:2px; }
+    .other-message .message-content { background:#fff; color:#000; border:1px solid #ddd; border-bottom-left-radius:2px; }
+    .input-area { padding:10px; background:#f0f0f0; border-top:1px solid #ddd; display:flex; }
+    .input-area input { flex-grow:1; padding:10px; border-radius:20px; border:none; margin-right:10px; }
+    .input-area button { background:#075e54; color:white; border:none; border-radius:50%; width:40px; height:40px; font-size:20px; line-height:1; cursor:pointer; }
+  </style>
 </head>
 <body>
-	<div th:replace="~{header :: header-fragment}"></div>
-
-<div class="chat-container">
-    <h2>ダイレクトメッセージ</h2>
-
-    <div class="chat-box" id="chat-box">
-        <div th:each="msg : ${messages}">
-            <div th:class="'message ' + (${msg.senderStudentId} == 1 ? 'right' : 'left')">
-                <p th:text="${msg.content}">メッセージ</p>
-                <div class="message-meta" th:text="'From: ' + ${msg.senderStudentId}"></div>
-            </div>
-        </div>
+  
+  <div id="data-container" 
+       th:data-room-id="${room.id}" 
+       th:data-sender-id="${sender.id}">
+  </div>
+  
+  <div class="chat-container">
+    
+    <div class="chat-header">
+      <a th:href="@{/user-search}"><i class="bi bi-arrow-left"></i></a>
+      <span th:text="${receiver != null} ? ${receiver.name} : 'DMチャット'"></span>
     </div>
 
-    <form class="chat-input" th:action="@{/dm/send}" method="post">
-        <input type="hidden" name="senderStudentId" value="1" />
-        
-        <input type="number" name="receiverStudentId" placeholder="受信者ID" required>
-        <input type="text" name="content" placeholder="メッセージを入力..." required>
-        <button type="submit">送信</button>
-    </form>
-</div>
+    <div class="message-area" id="messageArea">
+      <div th:each="message : ${messages}" 
+           th:classappend="${message.senderUserId == sender.id} ? 'my-message' : 'other-message'"
+           class="message">
+        <div class="message-content" th:text="${message.content}"></div>
+      </div>
+    </div>
 
-<script th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"></script>
+    <div class="input-area">
+      <form id="messageForm" style="display:flex; width:100%;">
+        <input type="text" id="messageInput" placeholder="メッセージを入力..." autocomplete="off" />
+        <button type="submit" id="sendButton"><i class="bi bi-send-fill"></i></button> </form>
+    </div>
+  </div>
+
+<script>
+    // 【修正】HTML要素からデータを取得する
+    const dataContainer = document.getElementById('data-container');
+    const senderId = Number(dataContainer.dataset.senderId) || 0;
+    const roomId = Number(dataContainer.dataset.roomId) || 0; 
+    // receiverIdはroomId取得に影響しないため、従来の書き方を維持
+    const receiverId = /*[[${receiver.id}]]*/ 0; 
+
+    console.log("Room ID loaded:", roomId); // デバッグ用ログ
+    
+    // DOM要素の取得
+    const messageForm = document.getElementById('messageForm');
+    const messageInput = document.getElementById('messageInput');
+    const messageArea = document.getElementById('messageArea');
+    const sendButton = document.getElementById('sendButton'); 
+    
+    let stompClient = null;
+
+    /**
+     * メッセージを画面に追加し、スクロール
+     */
+    function appendMessage(content, isSender) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message ' + (isSender ? 'my-message' : 'other-message');
+        
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
+        contentDiv.textContent = content;
+        
+        messageDiv.appendChild(contentDiv);
+        messageArea.appendChild(messageDiv);
+        
+        scrollToBottom();
+    }
+    
+    /**
+     * 一番下までスクロール
+     */
+    function scrollToBottom() {
+        messageArea.scrollTop = messageArea.scrollHeight;
+    }
+
+    /**
+     * STOMPクライアントの接続と購読
+     */
+    function connect() {
+        // roomId が 0 (無効値) の場合は接続を試みない
+        if (!roomId || typeof roomId !== 'number' || roomId <= 0) {
+             console.error('Room ID is invalid or missing:', roomId, '. Skipping WebSocket connection.');
+             return;
+        }
+
+        // 1. SockJSでWebSocket接続を確立
+        const socket = new SockJS('/ws');
+        stompClient = Stomp.over(socket);
+        
+        // 2. STOMP接続
+        stompClient.connect({}, (frame) => {
+            console.log('Connected to room: ' + roomId);
+
+            // 3. メッセージトピックを購読（このルーム専用）
+            stompClient.subscribe('/topic/messages/' + roomId, (chatMessage) => {
+                const messageDto = JSON.parse(chatMessage.body);
+                
+                // 受信したメッセージが自分の送信したものでなければ画面に追加
+                if (messageDto.senderUserId !== senderId) { 
+                    appendMessage(messageDto.content, false); // 相手からのメッセージ
+                }
+            });
+            
+        }, (error) => {
+            // 【修正】CORSエラーが解消されても、WebSocket接続エラーはここでキャッチされる
+            console.error('STOMP Error: WebSocket接続に失敗しました。', error);
+        });
+    }
+
+    /**
+     * メッセージ送信処理 (WebSocket)
+     */
+    function sendMessage(event) {
+        if (event) {
+            event.preventDefault(); // 【重要】フォームのデフォルト送信（リロード）をキャンセル
+        }
+        
+        const content = messageInput.value.trim();
+        
+        if (!content) {
+            return; // 内容がない場合は何もしない
+        }
+        
+        if (stompClient && stompClient.connected) {
+            const chatMessage = {
+                roomId: roomId, 
+                senderUserId: senderId,
+                content: content
+            };
+            
+            // 4. /app/chat.send にメッセージを送信 (ChatWebSocketControllerが処理)
+            stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));
+            
+            // 自分のメッセージは即座に画面に追加
+            appendMessage(content, true);
+            
+            // 入力欄をクリア
+            messageInput.value = '';
+        } else {
+             // 接続がない場合のアラートとエラーログ
+             console.error("STOMPクライアントが接続されていません。");
+             alert("チャット接続が切断されています。ページをリロードして再接続してください。");
+        }
+    }
+    
+    // 初期処理
+    document.addEventListener('DOMContentLoaded', () => {
+        scrollToBottom(); // ページロード時の初期スクロール
+        connect();        // WebSocket接続を開始
+        
+        // 1. フォームの submit イベント（Enterキー押下、または type="submit" ボタンクリック）
+        if (messageForm) {
+            messageForm.addEventListener('submit', sendMessage); 
+        }
+    });
+</script>
 </body>
 </html>

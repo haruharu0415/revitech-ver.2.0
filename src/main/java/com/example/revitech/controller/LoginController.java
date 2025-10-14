@@ -57,8 +57,8 @@ public class LoginController {
         user.setEmail(form.getUsername()); // email 兼 username 扱い（ログイン時に使う）
         user.setPassword(form.getPassword());
         user.setRole("USER"); // 必要に応じて変更可
-        user.setStatus("active");
-
+        user.setStatus("active"); // 仮の状態設定
+        
         usersService.save(user);
 
         return "redirect:/login";

@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!--teacher-list.html-->
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
@@ -33,162 +32,121 @@
             margin-bottom: 1rem;
             background-color: #fff;
             border: 1px solid #dee2e6;
-            border-radius: 0.25rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
         }
-        
-        /* 教員アイコン画像 */
+
+        /* アイコンのスタイル */
         .teacher-icon {
-            width: 65px;
-            height: 65px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
             object-fit: cover;
             margin-right: 1rem;
-            cursor: pointer;
+            border: 2px solid #007bff; /* アイコンに枠線を追加 */
         }
         
+        /* 教員情報の部分 */
         .teacher-info {
             flex-grow: 1;
         }
 
-        /* 評価（星）のスタイル */
-        .star-rating .bi {
-            color: #ffc107; /* 星の色を黄色に */
-            font-size: 1.5rem; /* 星のサイズを少し大きく */
-            margin-right: 2px;
+        /* 評価・コメント・DMボタンのコンテナ */
+        .action-btns {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
         }
 
-        /* 「コメント」リンクのコンテナ */
-        .rating-container {
-            border-left: 1px solid #dee2e6;
-            padding-left: 1rem;
-            margin-left: 1rem;
-            text-align: center;
-            /* 子要素のz-indexを機能させるためにpositionを設定 */
-            position: relative; 
-        }
-        
-        /* コメントリンクのスタイル */
-        .rating-container .btn-rating { 
-            font-size: 1.2rem;
-            font-weight: bold;
-            border: none;
-            background: none;
-            color: #6c757d;
-            padding: 0;
-            text-decoration: none; /* aタグの下線を非表示にする */
-            display: block;
-            cursor: pointer;
-            /* リンクを確実にクリックさせるため */
-            position: relative;
-            z-index: 10;
-        }
-        .rating-container .btn-rating:hover {
-            color: #0d6efd; 
-        }
-        
-        /* カテゴリ検索ボックスのスタイル */
-        .category-box {
-            border: 1px solid #0d6efd; /* 青い枠線 */
-            padding: 1rem;
-            border-radius: 0.25rem;
-            background-color: #fff;
-            display: none; 
+        /* カテゴリ検索ボックス */
+        #categoryBox {
             position: absolute;
-            z-index: 10;
-            top: 100%; 
-            left: 0;
-            right: 0;
-            margin-top: 0.25rem; 
+            z-index: 1000;
+            background: white;
+            border: 1px solid #ccc;
+            border-top: none;
+            width: calc(100% - 2rem);
+            max-height: 200px;
+            overflow-y: auto;
+            display: none; /* 初期は非表示 */
         }
-        .category-box p {
-            font-size: 0.9rem;
-            margin-bottom: 0.5rem;
-        }
-        .category-box a {
-            display: block; 
+        
+        .hashtag-link {
+            display: block;
+            padding: 8px 15px;
             text-decoration: none;
-            color: #212529;
-            padding: 0.25rem 0;
-            cursor: pointer;
+            color: #333;
         }
-        .category-box a:hover {
-            color: #0d6efd;
+        
+        .hashtag-link:hover {
+            background-color: #f0f0f0;
         }
     </style>
 </head>
 <body>
-    
     <div th:replace="~{header :: header-fragment}"></div>
 
     <main class="container p-3">
-        <div class="row justify-content-center">
+        <h1 class="mb-4 text-center">教員一覧</h1>
 
-            <div class="col-lg-8 col-md-10">
-                <div class="d-flex align-items-center mb-3">
-                    <i class="bi bi-arrow-left-short fs-1 me-2"></i>
-                    
-                    <div class="flex-grow-1 position-relative" id="categorySearchContainer">
-                        <div class="input-group search-bar">
-                            <input type="text" class="form-control" id="categorySearchInput" placeholder="教員名またはカテゴリで検索">
-                            <span class="input-group-text"><i class="bi bi-search"></i></span>
-                        </div>
-                        
-                        <div id="categoryBox" class="category-box">
-                            <a href="#" class="hashtag-link">#情報処理</a>
-                            <a href="#" class="hashtag-link">#ゲーム制作科</a>
-                            <a href="#" class="hashtag-link">#高度AI科</a>
-                            <a href="#" class="hashtag-link">#コンボボックス</a>
-                            <a href="#" class="hashtag-link">#Zipファイル</a>
-                            <a href="#" class="hashtag-link">#10分遅刻</a>
-                        </div>
-                    </div>
-                </div>
+        <div class="mb-4" id="categorySearchContainer" style="position: relative;">
+            <div class="input-group search-bar">
+                <input type="text" class="form-control" placeholder="ハッシュタグまたは教員名を検索" aria-label="Search" id="categorySearchInput">
+                <span class="input-group-text">
+                    <i class="bi bi-search"></i>
+                </span>
+            </div>
+            <div id="categoryBox">
+                <a href="#" class="hashtag-link">#プログラミング</a>
+                <a href="#" class="hashtag-link">#ウェブデザイン</a>
+                <a href="#" class="hashtag-link">#データベース</a>
+                <a href="#" class="hashtag-link">#セキュリティ</a>
+                <a href="#" class="hashtag-link">#ガチキチ</a> <a href="#" class="hashtag-link">#毒舌</a> </div>
+        </div>
 
+        <div class="teacher-card" th:each="teacher, iterStat : ${T(java.util.List).of(
+             T(com.example.revitech.entity.Users).of(1L, '佐藤 太郎', 'Java/Spring', 'TEACHER'),
+             T(com.example.revitech.entity.Users).of(2L, '田中 花子', 'Webデザイン/UI', 'TEACHER'),
+             T(com.example.revitech.entity.Users).of(3L, '山本 一郎', 'データベース/SQL', 'TEACHER')
+        )}">
+            
+            <a th:href="@{/profile/show/{userId}(userId=${teacher.id})}">
+                <img th:src="@{/images/default-icon.png}" alt="教員アイコン" class="teacher-icon">
+            </a>
 
-                <div class="teacher-card">
-                    <img src="https://placehold.co/150x150/EFEFEF/AAAAAA&text=icon" alt="教員アイコン" class="teacher-icon">
-                    <div class="teacher-info">
-                        <div class="star-rating">
-                            <i class="bi bi-star-fill"></i>
-                            <i class="bi bi-star-fill"></i>
-                            <i class="bi bi-star-fill"></i>
-                            <i class="bi bi-star-fill"></i>
-                            <i class="bi bi-star"></i>
-                        </div>
-                    </div>
-                    <div class="rating-container">
-                        <a th:href="@{/comment}" class="btn-rating">コメント</a>
-                    </div>
-                </div>
+            <div class="teacher-info">
+                <h5 class="mb-0" th:text="${teacher.name}">教員名</h5>
+                <p class="text-muted mb-0" th:text="${teacher.specialty}">専門分野</p>
+            </div>
 
-                <div class="teacher-card">
-                    <img src="https://placehold.co/150x150/EFEFEF/AAAAAA&text=icon" alt="教員アイコン" class="teacher-icon">
-                    <div class="teacher-info">
-                        <div class="star-rating">
-                            <i class="bi bi-star-fill"></i>
-                            <i class="bi bi-star-fill"></i>
-                            <i class="bi bi-star"></i>
-                            <i class="bi bi-star"></i>
-                            <i class="bi bi-star"></i>
-                        </div>
-                    </div>
-                    <div class="rating-container">
-                        <a th:href="@{/comment}" class="btn-rating">コメント</a>
-                    </div>
-                </div>
+            <div class="action-btns">
+                <a th:href="@{/comment}" class="btn btn-sm btn-outline-warning">
+                    <i class="bi bi-star-fill"></i> 評価
+                </a>
                 
-                <div class="teacher-card">
-                    <img src="https://placehold.co/150x150/EFEFEF/AAAAAA&text=icon" alt="教員アイコン" class="teacher-icon">
-                </div>
-                
-                <div class="teacher-card">
-                    <img src="https://placehold.co/150x150/EFEFEF/AAAAAA&text=icon" alt="教員アイコン" class="teacher-icon">
-                </div>
+                <a th:href="@{/dm(receiverId=${teacher.id})}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-chat-dots-fill"></i> DM
+                </a>
             </div>
         </div>
+        
+        <th:block th:if="${false}">
+             <script th:inline="javascript">
+                 /*<![CDATA[*/
+                 // ダミーのUsersクラスの代わり
+                 // Spring BootのControllerから渡される実際のUsersオブジェクトを使用してください
+                 var dummyUsers = [
+                     { id: 1, name: '佐藤 太郎', specialty: 'Java/Spring' },
+                     { id: 2, name: '田中 花子', specialty: 'Webデザイン/UI' },
+                     { id: 3, name: '山本 一郎', specialty: 'データベース/SQL' }
+                 ];
+                 /*]]>*/
+             </script>
+        </th:block>
+
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
     <script>
         // 必要なHTML要素を取得します
         const searchContainer = document.getElementById('categorySearchContainer');
@@ -227,9 +185,11 @@
                 
                 // 検索入力欄にフォーカス
                 searchInput.focus();
+                
+                // 【TODO: 検索処理をここに実装】
+                // ハッシュタグで絞り込みを行うJavaScriptまたはサーバーへのリクエストを実装
             });
         });
     </script>
-
 </body>
 </html>
