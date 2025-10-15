@@ -1,10 +1,12 @@
 package com.example.revitech.service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.example.revitech.dto.ChatMessageDto;
 import com.example.revitech.entity.ChatMessage;
 import com.example.revitech.repository.ChatMessageRepository;
 
@@ -13,26 +15,26 @@ import com.example.revitech.repository.ChatMessageRepository;
 public class ChatMessageService {
 
     private final ChatMessageRepository chatMessageRepository;
+    private final UsersService usersService;
 
-    public ChatMessageService(ChatMessageRepository chatMessageRepository) {
+    public ChatMessageService(ChatMessageRepository chatMessageRepository, UsersService usersService) {
         this.chatMessageRepository = chatMessageRepository;
+        this.usersService = usersService;
     }
 
-    // 【修正】sendMessage メソッドが roomId ベースになっていること
-    // このメソッドは ChatWebSocketController で利用されます。
     public ChatMessage sendMessage(Long roomId, Long senderUserId, String content) {
-        // ChatMessage エンティティに (Long roomId, Long senderUserId, String content) 
-        // を受け取るコンストラクタがあることを前提とします。
-        ChatMessage message = new ChatMessage(roomId, senderUserId, content); 
-        
-        // データベースに保存
-        return chatMessageRepository.save(message); 
+        ChatMessage message = new ChatMessage(roomId, senderUserId, content);
+        return chatMessageRepository.save(message);
     }
 
-    // 【修正】メッセージ取得メソッドが roomId ベースになっていること
-    // このメソッドは HomeController で利用されます。
-    public List<ChatMessage> getMessagesByRoomId(Long roomId) {
-        // Repositoryの findByRoomIdOrderByCreatedAtAsc(roomId) が必要です
-        return chatMessageRepository.findByRoomIdOrderByCreatedAtAsc(roomId); 
+    public List<ChatMessageDto> getMessagesByRoomId(Long roomId) {
+        return chatMessageRepository.findByRoomIdOrderByCreatedAtAsc(roomId).stream()
+            .map(message -> {
+                String senderName = usersService.findById(message.getSenderUserId())
+                                                 .map(user -> user.getName())
+                                                 .orElse("退会したユーザー");
+                return new ChatMessageDto(message, senderName);
+            })
+            .collect(Collectors.toList());
     }
 }

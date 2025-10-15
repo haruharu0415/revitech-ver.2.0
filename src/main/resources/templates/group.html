@@ -21,63 +21,75 @@
 <button id="createGroupBtn">＋</button>
 
 <script>
-  // 【TODO】認証ユーザーIDをThymeleafなどで設定することを想定
-  const myId = 1; 
-  const chatRoomList = document.getElementById('chatRoomList');
-  const createGroupBtn = document.getElementById('createGroupBtn');
+  document.addEventListener('DOMContentLoaded', async () => {
+    const chatRoomList = document.getElementById('chatRoomList');
+    const createGroupBtn = document.getElementById('createGroupBtn');
 
-  // アバターのテキストを生成
-  function getAvatarText(name){ return name ? name.charAt(0).toUpperCase() : "?"; }
+    // アバターのテキストを生成
+    function getAvatarText(name){ 
+      return name ? name.charAt(0).toUpperCase() : "?"; 
+    }
 
-  // チャットルーム一覧を取得
-  async function fetchChatRooms(){
-    // 【TODO】実際にはログインユーザーに紐づくルームのみを取得するAPIに変更
-    // const res = await fetch(`/api/chat-rooms/user/${myId}`); 
-    const res = await fetch('/api/chat-rooms');
-    const rooms = await res.json();
-    chatRoomList.innerHTML = '';
-    
-    rooms.forEach(r=>{
-      const div = document.createElement('div');
-      div.className='chat-room';
+    try {
+      // ★ 1. 全員分ではなく、自分専用のルームリストを取得するAPIを呼び出します
+      const response = await fetch('/api/chat-rooms/my-rooms');
       
-      const avatar = document.createElement('div');
-      avatar.className = 'avatar';
-      // DMの場合は相手の名前、グループの場合はグループ名でアバターテキストを生成
-      avatar.textContent = getAvatarText(r.name); 
-      div.appendChild(avatar);
+      if (!response.ok) {
+        throw new Error('ルームリストの取得に失敗しました。');
+      }
+      
+      const rooms = await response.json();
+      chatRoomList.innerHTML = ''; // 一旦クリア
+      
+      // ★ 2. ルームが0件の場合のメッセージを表示します
+      if (rooms.length === 0) {
+        chatRoomList.innerHTML = '<p style="text-align: center; padding: 20px; color: #666;">参加しているグループチャットはありません。</p>';
+        return;
+      }
+      
+      // ★ 3. 取得したルームを描画します (元のコードと同じロジックです)
+      rooms.forEach(room => {
+        const div = document.createElement('div');
+        div.className = 'chat-room';
+        
+        const avatar = document.createElement('div');
+        avatar.className = 'avatar';
+        avatar.textContent = getAvatarText(room.name); 
+        div.appendChild(avatar);
 
-      const info = document.createElement('div');
-      info.className = 'chat-info';
-      
-      const name = document.createElement('div');
-      name.className = 'chat-name';
-      name.textContent = r.name || (r.type === 'DM' ? 'DM相手' : 'グループ'); // 名前が空の場合はタイプを表示
-      info.appendChild(name);
-      
-      const type = document.createElement('div');
-      type.className = 'chat-type';
-      type.textContent = r.type === 'DM' ? 'ダイレクトメッセージ' : 'グループチャット';
-      info.appendChild(type);
-      
-      div.appendChild(info);
+        const info = document.createElement('div');
+        info.className = 'chat-info';
+        
+        const name = document.createElement('div');
+        name.className = 'chat-name';
+        name.textContent = room.name || 'DM';
+        info.appendChild(name);
+        
+        const type = document.createElement('div');
+        type.className = 'chat-type';
+        type.textContent = room.type === 'DM' ? 'ダイレクトメッセージ' : 'グループチャット';
+        info.appendChild(type);
+        
+        div.appendChild(info);
 
-      // クリックでルーム画面へ遷移
-      div.addEventListener('click', () => {
-        window.location.href = `/chat/room/${r.id}`; 
+        div.addEventListener('click', () => {
+          window.location.href = `/chat/room/${room.id}`; 
+        });
+
+        chatRoomList.appendChild(div);
       });
 
-      chatRoomList.appendChild(div);
+    } catch (error) {
+      // ★ 4. エラーが発生した場合のメッセージを表示します
+      console.error('Fetch Error:', error);
+      chatRoomList.innerHTML = `<p style="color: red; text-align: center; padding: 20px;">${error.message}</p>`;
+    }
+
+    // グループ作成画面への遷移
+    createGroupBtn.addEventListener('click', () => {
+      window.location.href = '/group-create'; 
     });
-  }
-
-  // グループ作成画面への遷移
-  createGroupBtn.addEventListener('click', () => {
-    window.location.href = '/group-create'; 
   });
-
-
-  document.addEventListener('DOMContentLoaded', fetchChatRooms);
 </script>
 </body>
 </html>
