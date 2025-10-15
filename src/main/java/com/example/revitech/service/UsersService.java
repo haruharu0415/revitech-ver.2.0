@@ -1,3 +1,4 @@
+// UsersService.java の全文
 package com.example.revitech.service;
 
 import java.util.List;
@@ -5,13 +6,13 @@ import java.util.Optional;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional; // 【追加】トランザクション管理
+import org.springframework.transaction.annotation.Transactional;
 
 import com.example.revitech.entity.Users;
 import com.example.revitech.repository.UsersRepository;
 
 @Service
-@Transactional // 【追加】サービス層にトランザクションを付与
+@Transactional
 public class UsersService {
 
     private final UsersRepository usersRepository;
@@ -43,18 +44,24 @@ public class UsersService {
         return usersRepository.save(user);
     }
     
-    /**
-     * 名前またはメールアドレスでユーザーを検索する
-     */
     public List<Users> searchUsers(String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) {
-            return List.of(); // キーワードがない場合は空のリストを返す
+            return List.of();
         }
-        // UsersRepositoryに定義されている効率的な検索メソッドを利用
         return usersRepository.findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(keyword, keyword);
     }
- // 【新規追加】IDリストで複数のユーザーを取得するメソッド
+
     public List<Users> findAllById(List<Long> ids) {
-        return usersRepository.findAllById(ids); // JpaRepository標準のメソッドを利用
+        return usersRepository.findAllById(ids);
+    }
+
+    // ▼▼▼【このメソッドを新規追加】▼▼▼
+    /**
+     * 教員の役割を持つユーザーのリストを取得します。
+     * @return 教員のリスト
+     */
+    public List<Users> findTeachers() {
+        // DBに保存されている役割名（例: "TEACHER"）を指定します
+        return usersRepository.findByRole("TEACHER");
     }
 }

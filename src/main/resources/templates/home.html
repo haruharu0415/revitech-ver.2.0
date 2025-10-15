@@ -10,19 +10,13 @@
     <th:block th:insert="~{header :: header-styles}"></th:block>
 
     <style>
-        /* メインコンテンツに必要なスタイルのみをここに残します */
-        .main-content {
-            padding: 1rem;
-        }
-        .info-box {
-            border: 1px solid #dee2e6;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            border-radius: 0.25rem;
-        }
+        /* このページ専用のスタイル */
+        .main-content { padding: 1rem; }
+        .info-box { border: 1px solid #dee2e6; padding: 1rem; margin-bottom: 1rem; border-radius: 0.25rem; }
     </style>
 </head>
 <body>
+
     <div th:replace="~{header :: header-fragment}"></div>
 
     <main class="main-content">
@@ -37,25 +31,19 @@
         </div>
 
         <div class="row">
-            <div class="col-6">
-                <h6>通知が来ているグループ</h6>
+            <div class="col-12">
+                <h6>最近のやりとり（サンプル）</h6>
                 <div class="list-group">
                     <a href="#" class="list-group-item list-group-item-action">グループA</a>
-                    <a href="#" class="list-group-item list-group-item-action">グループB</a>
-                    <a href="#" class="list-group-item list-group-item-action">グループC</a>
-                </div>
-            </div>
-            <div class="col-6">
-                <h6>未読のDM</h6>
-                <div class="list-group">
                     <a href="#" class="list-group-item list-group-item-action">田中先生</a>
-                    <a href="#" class="list-group-item list-group-item-action">佐藤先生</a>
-                    <a href="#" class="list-group-item list-group-item-action">鈴木先生</a>
                 </div>
             </div>
         </div>
     </main>
-    
+
     <script th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"></script>
+    
+    <th:block th:if="${#authentication.principal != 'anonymousUser'}" th:insert="~{header :: notification-script}"></th:block>
+
 </body>
 </html>

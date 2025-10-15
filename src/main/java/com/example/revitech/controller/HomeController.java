@@ -1,3 +1,4 @@
+// HomeController.java の全文
 package com.example.revitech.controller;
 
 import java.util.Collections;
@@ -34,17 +35,33 @@ public class HomeController {
         this.chatRoomService = chatRoomService; 
     }
 
-    // ホーム画面表示（role に応じて切り替え）
+    // ▼▼▼【修正箇所】homeメソッド全体を修正 ▼▼▼
     @GetMapping("/home")
     public String home(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        // 認証されておらず、匿名ユーザーの場合
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
+            // ログインしていないユーザー向けのホーム画面を表示
+            // ゲストユーザーであることを示す属性をModelに追加することもできます
+            // model.addAttribute("isGuest", true);
+            return "home";
+        }
+
+        // --- 以下、認証済みユーザーの場合の処理 ---
         String email = auth.getName();
         Optional<Users> optionalUser = usersService.findByEmail(email);
-        if (optionalUser.isEmpty()) return "redirect:/login";
+        
+        // 認証情報はあるが、DBにユーザーが存在しない場合
+        if (optionalUser.isEmpty()) {
+            // ゲスト用のホーム画面にフォールバックします
+            return "home"; 
+        }
 
         Users user = optionalUser.get();
         model.addAttribute("user", user);
 
+        // 役割に応じた画面振り分け
         switch (user.getRole().toUpperCase()) {
             case "ADMIN": return "home-admin";
             case "TEACHER": return "home-teacher";
@@ -55,10 +72,9 @@ public class HomeController {
 
     // DM画面表示
     @GetMapping("/dm")
-    public String dmView(@RequestParam(name = "receiverId", required = false) Long receiverId, // 【修正】required = false に戻す
+    public String dmView(@RequestParam(name = "receiverId", required = false) Long receiverId,
                          Model model) {
         
-        // 【修正】receiverId が null の場合、エラー画面ではなくユーザー検索画面にリダイレクト
         if (receiverId == null) {
             return "redirect:/user-search"; 
         }
@@ -70,20 +86,16 @@ public class HomeController {
         Users receiver = usersService.findById(receiverId).orElse(null);
 
         if (receiver == null) {
-             // ユーザーが見つからない場合はリダイレクト
              return "redirect:/user-search"; 
         }
 
-        // 1. ChatRoomServiceでDMルームを取得または作成
         ChatRoom room = chatRoomService.getOrCreateDmRoom(sender.getId(), receiverId);
         
-        // 2. ルームIDを使ってメッセージ履歴を取得 (新ロジック)
         List<ChatMessage> messages = Collections.emptyList();
         if (room != null) {
             messages = chatMessageService.getMessagesByRoomId(room.getId());
         }
         
-        // 3. Modelに情報を追加
         model.addAttribute("sender", sender);
         model.addAttribute("receiver", receiver);
         model.addAttribute("room", room);         
@@ -99,8 +111,6 @@ public class HomeController {
         
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Users sender = usersService.findByEmail(auth.getName()).orElseThrow();
-
-        // chatMessageService.sendMessage(sender.getId(), receiverId, content); // 古いメソッド
 
         return "redirect:/dm?receiverId=" + receiverId;
     }

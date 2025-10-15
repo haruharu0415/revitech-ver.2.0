@@ -1,3 +1,4 @@
+// ChatRoomRepository.java の全文
 package com.example.revitech.repository;
 
 import java.util.Optional;
@@ -11,13 +12,17 @@ import com.example.revitech.entity.ChatRoom;
 public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
 
     /**
-     * 【最終確認クエリ】二重引用符を外し、最も一般的なスネークケースのネイティブSQLに戻す
-     * DBの列名（room_id, user_id, type）に完全に合わせる
+     * ▼▼▼【修正点】2ユーザーが参加するDMルームを厳密に1件だけ検索するクエリに変更 ▼▼▼
+     * 2人のユーザーIDを含み、かつ、参加メンバーがちょうど2人だけのDMルームを検索することで、
+     * 不正なデータがあっても意図したルームを1件だけ取得できるようにします。
      */
     @Query(value = "SELECT r.* FROM chat_rooms r " +
-                   "JOIN chat_members m1 ON r.id = m1.room_id " +
-                   "JOIN chat_members m2 ON r.id = m2.room_id " +
-                   "WHERE r.type = 'DM' AND m1.user_id = :userId1 AND m2.user_id = :userId2", 
+                   "WHERE r.type = 'DM' AND r.id IN (" +
+                   "  SELECT room_id FROM chat_members WHERE user_id IN (:userId1, :userId2) " +
+                   "  GROUP BY room_id HAVING COUNT(DISTINCT user_id) = 2" +
+                   ") AND (" +
+                   "  SELECT COUNT(*) FROM chat_members WHERE room_id = r.id" +
+                   ") = 2", 
            nativeQuery = true)
     Optional<ChatRoom> findExistingDmRoom(@Param("userId1") Long userId1, @Param("userId2") Long userId2);
 }

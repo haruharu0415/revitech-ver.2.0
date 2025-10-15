@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!--header.html-->
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <style th:fragment="header-styles">
@@ -10,23 +9,21 @@
             align-items: center;
             padding: 0.5rem 1rem;
             border-bottom: 1px solid #dee2e6;
+            background-color: #f8f9fa;
         }
 
         /* アプリ名アイコンのリンクコンテナ */
         .app-icon-link {
-            margin-bottom: 0;
             display: flex;
             align-items: center;
             text-decoration: none;
             color: inherit;
-            font-size: 1.5rem;
-            font-weight: bold;
         }
 
         /* アプリのアイコン画像 */
         .app-icon {
-            height: 70px;
-            width: 370px;
+            height: 60px;
+            width: auto;
             margin-right: 8px;
         }
 
@@ -36,7 +33,7 @@
             font-size: 1.5rem;
             font-weight: bold;
         }
-
+        
         /* ハンバーガーメニューのスタイル */
         #humberger {
           position: relative;
@@ -44,42 +41,133 @@
           width: 28px;
           display: inline-block;
           box-sizing: border-box;
+          cursor: pointer;
         }
         #humberger div {
           position: absolute;
           left: 0;
-          height: 2px;
+          height: 3px;
           width: 28px;
-          background-color: #444;
+          background-color: #343a40;
           border-radius: 2px;
-          display: inline-block;
-          box-sizing: border-box;
         }
-        #humberger div:nth-of-type(1) {
-          top: 0;
+        #humberger div:nth-of-type(1) { top: 0; }
+        #humberger div:nth-of-type(2) { top: 10px; }
+        #humberger div:nth-of-type(3) { bottom: 0; }
+        
+        /* 通知とドロップダウンメニュー用のスタイル */
+        .notification-dropdown-menu {
+            width: 350px;
+            max-height: 400px;
+            overflow-y: auto;
         }
-        #humberger div:nth-of-type(2) {
-          top: 10px;
-        }
-        #humberger div:nth-of-type(3) {
-          bottom: 0;
+        .notification-item a {
+            white-space: normal;
         }
     </style>
 </head>
 <body>
-    <header th:fragment="header-fragment" class="header bg-light">
+    <header th:fragment="header-fragment" class="header">
+        
         <a th:href="@{/home}" class="app-icon-link">
             <img th:src="@{/images/logo.png}" alt="アプリ名" class="app-icon" />
             <span class="app-title-text">revitech_ver.2.0</span>
         </a>
 
-        <a th:href="@{/option}">
-            <div id="humberger">
-                <div></div>
-                <div></div>
-                <div></div>
-            </div>
-        </a>
+        <div th:if="${#authentication.principal != 'anonymousUser'}" class="dropdown">
+            <a href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false" class="position-relative">
+                <div id="humberger">
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                </div>
+                <span id="notification-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: none;">0</span>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+                <li><a class="dropdown-item" th:href="@{/option}">オプション</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><h6 class="dropdown-header">通知</h6></li>
+                <div id="notification-list" class="notification-dropdown-menu px-2"></div>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                    <form th:action="@{/logout}" method="post" class="px-2 py-1">
+                        <button type="submit" class="btn btn-sm btn-outline-danger w-100">ログアウト</button>
+                    </form>
+                </li>
+            </ul>
+        </div>
+
+        <div th:unless="${#authentication.principal != 'anonymousUser'}">
+            <a th:href="@{/option}">
+                <div id="humberger">
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                </div>
+            </a>
+        </div>
     </header>
+
+    <th:block th:fragment="notification-script">
+        <script th:src="@{/webjars/sockjs-client/1.5.1/sockjs.min.js}"></script>
+        <script th:src="@{/webjars/stomp-websocket/2.3.4/stomp.min.js}"></script>
+        <script th:inline="javascript">
+        /*<![CDATA[*/
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            // ▼▼▼【エラー修正点】Thymeleafの判定結果を先にJS変数へ格納 ▼▼▼
+            const isAuthenticated = /*[[${#authentication.principal != 'anonymousUser'}]]*/ false;
+
+            // ▼▼▼【エラー修正点】JS変数を使ってif判定を行う ▼▼▼
+            if (isAuthenticated) {
+                const principal = /*[[${#authentication.principal}]]*/ null;
+                const userEmail = (principal && typeof principal === 'object') ? principal.username : null;
+                let stompClient = null;
+
+                if (userEmail) { 
+                    connectToNotification(); 
+                }
+
+                function connectToNotification() {
+                    const socket = new SockJS('/ws');
+                    stompClient = Stomp.over(socket);
+                    stompClient.connect({}, (frame) => {
+                        console.log('Notification WebSocket Connected.');
+                        stompClient.subscribe('/user/queue/notifications', (notification) => {
+                            try {
+                                const notifyData = JSON.parse(notification.body);
+                                addNotification(notifyData);
+                            } catch (e) { console.error("Failed to parse notification JSON:", e); }
+                        });
+                    }, (error) => {
+                        console.error('Notification WebSocket Connection Error:', error);
+                        setTimeout(connectToNotification, 5000);
+                    });
+                }
+                function addNotification(data) {
+                    const notificationList = document.getElementById('notification-list');
+                    const notificationBadge = document.getElementById('notification-badge');
+                    const listItem = document.createElement('div');
+                    listItem.classList.add('notification-item');
+                    const link = document.createElement('a');
+                    link.className = 'text-decoration-none text-dark d-block border-bottom py-2';
+                    link.href = `/chat/room/${data.roomId}`;
+                    link.innerHTML = `<div><strong>${data.senderName}</strong>さんから新着メッセージ</div><div class="small text-muted">「${escapeHtml(data.content)}」</div>`;
+                    listItem.appendChild(link);
+                    notificationList.prepend(listItem);
+                    let currentCount = parseInt(notificationBadge.textContent) || 0;
+                    notificationBadge.textContent = currentCount + 1;
+                    notificationBadge.style.display = 'inline-block';
+                }
+                function escapeHtml(unsafe) {
+                    if (!unsafe) return '';
+                    return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+                }
+            }
+        });
+        /*]]>*/
+        </script>
+    </th:block>
+
 </body>
 </html>

@@ -1,3 +1,4 @@
+// LoginController.java の全文
 package com.example.revitech.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,35 +30,41 @@ public class LoginController {
         return "login";
     }
 
+
+
     @GetMapping("/signup")
     public String showSignupForm(Model model) {
         model.addAttribute("signupForm", new SignupForm());
         return "signup";
     }
 
+    // ▼▼▼【修正箇所】processSignupメソッド全体を修正 ▼▼▼
     @PostMapping("/signup")
     public String processSignup(@ModelAttribute("signupForm") @Valid SignupForm form,
                                 BindingResult result,
                                 Model model) {
 
+        // パスワードの一致チェック
         if (!form.getPassword().equals(form.getPasswordConfirm())) {
             result.rejectValue("passwordConfirm", null, "パスワードが一致しません");
         }
 
-        if (usersService.isEmailTaken(form.getUsername())) {
-            result.rejectValue("username", null, "このユーザー名は既に使用されています");
+        // メールアドレスの重複チェック
+        if (usersService.isEmailTaken(form.getEmail())) {
+            result.rejectValue("email", null, "このメールアドレスは既に使用されています");
         }
 
         if (result.hasErrors()) {
             return "signup";
         }
 
+        // データベースに保存するユーザー情報を作成
         Users user = new Users();
-        user.setName(form.getUsername()); // username → name に変換
-        user.setEmail(form.getUsername()); // email 兼 username 扱い（ログイン時に使う）
+        user.setName(form.getName());     // フォームの name をセット
+        user.setEmail(form.getEmail());   // フォームの email をセット
         user.setPassword(form.getPassword());
-        user.setRole("USER"); // 必要に応じて変更可
-        user.setStatus("active"); // 仮の状態設定
+        user.setRole("USER"); 
+        user.setStatus("active");
         
         usersService.save(user);
 

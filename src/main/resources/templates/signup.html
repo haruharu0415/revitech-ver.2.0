@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!-- signup.html -->
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
@@ -25,21 +24,24 @@
         <div class="card-body p-4">
             <h2 class="card-title text-center mb-4">新規アカウント作成</h2>
 
-            <!-- ★★★ th:objectでフォームオブジェクトを紐付け ★★★ -->
             <form th:action="@{/signup}" th:object="${signupForm}" method="post">
                 
-                <!-- ★★★ サーバーからの全体エラーメッセージ表示エリア ★★★ -->
                 <div th:if="${#fields.hasGlobalErrors()}" class="alert alert-danger" role="alert">
                     <p th:each="err : ${#fields.globalErrors()}" th:text="${err}"></p>
                 </div>
 
                 <div class="mb-3">
-                    <label for="username" class="form-label">ユーザー名</label>
-                    <!-- ★★★ th:fieldで各項目を紐付け ★★★ -->
-                    <input type="text" class="form-control" th:field="*{username}" th:errorclass="is-invalid">
-                    <!-- ★★★ バリデーションエラーメッセージ ★★★ -->
-                    <div th:if="${#fields.hasErrors('username')}" class="invalid-feedback" th:errors="*{username}"></div>
+                    <label for="name" class="form-label">名前</label>
+                    <input type="text" class="form-control" th:field="*{name}" th:errorclass="is-invalid" placeholder="例: 日本 太郎">
+                    <div th:if="${#fields.hasErrors('name')}" class="invalid-feedback" th:errors="*{name}"></div>
                 </div>
+
+                <div class="mb-3">
+                    <label for="email" class="form-label">メールアドレス</label>
+                    <input type="email" class="form-control" th:field="*{email}" th:errorclass="is-invalid" placeholder="example@jec.ac.jp">
+                    <div th:if="${#fields.hasErrors('email')}" class="invalid-feedback" th:errors="*{email}"></div>
+                </div>
+
                 <div class="mb-3">
                     <label for="password" class="form-label">パスワード</label>
                     <input type="password" class="form-control" th:field="*{password}" th:errorclass="is-invalid">
