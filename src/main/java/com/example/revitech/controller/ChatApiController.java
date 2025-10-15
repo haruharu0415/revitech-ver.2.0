@@ -20,37 +20,33 @@ import com.example.revitech.service.UsersService;
 public class ChatApiController {
 
     private final ChatRoomService chatRoomService;
-    private final UsersService usersService; // ★ ユーザー情報を取得するために追加
+    private final UsersService usersService;
 
-    // ★ コンストラクタを修正してUsersServiceを受け取る
+    // UsersServiceも利用するため、コンストラクタで両方のサービスを受け取ります
     public ChatApiController(ChatRoomService chatRoomService, UsersService usersService) {
         this.chatRoomService = chatRoomService;
         this.usersService = usersService;
     }
 
     /**
-     * ★★★ これが新しく追加した、最も重要なエンドポイントです ★★★
+     * 【これが正しいAPI】
      * ログインしているユーザーが所属するチャットルームのみを取得します。
-     * @return 自分が所属するチャットルームのリスト
+     * group.htmlはこのAPIを呼び出します。
      */
     @GetMapping("/my-rooms")
     public List<ChatRoom> getMyChatRooms() {
-        // 1. Spring Securityの機能を使って、現在ログインしているユーザーの情報を取得
+        // 現在ログイン中のユーザー情報を取得
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String email = auth.getName(); // ログインID（今回はメールアドレス）を取得
-
-        // 2. メールアドレスをキーにして、データベースから完全なユーザー情報を取得
-        Users currentUser = usersService.findByEmail(email)
-            .orElseThrow(() -> new RuntimeException("認証されたユーザーが見つかりません: " + email));
-
-        // 3. 取得したユーザーIDを使って、その人が所属するルームだけをサービスから取得して返す
+        // ユーザー情報からユーザーIDを特定
+        Users currentUser = usersService.findByEmail(auth.getName())
+            .orElseThrow(() -> new RuntimeException("User not found"));
+        // 特定したユーザーIDで、その人が所属するルームだけを取得して返します
         return chatRoomService.getRoomsForUser(currentUser.getId());
     }
-
+    
     /**
-     * 特定のチャットルームに参加しているメンバーの一覧を取得します。
-     * @param roomId メンバーを知りたいルームのID
-     * @return メンバー情報のリスト (UserSearchDto形式)
+     * 特定のルームのメンバーリストを取得します。
+     * group-chat.htmlがこのAPIを呼び出します。
      */
     @GetMapping("/{roomId}/members")
     public List<UserSearchDto> getRoomMembers(@PathVariable Long roomId) {
@@ -58,9 +54,9 @@ public class ChatApiController {
     }
 
     /**
-     * (参考) 以前の、全てのチャットルームを取得するAPI。
-     * これは誰でも全てのルームを見られてしまうため、管理者用などに用途を限定すべきです。
-     * @return 全てのチャットルームのリスト
+     * 【注意】これは全てのチャットルームを返すAPIです。
+     * 全員分のルーム名が見えてしまうため、通常のユーザー画面からは呼び出されません。
+     * 管理者用の機能として残すか、不要であれば削除しても構いません。
      */
     @GetMapping
     public List<ChatRoom> getAllChatRooms() {

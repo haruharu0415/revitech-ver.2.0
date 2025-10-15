@@ -28,9 +28,7 @@ public class ChatRoomController {
         this.usersService = usersService;
     }
 
-    // グループ作成処理 (変更なし)
     @PostMapping("/chat-room/group/create")
-<<<<<<< HEAD
     public String createGroup(@RequestParam("name") String name, @RequestParam("memberIds") List<Long> memberIds) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Users creator = usersService.findByEmail(auth.getName()).orElseThrow();
@@ -54,53 +52,6 @@ public class ChatRoomController {
         Optional<ChatRoom> roomOpt = chatRoomService.getRoomById(roomId);
         if (roomOpt.isEmpty()) {
             return "redirect:/home?error=not_found";
-=======
-    public String createGroup(
-            @RequestParam("name") String name,
-            @RequestParam("memberIds") List<Long> memberIds,
-            Model model) {
-        
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        Users creator = usersService.findByEmail(auth.getName())
-                .orElseThrow(() -> new RuntimeException("ログインユーザーが見つかりません。"));
-        Long creatorId = creator.getId();
-
-        ChatRoom group = chatRoomService.createGroupRoom(creatorId, name, memberIds);
-        
-        return "redirect:/chat/room/" + group.getId();
-    }
-
-
-    /**
-     * ★★★ これが画面真っ白問題を解決する、最も重要なメソッドです ★★★
-     * チャットルームの画面を表示する際に、必要なデータを全てモデルに追加します。
-     */
-    @GetMapping("/chat/room/{roomId}")
-    public String enterRoom(@PathVariable Long roomId, Model model) {
-        
-        // ★ 1. ログインユーザーのIDと名前をモデルに追加（これが無いとJSが動けません）
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        Optional<Users> userOpt = usersService.findByEmail(auth.getName());
-
-        if (userOpt.isPresent()) {
-            Users user = userOpt.get();
-            model.addAttribute("userId", user.getId());     // 必須
-            model.addAttribute("userName", user.getName()); // 必須
-        } else {
-            // ログインしていない場合はアクセスさせない
-            return "redirect:/login"; 
-        }
-
-        // ★ 2. 表示するチャットルームのIDと名前をモデルに追加（これが無いとJSが動けません）
-        Optional<ChatRoom> roomOpt = chatRoomService.getRoomById(roomId);
-        if (roomOpt.isPresent()) {
-            ChatRoom room = roomOpt.get();
-            model.addAttribute("roomId", room.getId());         // 必須
-            model.addAttribute("roomName", room.getName()); // 必須
-        } else {
-            // 存在しないルームにアクセスしようとした場合はホームに戻す
-            return "redirect:/home";
->>>>>>> 372bd0195d714990f90fd8ce9a4d2afebb696e88
         }
 
         model.addAttribute("userId", currentUser.getId());

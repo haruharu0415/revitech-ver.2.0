@@ -2,7 +2,9 @@ package com.example.revitech.entity;
 
 import java.time.LocalDateTime;
 
-import jakarta.persistence.Column;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import jakarta.persistence.Column; // 【重要】追加
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -18,42 +20,54 @@ public class ChatMessage {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
+    // 【必須】ルームID (デフォルトで 'room_id' にマッピングされる想定)
     private Long roomId; 
     
-    // ★★★ データベースのカラム名に合わせる ★★★
-    @Column(name = "sender_user_id")
+    // 【修正】クライアントJSONのキー "senderId" を、Javaのフィールド senderUserId にマッピングする
+    @JsonProperty("senderId") // ★ この行を追加
     private Long senderUserId; 
     
+    // メッセージ内容 
+    // 【重要修正】DBの実際のカラム名 'body' にマッピング
     @Column(name = "body", nullable = false) 
     private String content;
     
+    // 作成日時 
+    // 【重要修正】DBの実際のカラム名 'created_at' にマッピング
     @Column(name = "created_at", nullable = false) 
     private LocalDateTime createdAt; 
     
-    // JPA/Jacksonのためのデフォルトコンストラクタ
+    // デフォルトコンストラクタ (JPA/Jacksonで必須)
     public ChatMessage() {} 
     
-    // サービス層で使うコンストラクタ
+    // コンストラクタ (ChatServiceで利用)
     public ChatMessage(Long roomId, Long senderUserId, String content) {
         this.roomId = roomId;
-        this.senderUserId = senderUserId; // ★ senderUserId を受け取る
+        this.senderUserId = senderUserId;
         this.content = content;
+        // createdAt は PrePersist で設定するためここでは設定しない
     }
 
     @PrePersist
     protected void onCreate() {
+        // DB自動生成ではなく、Java側で時刻を設定
         this.createdAt = LocalDateTime.now(); 
     }
 
-    // --- Getter and Setters ---
+    // Getters and Setters
     public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public void setId(Long id) { this.id = id; } 
+    
     public Long getRoomId() { return roomId; }
     public void setRoomId(Long roomId) { this.roomId = roomId; }
+
     public Long getSenderUserId() { return senderUserId; }
     public void setSenderUserId(Long senderUserId) { this.senderUserId = senderUserId; }
+
     public String getContent() { return content; }
     public void setContent(String content) { this.content = content; }
+    
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; } 
+
 }

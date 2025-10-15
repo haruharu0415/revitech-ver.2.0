@@ -4,15 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${roomName ?: 'グループチャット'}"></title>
-    
     <link th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    
     <script th:src="@{/webjars/sockjs-client/1.5.1/sockjs.min.js}"></script>
     <script th:src="@{/webjars/stomp-websocket/2.3.4/stomp.min.js}"></script>
-    
     <style th:replace="~{header :: header-styles}"></style> 
-    
     <style>
         body { display: flex; flex-direction: column; height: 100vh; margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa; }
         .chat-header { background-color: #075e54; color: white; padding: 15px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.2); flex-shrink: 0; }
@@ -38,21 +34,11 @@
 <body>
     <div th:replace="~{header :: header-fragment}"></div> 
     <div class="chat-header">
-<<<<<<< HEAD
         <button onclick="window.location.href='/group'" class="btn btn-outline-light"><i class="bi bi-arrow-left"></i></button>
         <h1 id="chatRoomName" th:text="${roomName ?: '不明なルーム'}"></h1>
         <button id="toggleSidebar" class="user-list-button"><i class="bi bi-people-fill"></i></button>
     </div>
     <div class="message-area" id="messageArea"></div>
-=======
-        <button onclick="history.back()" class="btn btn-outline-light"><i class="bi bi-arrow-left"></i></button>
-        <h1 id="chatRoomName" th:text="${roomName ?: '不明なルーム'}">グループチャット</h1>
-        <button id="toggleSidebar" class="user-list-button"><i class="bi bi-people-fill"></i></button>
-    </div>
-
-    <div class="message-area" id="messageArea"></div>
-
->>>>>>> 372bd0195d714990f90fd8ce9a4d2afebb696e88
     <div class="input-area">
         <textarea id="messageInput" placeholder="メッセージを入力..." rows="1"></textarea>
         <button id="sendMessageButton" class="btn btn-success"><i class="bi bi-send-fill"></i></button>
@@ -63,10 +49,8 @@
     </div>
 
     <script th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"></script>
-    
     <script th:inline="javascript">
     /*<![CDATA[*/
-<<<<<<< HEAD
     const roomId = /*[[${roomId}]]*/ null;
     const authenticatedUserId = /*[[${userId}]]*/ null;
 
@@ -93,162 +77,12 @@
         function onConnected() {
             stompClient.subscribe('/topic/group/' + roomId, onMessageReceived);
             fetchRoomDetailsAndHistory();
-=======
-
-    // --- 1. サーバーからの必須データを受け取る ---
-    const roomId = /*[[${roomId}]]*/ null;
-    const authenticatedUserId = /*[[${userId}]]*/ null;
-    const authenticatedUserName = /*[[${userName}]]*/ '匿名';
-
-    // --- 2. DOM要素の取得 ---
-    const messageArea = document.getElementById('messageArea');
-    const messageInput = document.getElementById('messageInput');
-    const sendMessageButton = document.getElementById('sendMessageButton');
-    const userListSidebar = document.getElementById('userListSidebar');
-    const toggleSidebarButton = document.getElementById('toggleSidebar');
-    const memberListUl = document.getElementById('memberList');
-    const memberCountSpan = document.getElementById('memberCount');
-    let stompClient = null;
-
-    // --- 3. 必須データがない場合、画面真っ白を防ぐための緊急停止処理 ---
-    if (!roomId || !authenticatedUserId) {
-        document.body.innerHTML = `
-            <div class="alert alert-danger m-3">
-                <h4>致命的なエラー</h4>
-                <p>ページの描画に必要な情報がサーバーから提供されませんでした。</p>
-                <p>原因: ChatRoomControllerが、モデルにroomIdまたはuserIdを追加し忘れています。</p>
-                <a href="/home" class="btn btn-primary">ホームに戻る</a>
-            </div>`;
-    } else {
-        // --- 4. メインの処理を実行 ---
-        document.addEventListener('DOMContentLoaded', connect);
-    }
-
-    // --- 5. WebSocket関連の関数 ---
-    function connect() {
-        const socket = new SockJS('/ws');
-        stompClient = Stomp.over(socket);
-        stompClient.connect({}, onConnected, onError);
-    }
-
-    function onConnected() {
-        console.log("WebSocket Connected!");
-        stompClient.subscribe('/topic/group/' + roomId, onMessageReceived);
-        fetchRoomDetailsAndHistory();
-    }
-
-    function onError(error) {
-        console.error('STOMP Error:', error);
-        displayError("チャットサーバーへの接続に失敗しました。ページをリロードしてください。");
-    }
-
-    // --- 6. メッセージ送受信の関数 ---
-    function sendMessage() {
-        const messageContent = messageInput.value.trim();
-        if (messageContent && stompClient) {
-            const chatMessage = {
-                senderId: authenticatedUserId, // "senderId" キーで送信
-                content: messageContent,
-                roomId: roomId
-            };
-            stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));
-            messageInput.value = '';
-            adjustTextareaHeight();
-        }
-    }
-
-    function onMessageReceived(payload) {
-        displayMessage(JSON.parse(payload.body));
-    }
-
-    // --- 7. UI表示関連の関数 ---
-    function displayMessage(message) {
-        const messageElement = document.createElement('div');
-        messageElement.classList.add('message-bubble');
-
-        if (String(message.senderUserId) === String(authenticatedUserId)) {
-            messageElement.classList.add('sent');
-        } else {
-            messageElement.classList.add('received');
-            const senderNameElement = document.createElement('div');
-            senderNameElement.classList.add('message-sender');
-            senderNameElement.textContent = message.senderName || `User ID: ${message.senderUserId}`;
-            messageElement.appendChild(senderNameElement);
         }
 
-        const textElement = document.createElement('p');
-        textElement.textContent = message.content;
-        messageElement.appendChild(textElement);
-
-        const timeElement = document.createElement('span');
-        timeElement.classList.add('message-time');
-        timeElement.textContent = new Date(message.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-        messageElement.appendChild(timeElement);
-
-        messageArea.appendChild(messageElement);
-        messageArea.scrollTop = messageArea.scrollHeight;
-    }
-
-    async function fetchRoomDetailsAndHistory() {
-        try {
-            // メンバーリスト取得
-            const membersResponse = await fetch(`/api/chat-rooms/${roomId}/members`);
-            if (!membersResponse.ok) throw new Error('メンバーリストの取得に失敗しました。');
-            const membersData = await membersResponse.json();
-            
-            memberListUl.innerHTML = '';
-            membersData.forEach(member => {
-                const li = document.createElement('li');
-                li.innerHTML = `<i class="bi bi-person-fill"></i> ${member.name}`;
-                memberListUl.appendChild(li);
-            });
-            memberCountSpan.textContent = membersData.length;
-
-            // 過去のメッセージ履歴を取得
-            const historyResponse = await fetch(`/api/chat/messages/${roomId}`);
-            if (!historyResponse.ok) throw new Error('メッセージ履歴の取得に失敗しました。');
-            const historyData = await historyResponse.json();
-            
-            historyData.forEach(displayMessage);
-
-        } catch (error) {
-            console.error('Fetch Error:', error);
-            displayError(error.message);
->>>>>>> 372bd0195d714990f90fd8ce9a4d2afebb696e88
-        }
-    }
-    
-    function displayError(message) {
-        const errorDiv = document.createElement('div');
-        errorDiv.className = 'alert alert-warning m-2';
-        errorDiv.textContent = 'エラー: ' + message;
-        messageArea.appendChild(errorDiv);
-    }
-    
-    function adjustTextareaHeight() {
-        messageInput.style.height = 'auto';
-        messageInput.style.height = (messageInput.scrollHeight) + 'px';
-    }
-
-<<<<<<< HEAD
         function onError(error) {
             displayError("チャットサーバーへの接続に失敗しました。");
-=======
-    // --- 8. イベントリスナーの設定 ---
-    sendMessageButton.addEventListener('click', sendMessage);
-    messageInput.addEventListener('keypress', (event) => {
-        if (event.key === 'Enter' && !event.shiftKey) {
-            event.preventDefault();
-            sendMessage();
->>>>>>> 372bd0195d714990f90fd8ce9a4d2afebb696e88
         }
-    });
-    messageInput.addEventListener('input', adjustTextareaHeight);
-    toggleSidebarButton.addEventListener('click', () => {
-        userListSidebar.classList.toggle('open');
-    });
 
-<<<<<<< HEAD
         function sendMessage() {
             const messageContent = messageInput.value.trim();
             if (messageContent && stompClient) {
@@ -341,8 +175,6 @@
             userListSidebar.classList.toggle('open');
         });
     }
-=======
->>>>>>> 372bd0195d714990f90fd8ce9a4d2afebb696e88
     /*]]>*/
     </script>
 </body>
