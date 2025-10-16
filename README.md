@@ -1,12 +1,11 @@
 
-# origin のリモート追跡ブランチを更新
-git fetch --prune
+# git !rejected
 
-git remote -v
+git pull origin (自分の名前)
 
-git remote set-url origin https://github.com/24yn0129/revitech.git
+自分のファイルから.gitファイルだけ残してバックアップファイルから.git以外をバックアップする
 
-git remote -v
-
-git push -u origin master
+そこからgit add . 
+git commit -m ""
+git push -u origin (自分の名前)
 
