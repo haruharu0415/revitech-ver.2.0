@@ -3,11 +3,13 @@ package com.example.revitech.repository;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import com.example.revitech.entity.ChatReadStatus;
 
-public interface ChatReadStatusRepository extends JpaRepository<ChatReadStatus, Long> {
+@Repository
+public interface ChatReadStatusRepository extends JpaRepository<ChatReadStatus, Integer> {
 
-    // 特定のユーザーの、特定のルームでの既読情報を検索する
-    Optional<ChatReadStatus> findByUserIdAndRoomId(Long userId, Long roomId);
+    // ★ メソッド名を findByUserIdAndRoomId に修正
+    Optional<ChatReadStatus> findByUserIdAndRoomId(Integer userId, Integer roomId);
 }

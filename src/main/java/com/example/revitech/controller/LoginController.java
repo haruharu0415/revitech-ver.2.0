@@ -1,6 +1,5 @@
 package com.example.revitech.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -19,7 +18,6 @@ public class LoginController {
 
     private final UsersService usersService;
 
-    @Autowired
     public LoginController(UsersService usersService) {
         this.usersService = usersService;
     }
@@ -37,28 +35,24 @@ public class LoginController {
 
     @PostMapping("/signup")
     public String processSignup(@ModelAttribute("signupForm") @Valid SignupForm form,
-                                BindingResult result,
-                                Model model) {
+                                BindingResult result) {
 
         if (!form.getPassword().equals(form.getPasswordConfirm())) {
-            result.rejectValue("passwordConfirm", null, "パスワードが一致しません");
+            result.rejectValue("passwordConfirm", "error.signupForm", "パスワードが一致しません");
         }
-
-        if (usersService.isEmailTaken(form.getUsername())) {
-            result.rejectValue("username", null, "このユーザー名は既に使用されています");
+        if (usersService.isEmailTaken(form.getEmail())) {
+            result.rejectValue("email", "error.signupForm", "このメールアドレスは既に使用されています");
         }
-
         if (result.hasErrors()) {
             return "signup";
         }
-
         Users user = new Users();
-        user.setName(form.getUsername()); // username → name に変換
-        user.setEmail(form.getUsername()); // email 兼 username 扱い（ログイン時に使う）
+        user.setName(form.getName());
+        user.setEmail(form.getEmail());
         user.setPassword(form.getPassword());
-        user.setRole("USER"); // 必要に応じて変更可
-        user.setStatus("active"); // 仮の状態設定
-        
+        user.setRole(1); // 1: 学生で固定
+        user.setStatus("active");
+
         usersService.save(user);
 
         return "redirect:/login";

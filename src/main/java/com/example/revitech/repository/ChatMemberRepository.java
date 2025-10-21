@@ -3,15 +3,18 @@ package com.example.revitech.repository;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import com.example.revitech.entity.ChatMember;
 
-public interface ChatMemberRepository extends JpaRepository<ChatMember, Long> {
-    
-    List<ChatMember> findByRoomId(Long roomId);
-    
-    List<ChatMember> findByUserId(Long userId);
+@Repository
+public interface ChatMemberRepository extends JpaRepository<ChatMember, Integer> {
 
-    // 指定されたuserIdとroomIdの組み合わせが存在するかどうかをチェックする
-    boolean existsByUserIdAndRoomId(Long userId, Long roomId);
+    List<ChatMember> findByRoomId(Integer roomId);
+
+    // ★ メソッド名を findByUserId に修正
+    List<ChatMember> findByUserId(Integer userId);
+
+    // ★ メソッド名を existsByUserIdAndRoomId に修正
+    boolean existsByUserIdAndRoomId(Integer userId, Integer roomId);
 }

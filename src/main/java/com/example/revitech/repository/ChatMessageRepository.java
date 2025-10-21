@@ -5,18 +5,16 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 import com.example.revitech.entity.ChatMessage;
 
-public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
+@Repository
+public interface ChatMessageRepository extends JpaRepository<ChatMessage, Integer> {
 
-    List<ChatMessage> findByRoomIdOrderByCreatedAtAsc(Long roomId);
+    List<ChatMessage> findByRoomIdOrderByCreatedAtAsc(Integer roomId);
 
-    // --- 以下の2つのメソッドを追加 ---
-    /** 指定時刻以降に作成された、ルーム内のメッセージ数をカウントする */
-    long countByRoomIdAndCreatedAtAfter(Long roomId, LocalDateTime timestamp);
+    long countByRoomIdAndCreatedAtAfter(Integer roomId, LocalDateTime timestamp);
 
-    /** ルーム内の最新メッセージを1件取得する */
-    Optional<ChatMessage> findFirstByRoomIdOrderByCreatedAtDesc(Long roomId);
-    // --- 追加メソッドここまで ---
+    Optional<ChatMessage> findFirstByRoomIdOrderByCreatedAtDesc(Integer roomId);
 }

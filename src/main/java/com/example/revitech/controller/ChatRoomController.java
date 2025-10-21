@@ -29,25 +29,25 @@ public class ChatRoomController {
     }
 
     @PostMapping("/chat-room/group/create")
-    public String createGroup(@RequestParam("name") String name, @RequestParam("memberIds") List<Long> memberIds) {
+    public String createGroup(@RequestParam("name") String name, @RequestParam("memberIds") List<Integer> memberIds) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Users creator = usersService.findByEmail(auth.getName()).orElseThrow();
-        ChatRoom group = chatRoomService.createGroupRoom(creator.getId(), name, memberIds);
-        return "redirect:/chat/room/" + group.getId();
+        ChatRoom group = chatRoomService.createGroupRoom(creator.getUsersId(), name, memberIds);
+        return "redirect:/chat/room/" + group.getRoomId();
     }
 
     @GetMapping("/chat/room/{roomId}")
-    public String enterRoom(@PathVariable Long roomId, Model model) {
+    public String enterRoom(@PathVariable Integer roomId, Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Optional<Users> userOpt = usersService.findByEmail(auth.getName());
-        
+
         if (userOpt.isEmpty()) {
             return "redirect:/login";
         }
         Users currentUser = userOpt.get();
 
-        if (!chatRoomService.isUserMemberOfRoom(currentUser.getId(), roomId)) {
-            return "redirect:/home?error=access_denied"; 
+        if (!chatRoomService.isUserMemberOfRoom(currentUser.getUsersId(), roomId)) {
+            return "redirect:/home?error=access_denied";
         }
 
         Optional<ChatRoom> roomOpt = chatRoomService.getRoomById(roomId);
@@ -55,11 +55,13 @@ public class ChatRoomController {
             return "redirect:/home?error=not_found";
         }
 
-        model.addAttribute("userId", currentUser.getId());
+        model.addAttribute("userId", currentUser.getUsersId());
         model.addAttribute("userName", currentUser.getName());
-        model.addAttribute("roomId", roomOpt.get().getId());
+        model.addAttribute("roomId", roomOpt.get().getRoomId());
         model.addAttribute("roomName", roomOpt.get().getName());
-        chatRoomService.markRoomAsRead(currentUser.getId(), roomId);
+        
+        chatRoomService.markRoomAsRead(currentUser.getUsersId(), roomId);
+
         return "group-chat";
     }
 }

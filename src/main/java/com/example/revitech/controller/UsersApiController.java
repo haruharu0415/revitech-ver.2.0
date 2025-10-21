@@ -22,19 +22,12 @@ public class UsersApiController {
         this.usersService = usersService;
     }
 
-    /**
-     * 名前またはメールアドレスでユーザーを検索するAPI
-     * @param query 検索キーワード
-     * @return 該当するユーザーのリスト（UserSearchDto形式）
-     */
     @GetMapping("/search")
     public List<UserSearchDto> searchUsers(@RequestParam String query) {
-        // 【修正】Service層の効率的な検索メソッドを利用
         List<Users> searchResults = usersService.searchUsers(query);
-
-        // 取得したUsersエンティティをDTOに変換して返す
         return searchResults.stream()
-                .map(user -> new UserSearchDto(user.getId(), user.getName(), user.getEmail()))
+                // ★ 修正: user.getId() -> user.getUsersId()
+                .map(user -> new UserSearchDto(user.getUsersId(), user.getName(), user.getEmail()))
                 .collect(Collectors.toList());
     }
 }

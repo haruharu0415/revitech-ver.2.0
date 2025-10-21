@@ -4,26 +4,22 @@ import java.time.LocalDateTime;
 
 import com.example.revitech.entity.ChatRoom;
 
+import lombok.Data;
+
+@Data
 public class ChatRoomWithNotificationDto {
 
-    private Long id;
+    private Integer roomId;
     private String name;
-    private String type;
-    private long unreadCount;           // 未読メッセージ件数
-    private LocalDateTime lastMessageTimestamp; // 最新メッセージのタイムスタンプ
+    private Integer type;
+    private long unreadCount;
+    private LocalDateTime lastMessageTimestamp;
 
     public ChatRoomWithNotificationDto(ChatRoom room, long unreadCount, LocalDateTime lastMessageTimestamp) {
-        this.id = room.getId();
+        this.roomId = room.getRoomId();
         this.name = room.getName();
         this.type = room.getType();
         this.unreadCount = unreadCount;
         this.lastMessageTimestamp = lastMessageTimestamp;
     }
-
-    // Jackson (JSON変換) のためにGetterが必要
-    public Long getId() { return id; }
-    public String getName() { return name; }
-    public String getType() { return type; }
-    public long getUnreadCount() { return unreadCount; }
-    public LocalDateTime getLastMessageTimestamp() { return lastMessageTimestamp; }
 }

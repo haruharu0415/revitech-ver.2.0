@@ -10,107 +10,49 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import lombok.Data;
 
 @Entity
 @Table(name = "Users")
+@Data
 public class Users {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "users_id")
+    private Integer usersId;
 
-    @Column(nullable = false, unique = true)
-    private String email;
-
-    @Column(nullable = false)
+    @Column(name = "name", length = 50, nullable = false, unique = true) // ★ unique制約を追加（名前でのログインに備える）
     private String name;
 
-    @Column(nullable = false)
+    @Column(name = "email", length = 50, nullable = false, unique = true)
+    private String email;
+
+    // ★★★ 最重要修正 ★★★
+    // パスワードの長さを50から255に変更します。
+    @Column(name = "password", length = 255, nullable = false)
     private String password;
 
-    @Column(nullable = false)
-    private String role;
-
-    @Column(nullable = false)
+    @Column(name = "status", length = 10, nullable = false)
     private String status;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @Column(name = "role", nullable = false)
+    private Integer role;
 
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    @Column(name = "create_at", nullable = false, updatable = false)
+    private LocalDateTime createAt;
 
-    // 自動で作成日時をセット
+    @Column(name = "update_at", nullable = false)
+    private LocalDateTime updateAt;
+
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+        createAt = LocalDateTime.now();
+        updateAt = LocalDateTime.now();
     }
 
-    // 更新時に更新日時をセット
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+        updateAt = LocalDateTime.now();
     }
-
-    // --- getter/setter ---
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public String getRole() {
-        return role;
-    }
-
-    public void setRole(String role) {
-        this.role = role;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    // createdAtは自動セットなのでsetterは省略してもよい
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    // updatedAtも自動セットなのでsetterは省略してもよい
 }

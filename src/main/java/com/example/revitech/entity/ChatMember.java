@@ -6,33 +6,29 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "chat_members")
+@Data
+@NoArgsConstructor
 public class ChatMember {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private Integer id;
 
-    @Column(name = "room_id")
-    private Long roomId;
+    @Column(name = "room_id", nullable = false)
+    private Integer roomId;
 
-    @Column(name = "user_id")
-    private Long userId;
+    // ★ フィールド名を userId に修正
+    @Column(name = "users_id", nullable = false)
+    private Integer userId;
 
-    public ChatMember() {}
-
-    public ChatMember(Long roomId, Long userId) {
+    // ★ コンストラクタの引数名も修正
+    public ChatMember(Integer roomId, Integer userId) {
         this.roomId = roomId;
         this.userId = userId;
     }
-
-    // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public Long getRoomId() { return roomId; }
-    public void setRoomId(Long roomId) { this.roomId = roomId; }
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
 }

@@ -9,9 +9,9 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.web.cors.CorsConfiguration; // 【追加】
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource; // 【追加】
-import org.springframework.web.filter.CorsFilter; // 【追加】
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -27,69 +27,52 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
-    /**
-     * 【追加】WebSocket接続のためのCORS設定
-     * allowCredentials=trueの場合、AllowedOriginsに*を使用できない制約を回避するため、
-     * 開発環境のlocalhostを明示的に許可する。
-     */
     @Bean
     public CorsFilter corsFilter() {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
-        
-        // 認証情報（セッションクッキー）の送信を許可
-        config.setAllowCredentials(true); 
-        
-        // 【重要】localhostを明示的に許可
-        config.addAllowedOrigin("http://localhost:8080"); 
-        config.addAllowedOrigin("http://127.0.0.1:8080"); 
-        
-        // すべてのヘッダーとメソッドを許可
+        config.setAllowCredentials(true);
+        config.addAllowedOrigin("http://localhost:8080");
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
-        
-        // すべてのパス ("/**") にこのCORS設定を適用
-        source.registerCorsConfiguration("/**", config); 
+        source.registerCorsConfiguration("/**", config);
         return new CorsFilter(source);
     }
-
 
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            // 【修正】CorsFilter Beanを使用するためにCORSを有効化
-            .cors(cors -> {}) 
+            .cors(cors -> {})
             .authorizeHttpRequests(authorize -> authorize
-                // 【最重要】静的リソース（WebJars, CSS, JS）を許可
-                .requestMatchers("/css/**", "/js/**", "/webjars/**", "/images/**").permitAll() 
+                // ★ 修正: CSSやJSなどの静的リソースへのアクセスを許可
+                .requestMatchers("/css/**", "/js/**", "/webjars/**", "/images/**").permitAll()
                 
-                // 【最重要】ログイン画面、サインアップ、および公開ページを許可
-                .requestMatchers("/", "/option", "/login", "/signup", "/teacher-list", "/terms").permitAll()
+                // ★ 最重要修正: ログイン、新規登録、利用規約など、認証なしでアクセスできるページを明示的に許可
+                .requestMatchers("/", "/login", "/signup", "/option", "/terms").permitAll()
                 
-                // WebSocketエンドポイントも許可
-                .requestMatchers("/ws/**", "/app/**").permitAll() 
+                // WebSocketエンドポイントを許可
+                .requestMatchers("/ws/**").permitAll()
                 
-                // 上記以外は認証が必要
+                // 上記以外のすべてのリクエストは認証が必要
                 .anyRequest().authenticated()
             )
             .formLogin(login -> login
-                .loginPage("/login") 
-                .loginProcessingUrl("/login")
+                .loginPage("/login")
+                .loginProcessingUrl("/login") // フォームの送信先
+                .usernameParameter("username") // ★ フォームのメールアドレス入力欄のname属性
+                .passwordParameter("password") // ★ フォームのパスワード入力欄のname属性
                 .defaultSuccessUrl("/home", true)
-                .failureUrl("/login?error") 
+                .failureUrl("/login?error")
                 .permitAll()
             )
             .logout(logout -> logout
-            	    .logoutUrl("/logout") 
-            	    .logoutSuccessUrl("/login?logout")
-            	    .permitAll()
-            	)
-            
-            // WebSocket/STOMPのエンドポイントでCSRF保護を無効化
+                .logoutUrl("/logout")
+                .logoutSuccessUrl("/login?logout")
+                .permitAll()
+            )
             .csrf(csrf -> csrf
-                .ignoringRequestMatchers("/ws/**", "/app/**")
+                .ignoringRequestMatchers("/ws/**")
             );
-        
 
         return http.build();
     }

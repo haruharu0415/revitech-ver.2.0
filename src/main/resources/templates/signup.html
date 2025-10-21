@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!-- signup.html -->
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
@@ -7,59 +6,56 @@
     <title>新規アカウント作成</title>
     <link th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" rel="stylesheet" />
     <style>
-        body {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            background-color: #f8f9fa;
-        }
-        .signup-card {
-            width: 100%;
-            max-width: 420px;
-        }
+        .signup-container { max-width: 420px; margin-top: 50px; }
     </style>
 </head>
-<body>
-    <div class="card signup-card shadow-sm">
-        <div class="card-body p-4">
-            <h2 class="card-title text-center mb-4">新規アカウント作成</h2>
+<body class="bg-light">
+    <div class="container signup-container">
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <h2 class="card-title text-center mb-4">新規アカウント作成</h2>
 
-            <!-- ★★★ th:objectでフォームオブジェクトを紐付け ★★★ -->
-            <form th:action="@{/signup}" th:object="${signupForm}" method="post">
-                
-                <!-- ★★★ サーバーからの全体エラーメッセージ表示エリア ★★★ -->
-                <div th:if="${#fields.hasGlobalErrors()}" class="alert alert-danger" role="alert">
-                    <p th:each="err : ${#fields.globalErrors()}" th:text="${err}"></p>
-                </div>
+                <form th:action="@{/signup}" th:object="${signupForm}" method="post">
+                    
+                    <div th:if="${#fields.hasGlobalErrors()}" class="alert alert-danger" role="alert">
+                        <p th:each="err : ${#fields.globalErrors()}" th:text="${err}"></p>
+                    </div>
 
-                <div class="mb-3">
-                    <label for="username" class="form-label">ユーザー名</label>
-                    <!-- ★★★ th:fieldで各項目を紐付け ★★★ -->
-                    <input type="text" class="form-control" th:field="*{username}" th:errorclass="is-invalid">
-                    <!-- ★★★ バリデーションエラーメッセージ ★★★ -->
-                    <div th:if="${#fields.hasErrors('username')}" class="invalid-feedback" th:errors="*{username}"></div>
-                </div>
-                <div class="mb-3">
-                    <label for="password" class="form-label">パスワード</label>
-                    <input type="password" class="form-control" th:field="*{password}" th:errorclass="is-invalid">
-                    <div th:if="${#fields.hasErrors('password')}" class="invalid-feedback" th:errors="*{password}"></div>
-                </div>
-                <div class="mb-3">
-                    <label for="password-confirm" class="form-label">パスワード（確認用）</label>
-                    <input type="password" class="form-control" th:field="*{passwordConfirm}" th:errorclass="is-invalid">
-                    <div th:if="${#fields.hasErrors('passwordConfirm')}" class="invalid-feedback" th:errors="*{passwordConfirm}"></div>
-                </div>
-                <div class="d-grid">
-                    <button type="submit" class="btn btn-success">登録する</button>
-                </div>
-            </form>
+                    <div class="mb-3">
+                        <label for="name" class="form-label">名前</label>
+                        <input type="text" id="name" class="form-control" th:field="*{name}" th:errorclass="is-invalid" placeholder="例: 山田 太郎">
+                        <div th:if="${#fields.hasErrors('name')}" class="invalid-feedback" th:errors="*{name}"></div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="email" class="form-label">メールアドレス</label>
+                        <input type="email" id="email" class="form-control" th:field="*{email}" th:errorclass="is-invalid" placeholder="example@jec.ac.jp">
+                        <div th:if="${#fields.hasErrors('email')}" class="invalid-feedback" th:errors="*{email}"></div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="password" class="form-label">パスワード</label>
+                        <input type="password" id="password" class="form-control" th:field="*{password}" th:errorclass="is-invalid">
+                        <div th:if="${#fields.hasErrors('password')}" class="invalid-feedback" th:errors="*{password}"></div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="passwordConfirm" class="form-label">パスワード（確認用）</label>
+                        <input type="password" id="passwordConfirm" class="form-control" th:field="*{passwordConfirm}" th:errorclass="is-invalid">
+                        <div th:if="${#fields.hasErrors('passwordConfirm')}" class="invalid-feedback" th:errors="*{passwordConfirm}"></div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success">登録する</button>
+                    </div>
+                </form>
 
-            <hr class="my-4">
+                <hr class="my-4">
 
-            <div class="text-center">
-                <p>すでにアカウントをお持ちですか？</p>
-                <a th:href="@{/login}" class="btn btn-outline-primary">ログインはこちら</a>
+                <div class="text-center">
+                    <p>すでにアカウントをお持ちですか？</p>
+                    <a th:href="@{/login}" class="btn btn-outline-primary">ログインはこちら</a>
+                </div>
             </div>
         </div>
     </div>

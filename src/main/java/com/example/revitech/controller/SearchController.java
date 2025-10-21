@@ -1,5 +1,6 @@
 package com.example.revitech.controller;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.springframework.stereotype.Controller;
@@ -19,21 +20,16 @@ public class SearchController {
         this.usersService = usersService;
     }
 
-    /**
-     * ユーザー検索画面の表示と検索結果の処理
-     * URL: /user-search
-     */
     @GetMapping("/user-search")
     public String searchUsers(@RequestParam(name = "keyword", required = false) String keyword, Model model) {
-        List<Users> searchResults = null;
-        
+        List<Users> searchResults = Collections.emptyList();
+
         if (keyword != null && !keyword.trim().isEmpty()) {
-            // サービスを呼び出して検索を実行
             searchResults = usersService.searchUsers(keyword.trim());
         }
 
         model.addAttribute("keyword", keyword);
         model.addAttribute("searchResults", searchResults);
-        return "user-search"; // user-search.html に遷移
+        return "user-search";
     }
 }
