@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<!-- terms.html-->
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>利用規約</title>
+    <link th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" rel="stylesheet" />
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css}">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            background-color: #ffffff;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .header .back-arrow {
+            font-size: 1.5rem;
+            color: #495057;
+        }
+        .header .title {
+            margin: 0 auto;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        .terms-content {
+            padding: 1.5rem;
+        }
+        .terms-content h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        .terms-content .term-item {
+            margin-bottom: 1.25rem;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <!-- オプションページに戻るボタン -->
+        <a th:href="@{/option}">
+            <i class="bi bi-arrow-left back-arrow"></i>
+        </a>
+        <h1 class="title">利用規約</h1>
+    </header>
+
+    <main class="container">
+        <div class="terms-content">
+            <h3>利用規約</h3>
+            <p>本アプリのアカウントを作成することにより、以下の利用規約に同意したものとみなします。</p>
+
+            <div class="term-item">
+                <h5>(1) 禁止事項と法的措置</h5>
+                <p>教員に対する暴言、誹謗中傷、名誉毀損、その他ハラスメントと見なされる一切の行為を禁止します。悪質であると判断した場合、発信者情報開示請求を含む法的措置を講じることがあります。</p>
+            </div>
+
+            <div class="term-item">
+                <h5>(2) 禁止ワード</h5>
+                <p>本アプリでは、健全なコミュニケーションを維持するため禁止ワードを設定しています。システムにより、これらの単語を含む不適切な投稿は自動的に制限されます。</p>
+            </div>
+
+            <div class="term-item">
+                <h5>(3) 規約違反の判断</h5>
+                <p>禁止ワードに設定されていない表現であっても、その内容が第1項に定める禁止事項に該当すると運営が判断した場合、法的措置の対象となる可能性があります。</p>
+            </div>
+
+            <div class="term-item">
+                <h5>(4) アカウントの利用停止・削除</h5>
+                <p>本規約への違反が確認された場合、または運営が不適切と判断した行為があった場合、事前の通知なくアカウント機能の一部停止、またはアカウントを削除する措置を行うことがあります。</p>
+            </div>
+        </div>
+    </main>
+
+    <script th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"></script>
+</body>
+</html>
