@@ -15,18 +15,14 @@ public class ChatMember {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // 【最重要】DBの列名 'room_id' にマッピング
     @Column(name = "room_id")
     private Long roomId;
 
-    // 【最重要】DBの列名 'user_id' にマッピング
     @Column(name = "user_id")
     private Long userId;
 
-    // デフォルトコンストラクタ (JPAで必須)
     public ChatMember() {}
 
-    // コンストラクタ (Service層で利用)
     public ChatMember(Long roomId, Long userId) {
         this.roomId = roomId;
         this.userId = userId;
