@@ -1,95 +1,137 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-<meta charset="UTF-8" />
-<title>グループチャット</title>
-<style>
-  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:#e5ddd5; margin:0; padding:0; display:flex; flex-direction:column; }
-  header { background:#075e54; color:white; padding:15px; font-size:20px; font-weight:bold; }
-  #chatRoomList { flex-grow:1; overflow-y:auto; padding:10px; }
-  .chat-room { background:white; border-radius:8px; margin-bottom:10px; display:flex; align-items:center; padding:10px; box-shadow:0 2px 3px rgba(0,0,0,0.1); cursor:pointer; }
-  .avatar { width:50px; height:50px; background:#25d366; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:bold; font-size:20px; margin-right:15px; user-select:none; }
-  .chat-info { flex-grow:1; }
-  .chat-name { font-weight:600; font-size:16px; color:#111; }
-  .chat-type { font-size:12px; color:#666; margin-top:3px; }
-  #createGroupBtn { position:fixed; bottom:30px; right:30px; width:60px; height:60px; background:#25d366; border-radius:50%; border:none; color:white; font-size:30px; font-weight:bold; cursor:pointer; }
-</style>
+    <meta charset="UTF-8" />
+    <title>グループチャット</title>
+    <style>
+      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:#e5ddd5; margin:0; padding:0; display:flex; flex-direction:column; }
+      header { background:#075e54; color:white; padding:15px; font-size:20px; font-weight:bold; }
+      #chatRoomList { flex-grow:1; overflow-y:auto; padding:10px; }
+      /* バッジを絶対配置するために relative を追加 */
+      .chat-room { background:white; border-radius:8px; margin-bottom:10px; display:flex; align-items:center; padding:10px; box-shadow:0 2px 3px rgba(0,0,0,0.1); cursor:pointer; position: relative; }
+      .avatar { width:50px; height:50px; background:#25d366; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:bold; font-size:20px; margin-right:15px; user-select:none; }
+      .chat-info { flex-grow:1; }
+      .chat-name { font-weight:600; font-size:16px; color:#111; }
+      .chat-type { font-size:12px; color:#666; margin-top:3px; }
+      #createGroupBtn { position:fixed; bottom:30px; right:30px; width:60px; height:60px; background:#25d366; border-radius:50%; border:none; color:white; font-size:30px; font-weight:bold; cursor:pointer; }
+
+      /* --- 通知バッジのスタイル --- */
+      .notification-badge {
+          position: absolute; /* .chat-room基準で配置 */
+          top: 10px;          /* 位置は適宜調整 */
+          right: 15px;         /* 位置は適宜調整 */
+          background-color: #f44336; /* 赤色 */
+          color: white;
+          border-radius: 50%; /* 円形にする */
+          width: 22px;        /* 固定サイズ */
+          height: 22px;       /* 固定サイズ */
+          font-size: 12px;    /* 小さいフォント */
+          display: flex;      /* 中の数字を中央揃え */
+          justify-content: center;
+          align-items: center;
+          font-weight: bold;
+          line-height: 1;    /* 文字の縦位置調整 */
+      }
+      /* --- バッジスタイルここまで --- */
+    </style>
 </head>
 <body>
-<header>グループチャットルーム</header>
-<div id="chatRoomList"></div>
-<button id="createGroupBtn">＋</button>
+    <header>グループチャットルーム</header>
+    <div id="chatRoomList">
+        <p style="text-align: center; padding: 20px; color: #666;">ルームを読み込んでいます...</p>
+    </div>
+    <button id="createGroupBtn">＋</button>
 
-<script>
-  document.addEventListener('DOMContentLoaded', async () => {
-    const chatRoomList = document.getElementById('chatRoomList');
-    const createGroupBtn = document.getElementById('createGroupBtn');
+    <script>
+      document.addEventListener('DOMContentLoaded', async () => {
+        const chatRoomList = document.getElementById('chatRoomList');
+        const createGroupBtn = document.getElementById('createGroupBtn');
 
-    // アバターのテキストを生成
-    function getAvatarText(name){ 
-      return name ? name.charAt(0).toUpperCase() : "?"; 
-    }
+        function getAvatarText(name){ return name ? name.charAt(0).toUpperCase() : "?"; }
 
-    try {
-      // ★ 1. 全員分ではなく、自分専用のルームリストを取得するAPIを呼び出します
-      const response = await fetch('/api/chat-rooms/my-rooms');
-      
-      if (!response.ok) {
-        throw new Error('ルームリストの取得に失敗しました。');
-      }
-      
-      const rooms = await response.json();
-      chatRoomList.innerHTML = ''; // 一旦クリア
-      
-      // ★ 2. ルームが0件の場合のメッセージを表示します
-      if (rooms.length === 0) {
-        chatRoomList.innerHTML = '<p style="text-align: center; padding: 20px; color: #666;">参加しているグループチャットはありません。</p>';
-        return;
-      }
-      
-      // ★ 3. 取得したルームを描画します (元のコードと同じロジックです)
-      rooms.forEach(room => {
-        const div = document.createElement('div');
-        div.className = 'chat-room';
-        
-        const avatar = document.createElement('div');
-        avatar.className = 'avatar';
-        avatar.textContent = getAvatarText(room.name); 
-        div.appendChild(avatar);
+        try {
+          // 1. ルームリストを取得 (未読件数 unreadCount と 最新メッセージ時刻 lastMessageTimestamp が含まれる)
+          const response = await fetch('/api/chat-rooms/my-rooms');
+          if (!response.ok) {
+              throw new Error('ルームリストの取得に失敗しました。');
+          }
+          let rooms = await response.json(); // データは List<ChatRoomWithNotificationDto> 形式
+          chatRoomList.innerHTML = ''; // 読み込み中表示をクリア
 
-        const info = document.createElement('div');
-        info.className = 'chat-info';
-        
-        const name = document.createElement('div');
-        name.className = 'chat-name';
-        name.textContent = room.name || 'DM';
-        info.appendChild(name);
-        
-        const type = document.createElement('div');
-        type.className = 'chat-type';
-        type.textContent = room.type === 'DM' ? 'ダイレクトメッセージ' : 'グループチャット';
-        info.appendChild(type);
-        
-        div.appendChild(info);
+          if (rooms.length === 0) {
+            chatRoomList.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">参加しているグループチャットはありません。</p>';
+            return;
+          }
 
-        div.addEventListener('click', () => {
-          window.location.href = `/chat/room/${room.id}`; 
+          // --- リストの並び替え ---
+          rooms.sort((a, b) => {
+              // ルール1：未読があるルームを最優先で上に表示
+              if (a.unreadCount > 0 && b.unreadCount === 0) {
+                  return -1; // a を b より前に置く
+              }
+              if (b.unreadCount > 0 && a.unreadCount === 0) {
+                  return 1;  // b を a より前に置く
+              }
+              // ルール2：未読状況が同じ場合は、最新メッセージの時刻で降順（新しいものが上）にソート
+              const timeA = a.lastMessageTimestamp ? new Date(a.lastMessageTimestamp) : new Date(0);
+              const timeB = b.lastMessageTimestamp ? new Date(b.lastMessageTimestamp) : new Date(0);
+              return timeB - timeA; // 降順ソート
+          });
+          // --- 並び替えここまで ---
+
+          // 3. 並び替えたルームリストを描画
+          rooms.forEach(room => { // room オブジェクトには unreadCount と lastMessageTimestamp が含まれる
+            const div = document.createElement('div');
+            div.className = 'chat-room';
+
+            // アバター
+            const avatar = document.createElement('div');
+            avatar.className = 'avatar';
+            avatar.textContent = getAvatarText(room.name);
+            div.appendChild(avatar);
+
+            // ルーム情報 (名前とタイプ)
+            const info = document.createElement('div');
+            info.className = 'chat-info';
+            const name = document.createElement('div');
+            name.className = 'chat-name';
+            name.textContent = room.name || 'DM'; // 名前がなければ 'DM' と表示
+            info.appendChild(name);
+            const type = document.createElement('div');
+            type.className = 'chat-type';
+            type.textContent = room.type === 'DM' ? 'ダイレクトメッセージ' : 'グループチャット';
+            info.appendChild(type);
+            div.appendChild(info);
+
+            // --- 未読件数 > 0 なら通知バッジを追加 ---
+            if (room.unreadCount > 0) {
+                const badge = document.createElement('span');
+                badge.className = 'notification-badge';
+                // 9件より多い場合は '9+' と表示
+                badge.textContent = room.unreadCount > 9 ? '9+' : room.unreadCount;
+                div.appendChild(badge);
+            }
+            // --- バッジ追加ここまで ---
+
+            // クリックイベント
+            div.addEventListener('click', () => {
+              window.location.href = `/chat/room/${room.id}`;
+            });
+
+            chatRoomList.appendChild(div);
+          });
+
+        } catch (error) {
+          console.error('Fetch Error:', error);
+          // エラーメッセージを表示
+          chatRoomList.innerHTML = `<p style="color: red; text-align: center; padding: 20px;">${error.message}</p>`;
+        }
+
+        // グループ作成ボタンのイベント
+        createGroupBtn.addEventListener('click', () => {
+          window.location.href = '/group-create';
         });
-
-        chatRoomList.appendChild(div);
       });
-
-    } catch (error) {
-      // ★ 4. エラーが発生した場合のメッセージを表示します
-      console.error('Fetch Error:', error);
-      chatRoomList.innerHTML = `<p style="color: red; text-align: center; padding: 20px;">${error.message}</p>`;
-    }
-
-    // グループ作成画面への遷移
-    createGroupBtn.addEventListener('click', () => {
-      window.location.href = '/group-create'; 
-    });
-  });
-</script>
+    </script>
 </body>
 </html>
