@@ -40,6 +40,7 @@ public class ChatRoomController {
     public String enterRoom(@PathVariable Long roomId, Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Optional<Users> userOpt = usersService.findByEmail(auth.getName());
+        
         if (userOpt.isEmpty()) {
             return "redirect:/login";
         }
@@ -58,7 +59,7 @@ public class ChatRoomController {
         model.addAttribute("userName", currentUser.getName());
         model.addAttribute("roomId", roomOpt.get().getId());
         model.addAttribute("roomName", roomOpt.get().getName());
-        
+        chatRoomService.markRoomAsRead(currentUser.getId(), roomId);
         return "group-chat";
     }
 }
