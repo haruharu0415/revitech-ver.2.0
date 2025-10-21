@@ -32,6 +32,8 @@ public class ChatRoom {
     public ChatRoom() {}
 
     @PrePersist
+    
+  
     protected void onCreate() {
         if (this.createdAt == null) {
             this.createdAt = LocalDateTime.now();
