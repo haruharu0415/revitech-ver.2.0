@@ -2,12 +2,13 @@ package com.example.revitech.entity;
 
 import java.time.LocalDateTime;
 
+import org.hibernate.annotations.CreationTimestamp;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
 @Entity
@@ -16,39 +17,37 @@ public class ChatRoom {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "room_id") // DB列名 room_id
+    private Long id; // Java変数名
 
+    @Column(length = 50)
     private String name;
-    private String type;
 
-    // 【重要】DB列名 'creatar_user_id' にマッピング
-    @Column(name = "creatar_user_id")
-    private Long creatarUserId; 
-    
-    @Column(name = "created_at")
-    private LocalDateTime createdAt;
+    @Column(nullable = false)
+    private Integer type; // DBデータ型 INT
 
-    // デフォルトコンストラクタ (JPA/Jacksonで必須)
+    @Column(name = "users_id", nullable = false) // DB列名 users_id
+    private Long creatarUserId; // Java変数名 (以前の経緯からこのまま)
+
+    // ★ フィールド名を createdAt (キャメルケース) に変更 ★
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false) // DB列名は created_at
+    private LocalDateTime createdAt; // ← ここを変更
+
     public ChatRoom() {}
 
-    @PrePersist
-    
-  
-    protected void onCreate() {
-        if (this.createdAt == null) {
-            this.createdAt = LocalDateTime.now();
-        }
-    }
-
-    // Getters and Setters
+    // --- Getters and Setters ---
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }
-    public String getType() { return type; }
-    public void setType(String type) { this.type = type; }
+    public Integer getType() { return type; }
+    public void setType(Integer type) { this.type = type; }
     public Long getCreatarUserId() { return creatarUserId; }
     public void setCreatarUserId(Long creatarUserId) { this.creatarUserId = creatarUserId; }
+
+    // ★ Getter/Setter 名も createdAt に変更 ★
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    // --- End of Getters and Setters ---
 }

@@ -35,17 +35,25 @@ public class HomeController {
 
     @GetMapping("/home")
     public String home(Model model) {
+        // ★ getContext() に修正
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Optional<Users> userOpt = usersService.findByEmail(auth.getName());
         if (userOpt.isEmpty()) return "redirect:/login";
-        
+
         Users user = userOpt.get();
         model.addAttribute("user", user);
-        
-        return switch (user.getRole().toUpperCase()) {
-            case "ADMIN" -> "home-admin";
-            case "TEACHER" -> "home-teacher";
-            default -> "home";
+
+        // ★ Integer 型の role で分岐 (値は実際のフラグに合わせてください)
+        Integer userRole = user.getRole();
+        if (userRole == null) {
+             // role が null の場合の処理 (例: デフォルトのホーム画面へ)
+             return "home";
+        }
+
+        return switch (userRole) {
+            case 1 -> "home-admin";    // 例: 1 が ADMIN の場合
+            case 2 -> "home-teacher";   // 例: 2 が TEACHER の場合
+            default -> "home";          // それ以外 (STUDENT など)
         };
     }
 

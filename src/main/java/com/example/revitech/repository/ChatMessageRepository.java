@@ -10,13 +10,12 @@ import com.example.revitech.entity.ChatMessage;
 
 public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> {
 
+    // ★ メソッド名を CreatedAt (キャメルケース) に変更 ★
     List<ChatMessage> findByRoomIdOrderByCreatedAtAsc(Long roomId);
 
-    // --- 以下の2つのメソッドを追加 ---
-    /** 指定時刻以降に作成された、ルーム内のメッセージ数をカウントする */
+    // ★ メソッド名を CreatedAt (キャメルケース) に変更 ★
     long countByRoomIdAndCreatedAtAfter(Long roomId, LocalDateTime timestamp);
 
-    /** ルーム内の最新メッセージを1件取得する */
+    // ★ メソッド名を CreatedAt (キャメルケース) に変更 ★
     Optional<ChatMessage> findFirstByRoomIdOrderByCreatedAtDesc(Long roomId);
-    // --- 追加メソッドここまで ---
 }

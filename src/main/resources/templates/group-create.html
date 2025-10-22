@@ -6,227 +6,179 @@
   <link th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <style>
-    .selected-member {
-      display: inline-block;
-      padding: 5px 10px;
-      margin: 5px;
-      background-color: #0d6efd;
-      color: white;
-      border-radius: 20px;
-      font-size: 0.9em;
-    }
-    .remove-btn {
-      margin-left: 5px;
-      cursor: pointer;
-      font-weight: bold;
-    }
-    .search-results {
-      max-height: 300px;
-      overflow-y: auto;
-      border: 1px solid #ccc;
-      border-top: none;
-      border-radius: 0 0 5px 5px;
-    }
-    .search-results .list-group-item {
-      cursor: pointer;
-    }
+    body { padding-top: 1rem; padding-bottom: 1rem; background-color: #f8f9fa; }
+    .container { max-width: 600px; background-color: #fff; padding: 2rem; border-radius: 0.5rem; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); }
+    .selected-member { display: inline-flex; align-items: center; padding: 0.3rem 0.8rem; margin: 0.2rem; background-color: #e9ecef; color: #495057; border-radius: 1rem; font-size: 0.9em; border: 1px solid #ced4da; }
+    .remove-btn { margin-left: 0.5rem; cursor: pointer; color: #dc3545; background: none; border: none; padding: 0; line-height: 1; font-size: 1.1em; }
+    .search-results { max-height: 200px; overflow-y: auto; border: 1px solid #ced4da; border-top: none; border-radius: 0 0 0.375rem 0.375rem; position: absolute; background-color: white; width: calc(100% - 2px); z-index: 10; }
+    .search-results .list-group-item { cursor: pointer; padding: 0.5rem 1rem; }
+    .search-results .list-group-item:hover { background-color: #f8f9fa; }
+    #selectedMembersContainer { min-height: 50px; background-color: #f8f9fa; }
   </style>
 </head>
 <body>
-  <main class="container p-3">
-    <h1 class="mb-4">グループチャットの新規作成</h1>
+  <main class="container">
+    <h1 class="mb-4 text-center">グループチャットの新規作成</h1>
 
     <form id="groupCreateForm" th:action="@{/chat-room/group/create}" method="post">
-      <input type="hidden" name="creatorId" id="creatorId" value="1" /> 
-      
       <div class="mb-3">
         <label for="groupName" class="form-label">グループ名</label>
-        <input type="text" class="form-control" id="groupName" name="name" required placeholder="グループ名を入力" maxlength="50">
+        <input type="text" class="form-control" id="groupName" name="name" placeholder="グループ名を入力 (任意)" maxlength="50">
       </div>
 
-      <div class="mb-3">
+      <div class="mb-4">
         <label class="form-label">メンバーの招待</label>
-        
         <div id="selectedMembersContainer" class="p-2 border rounded mb-2">
-            </div>
-
-        <div class="input-group">
-          <input type="text" class="form-control" id="memberSearchInput" placeholder="名前またはメールアドレスでユーザーを検索">
-          <button class="btn btn-secondary" type="button" id="searchButton">
-            <i class="bi bi-search"></i> 検索
-          </button>
+            <span class="text-muted small">検索してメンバーを追加してください</span>
         </div>
-        
-        <div id="searchResults" class="list-group search-results" style="display:none;">
-          </div>
-
-        <input type="hidden" name="memberIds" id="memberIds" required>
+        <div class="position-relative">
+            <div class="input-group">
+              <input type="text" class="form-control" id="memberSearchInput" placeholder="名前またはメールアドレスで検索">
+              <button class="btn btn-outline-secondary" type="button" id="searchButton">
+                <i class="bi bi-search"></i> 検索
+              </button>
+            </div>
+            <div id="searchResults" class="list-group search-results" style="display:none;"></div>
+        </div>
+        <input type="hidden" name="memberIds" id="memberIds">
       </div>
 
-      <button type="submit" class="btn btn-primary w-100">グループを作成</button>
-      <a th:href="@{/group}" class="btn btn-outline-secondary w-100 mt-2">キャンセル</a>
+      <div class="d-grid gap-2">
+          <button type="submit" class="btn btn-primary">グループを作成</button>
+          <a th:href="@{/group}" class="btn btn-outline-secondary">キャンセル</a>
+      </div>
     </form>
   </main>
 
   <script th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"></script>
-  <script>
-    const creatorId = document.getElementById('creatorId').value;
-    const searchInput = document.getElementById('memberSearchInput');
-    const searchButton = document.getElementById('searchButton');
-    const searchResultsDiv = document.getElementById('searchResults');
-    const selectedMembersContainer = document.getElementById('selectedMembersContainer');
-    const memberIdsInput = document.getElementById('memberIds');
-    const groupCreateForm = document.getElementById('groupCreateForm');
+  <script th:inline="javascript">
+    /*<![CDATA[*/ // ← 開始コメントはこれでOK
+    // Controllerから渡されたログインユーザーIDを使用
+    const authenticatedUserId = /*[[${userId}]]*/ null;
 
-    // 既に選択されているメンバーIDのSet (重複防止用)
-    const selectedMemberIds = new Set([creatorId]); 
-    // 選択されたメンバーの表示用Map { id: name }
-    const selectedMemberData = new Map(); 
+    if (!authenticatedUserId) {
+        console.error("ログインユーザーIDが取得できませんでした。");
+        document.querySelector('main.container').innerHTML = '<div class="alert alert-danger">エラー: ユーザー情報を取得できませんでした。ログインし直してください。</div><a href="/login" class="btn btn-primary">ログインページへ</a>';
+    } else {
+        const searchInput = document.getElementById('memberSearchInput');
+        const searchButton = document.getElementById('searchButton');
+        const searchResultsDiv = document.getElementById('searchResults');
+        const selectedMembersContainer = document.getElementById('selectedMembersContainer');
+        const memberIdsInput = document.getElementById('memberIds');
+        const groupCreateForm = document.getElementById('groupCreateForm');
 
-    // 認証ユーザー(creator)を初期メンバーとして追加
-    // 実際にはAPIで自分の名前を取得し、UIに追加しないが、ロジックとしてmemberIdsに追加する
-    updateMemberIdsInput();
+        const selectedMemberIds = new Set();
+        const selectedMemberData = new Map();
 
-    /**
-     * 選択されたメンバーをUIに追加する
-     * @param {number} id - ユーザーID
-     * @param {string} name - ユーザー名
-     */
-    function addSelectedMemberToUI(id, name) {
-      if (id == creatorId) { // 作成者はUIに表示しない
-          return; 
-      }
-      
-      if (selectedMemberIds.has(String(id))) {
-        return; // 既に選択済み
-      }
-      
-      selectedMemberIds.add(String(id));
-      selectedMemberData.set(id, name);
-      
-      const tag = document.createElement('span');
-      tag.className = 'selected-member';
-      tag.setAttribute('data-id', id);
-      tag.innerHTML = `
-        ${name} 
-        <span class="remove-btn" data-id="${id}"><i class="bi bi-x-circle-fill"></i></span>
-      `;
-      
-      selectedMembersContainer.appendChild(tag);
-      updateMemberIdsInput();
-    }
-
-    /**
-     * 選択されたメンバーIDをHiddenフィールドに設定する
-     */
-    function updateMemberIdsInput() {
-      // Setに含まれる全てのID（作成者IDを含む）をカンマ区切りで設定
-      memberIdsInput.value = Array.from(selectedMemberIds).join(','); 
-    }
-
-    /**
-     * ユーザー検索APIの呼び出し
-     */
-    async function searchUsers() {
-      const query = searchInput.value.trim();
-      if (!query) {
-        searchResultsDiv.style.display = 'none';
-        return;
-      }
-
-      try {
-        const response = await fetch(`/api/users/search?query=${encodeURIComponent(query)}`);
-        if (!response.ok) {
-          throw new Error('ユーザー検索APIの呼び出しに失敗しました');
+        if (selectedMembersContainer.children.length === 0) {
+            selectedMembersContainer.innerHTML = '<span class="text-muted small p-2">検索してメンバーを追加してください</span>';
         }
-        const users = await response.json();
-        renderSearchResults(users);
-      } catch (error) {
-        console.error('検索エラー:', error);
-        searchResultsDiv.innerHTML = '<div class="list-group-item list-group-item-danger">検索中にエラーが発生しました。</div>';
-        searchResultsDiv.style.display = 'block';
-      }
-    }
-
-    /**
-     * 検索結果をUIにレンダリングする
-     * @param {Array<Object>} users - 検索結果のユーザーリスト
-     */
-    function renderSearchResults(users) {
-      searchResultsDiv.innerHTML = '';
-      if (users.length === 0) {
-        searchResultsDiv.innerHTML = '<div class="list-group-item">該当するユーザーはいません。</div>';
-        searchResultsDiv.style.display = 'block';
-        return;
-      }
-      
-      users.forEach(user => {
-        // 自分自身、または既に選択されているユーザーは除外
-        if (String(user.id) === creatorId || selectedMemberIds.has(String(user.id))) {
-          return;
-        }
-
-        const item = document.createElement('div');
-        item.className = 'list-group-item list-group-item-action';
-        item.textContent = `${user.name} (${user.email})`;
-        item.setAttribute('data-id', user.id);
-        item.setAttribute('data-name', user.name);
-        
-        // クリックでメンバーに追加
-        item.addEventListener('click', (e) => {
-          addSelectedMemberToUI(user.id, user.name);
-          searchResultsDiv.style.display = 'none'; // 選択後、検索結果を非表示
-          searchInput.value = ''; // 検索窓をクリア
-        });
-
-        searchResultsDiv.appendChild(item);
-      });
-
-      searchResultsDiv.style.display = searchResultsDiv.children.length > 0 ? 'block' : 'none';
-    }
-
-    // --- イベントリスナー ---
-
-    // 検索ボタンのクリック/Enterキーで検索を実行
-    searchButton.addEventListener('click', searchUsers);
-    searchInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        searchUsers();
-      }
-    });
-
-    // メンバー削除ボタンのクリック処理
-    selectedMembersContainer.addEventListener('click', (e) => {
-      const removeBtn = e.target.closest('.remove-btn');
-      if (removeBtn) {
-        const idToRemove = removeBtn.getAttribute('data-id');
-        
-        // SetからIDを削除
-        selectedMemberIds.delete(idToRemove);
-        selectedMemberData.delete(Number(idToRemove)); // Mapからも削除
-
-        // UIからタグを削除
-        const tagToRemove = removeBtn.closest('.selected-member');
-        if (tagToRemove) {
-          tagToRemove.remove();
-        }
-        
         updateMemberIdsInput();
-      }
-    });
-    
-    // フォーム送信時のチェック（グループ名とメンバー数の確認）
-    groupCreateForm.addEventListener('submit', (e) => {
-        const memberCount = selectedMemberIds.size;
-        
-        // グループ作成には最低2名 (作成者+1名) が必要
-        if (memberCount < 2) {
-            e.preventDefault();
-            alert('グループには自分自身を含め、最低2名（他に1名以上）のメンバーが必要です。');
-        }
-    });
 
+        function addSelectedMemberToUI(id, name) {
+            const userIdStr = String(id);
+            if (userIdStr === String(authenticatedUserId) || selectedMemberIds.has(userIdStr)) return;
+            selectedMemberIds.add(userIdStr);
+            selectedMemberData.set(id, name);
+            if (selectedMembersContainer.children.length === 1 && selectedMembersContainer.children[0].classList.contains('text-muted')) {
+                selectedMembersContainer.innerHTML = '';
+            }
+            const tag = document.createElement('span');
+            tag.className = 'selected-member';
+            tag.setAttribute('data-id', id);
+            tag.innerHTML = `
+                ${name}
+                <button type="button" class="remove-btn" data-id="${id}" aria-label="削除"><i class="bi bi-x-circle"></i></button>
+            `;
+            selectedMembersContainer.appendChild(tag);
+            updateMemberIdsInput();
+        }
+
+        function updateMemberIdsInput() {
+            memberIdsInput.value = Array.from(selectedMemberIds).join(',');
+        }
+
+        async function searchUsers() {
+            const keyword = searchInput.value.trim();
+            if (keyword.length < 1) {
+                searchResultsDiv.style.display = 'none';
+                return;
+            }
+            try {
+                const response = await fetch(`/api/users/search?keyword=${encodeURIComponent(keyword)}`);
+                if (!response.ok) throw new Error('ユーザー検索APIエラー');
+                const users = await response.json();
+                renderSearchResults(users);
+            } catch (error) {
+                console.error('検索エラー:', error);
+                searchResultsDiv.innerHTML = '<div class="list-group-item list-group-item-light text-danger small">検索エラー</div>';
+                searchResultsDiv.style.display = 'block';
+            }
+        }
+
+        function renderSearchResults(users) {
+            searchResultsDiv.innerHTML = '';
+            let resultsFound = false;
+            users.forEach(user => {
+                const userIdStr = String(user.id);
+                if (userIdStr === String(authenticatedUserId) || selectedMemberIds.has(userIdStr)) return;
+                resultsFound = true;
+                const item = document.createElement('a');
+                item.href = '#';
+                item.className = 'list-group-item list-group-item-action py-2';
+                item.textContent = `${user.name} (${user.email})`;
+                item.setAttribute('data-id', user.id);
+                item.setAttribute('data-name', user.name);
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    addSelectedMemberToUI(user.id, user.name);
+                    searchResultsDiv.style.display = 'none';
+                    searchInput.value = '';
+                    searchInput.focus();
+                });
+                searchResultsDiv.appendChild(item);
+            });
+            if (!resultsFound) {
+                 searchResultsDiv.innerHTML = '<div class="list-group-item list-group-item-light small">該当なし (自分自身と選択済みメンバーは表示されません)</div>';
+            }
+            searchResultsDiv.style.display = 'block';
+        }
+
+        searchButton.addEventListener('click', searchUsers);
+        searchInput.addEventListener('input', searchUsers);
+        searchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') e.preventDefault();
+        });
+        document.addEventListener('click', (e) => {
+            if (!searchResultsDiv.contains(e.target) && e.target !== searchInput) {
+                searchResultsDiv.style.display = 'none';
+            }
+        });
+        selectedMembersContainer.addEventListener('click', (e) => {
+            const removeBtn = e.target.closest('.remove-btn');
+            if (removeBtn) {
+                const idToRemove = removeBtn.getAttribute('data-id');
+                selectedMemberIds.delete(idToRemove);
+                selectedMemberData.delete(Number(idToRemove));
+                const tagToRemove = removeBtn.closest('.selected-member');
+                if (tagToRemove) tagToRemove.remove();
+                updateMemberIdsInput();
+                if (selectedMembersContainer.children.length === 0) {
+                     selectedMembersContainer.innerHTML = '<span class="text-muted small p-2">検索してメンバーを追加してください</span>';
+                }
+            }
+        });
+        groupCreateForm.addEventListener('submit', (e) => {
+            const memberIdsArray = memberIdsInput.value ? memberIdsInput.value.split(',') : [];
+            if (memberIdsArray.length < 1) {
+                e.preventDefault();
+                alert('招待するメンバーを1名以上選択してください。');
+                searchInput.focus();
+            }
+        });
+    }
+    // ★★★ 終了コメントを修正 ★★★
+    /*]]>*/
   </script>
 </body>
 </html>

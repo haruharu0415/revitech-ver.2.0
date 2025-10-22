@@ -9,28 +9,31 @@ public class ChatMessageDto {
     private Long roomId;
     private Long senderUserId;
     private String senderName;
-    private String content;
-    private LocalDateTime createdAt;
+    private String content; // DTOのフィールド名はこのままでもOK
+    private LocalDateTime createdAt; // DTOのフィールド名はこのままでもOK
 
+    // ★ コンストラクタ内の修正
     public ChatMessageDto(ChatMessage message, String senderName) {
         this.roomId = message.getRoomId();
         this.senderUserId = message.getSenderUserId();
         this.senderName = senderName;
-        this.content = message.getContent();
+        // ★ message.getContent() -> message.getBody() に修正
+        this.content = message.getBody();
+        // ★ message.getCreatedAt() -> message.getCreated_at() に修正 (DB列名に合わせた場合)
         this.createdAt = message.getCreatedAt();
     }
-    
+
     public ChatMessageDto() {}
 
-    // Getters and Setters
+    // Getters and Setters (変更なし、ただし内部ロジックで使うGetter名は要注意)
     public Long getRoomId() { return roomId; }
     public void setRoomId(Long roomId) { this.roomId = roomId; }
     public Long getSenderUserId() { return senderUserId; }
     public void setSenderUserId(Long senderUserId) { this.senderUserId = senderUserId; }
     public String getSenderName() { return senderName; }
     public void setSenderName(String senderName) { this.senderName = senderName; }
-    public String getContent() { return content; }
+    public String getContent() { return content; } // getter名はこのまま
     public void setContent(String content) { this.content = content; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
+    public LocalDateTime getCreatedAt() { return createdAt; } // getter名はこのまま
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

@@ -8,13 +8,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.example.revitech.dto.ChatMessageDto;
 import com.example.revitech.entity.ChatMessage;
-import com.example.revitech.repository.ChatMessageRepository;
+import com.example.revitech.repository.ChatMessageRepository; // ★ 修正済みのメソッドを持つ Repository
 
 @Service
 @Transactional
 public class ChatMessageService {
 
-    private final ChatMessageRepository chatMessageRepository;
+    private final ChatMessageRepository chatMessageRepository; // ★ 修正済みのメソッドを持つ Repository
     private final UsersService usersService;
 
     public ChatMessageService(ChatMessageRepository chatMessageRepository, UsersService usersService) {
@@ -22,17 +22,21 @@ public class ChatMessageService {
         this.usersService = usersService;
     }
 
+    // メッセージを送信（保存）する
     public ChatMessage sendMessage(Long roomId, Long senderUserId, String content) {
         ChatMessage message = new ChatMessage(roomId, senderUserId, content);
         return chatMessageRepository.save(message);
     }
 
+    // 特定ルームのメッセージ履歴を DTO のリストとして取得する
     public List<ChatMessageDto> getMessagesByRoomId(Long roomId) {
+        // ★★★ Repository のメソッド名を CreatedAt (キャメルケース) に修正 ★★★
         return chatMessageRepository.findByRoomIdOrderByCreatedAtAsc(roomId).stream()
             .map(message -> {
                 String senderName = usersService.findById(message.getSenderUserId())
                                                  .map(user -> user.getName())
                                                  .orElse("退会したユーザー");
+                // ★ DTOのコンストラクタ内で getCreatedAt() が呼ばれることを確認
                 return new ChatMessageDto(message, senderName);
             })
             .collect(Collectors.toList());

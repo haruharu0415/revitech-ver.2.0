@@ -1,38 +1,42 @@
 package com.example.revitech.entity;
 
-import jakarta.persistence.Column;
+import jakarta.persistence.EmbeddedId;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "chat_members")
 public class ChatMember {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @EmbeddedId // 複合主キーを使用
+    private ChatMemberId id;
 
-    @Column(name = "room_id")
-    private Long roomId;
+    // // 必要であれば、関連エンティティへのマッピングを追加
+    // @ManyToOne
+    // @MapsId("roomId") // id.roomIdに対応
+    // @JoinColumn(name = "room_id")
+    // private ChatRoom chatRoom;
 
-    @Column(name = "user_id")
-    private Long userId;
+    // @ManyToOne
+    // @MapsId("userId") // id.userIdに対応
+    // @JoinColumn(name = "users_id")
+    // private Users user;
 
     public ChatMember() {}
 
-    public ChatMember(Long roomId, Long userId) {
-        this.roomId = roomId;
-        this.userId = userId;
+    public ChatMember(ChatMemberId id) {
+        this.id = id;
     }
 
-    // Getters and Setters
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-    public Long getRoomId() { return roomId; }
-    public void setRoomId(Long roomId) { this.roomId = roomId; }
-    public Long getUserId() { return userId; }
-    public void setUserId(Long userId) { this.userId = userId; }
+    public ChatMember(Long roomId, Long userId) {
+        this.id = new ChatMemberId(roomId, userId);
+    }
+
+    // Getters and Setters for id
+    public ChatMemberId getId() { return id; }
+    public void setId(ChatMemberId id) { this.id = id; }
+
+    // id内のフィールドへの簡易アクセス用 (任意)
+    public Long getRoomId() { return this.id != null ? this.id.getRoomId() : null; }
+    public Long getUserId() { return this.id != null ? this.id.getUserId() : null; }
 }

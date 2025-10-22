@@ -12,14 +12,14 @@ import jakarta.persistence.UniqueConstraint;
 
 @Entity
 @Table(name = "chat_read_status",
-       uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "room_id"})) // 複合ユニーク制約
+       uniqueConstraints = @UniqueConstraint(columnNames = {"users_id", "room_id"})) // DB定義に合わせる
 public class ChatReadStatus {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "user_id", nullable = false)
+    @Column(name = "users_id", nullable = false) // DB定義に合わせる
     private Long userId;
 
     @Column(name = "room_id", nullable = false)
@@ -28,15 +28,15 @@ public class ChatReadStatus {
     @Column(name = "last_read_at", nullable = false)
     private LocalDateTime lastReadAt;
 
-    public ChatReadStatus() {} // JPAのための空のコンストラクタ
+    public ChatReadStatus() {}
 
     public ChatReadStatus(Long userId, Long roomId) {
         this.userId = userId;
         this.roomId = roomId;
-        this.lastReadAt = LocalDateTime.now(); // 作成時に現在時刻を設定
+        this.lastReadAt = LocalDateTime.now();
     }
 
-    // --- Getters and Setters ---
+    // Getters and Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public Long getUserId() { return userId; }
@@ -45,5 +45,4 @@ public class ChatReadStatus {
     public void setRoomId(Long roomId) { this.roomId = roomId; }
     public LocalDateTime getLastReadAt() { return lastReadAt; }
     public void setLastReadAt(LocalDateTime lastReadAt) { this.lastReadAt = lastReadAt; }
-    // --- End of Getters and Setters ---
 }

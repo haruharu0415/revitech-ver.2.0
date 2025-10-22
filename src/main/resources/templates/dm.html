@@ -4,12 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title th:text="${receiver != null} ? 'DMチャット - ' + ${receiver.name} : 'DMチャット'"></title>
-   <link th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" rel="stylesheet" />
+  <link th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" rel="stylesheet" />
   <script th:src="@{/webjars/sockjs-client/1.5.1/sockjs.min.js}"></script>
   <script th:src="@{/webjars/stomp-websocket/2.3.4/stomp.min.js}"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <style>
-    /* ... スタイルは前回と同じ ... */
     body { font-family: 'Helvetica', 'Arial', sans-serif; background:#e5ddd5; margin:0; padding:0; }
     .chat-container { max-width:600px; margin:0 auto; background:#fff; border-radius:0; display:flex; flex-direction:column; height:100vh; overflow:hidden; }
     .chat-header { background:#075e54; color:white; padding:15px; font-size:18px; font-weight:bold; display:flex; align-items:center; }
@@ -27,21 +26,21 @@
   </style>
 </head>
 <body>
-  
-  <div id="data-container" 
-       th:data-room-id="${room.id}" 
-       th:data-sender-id="${sender.id}">
+
+  <div id="data-container"
+       th:data-room-id="${room?.id}"
+       th:data-sender-id="${sender?.id}">
   </div>
-  
+
   <div class="chat-container">
-    
+
     <div class="chat-header">
       <a th:href="@{/user-search}"><i class="bi bi-arrow-left"></i></a>
       <span th:text="${receiver != null} ? ${receiver.name} : 'DMチャット'"></span>
     </div>
 
     <div class="message-area" id="messageArea">
-      <div th:each="message : ${messages}" 
+      <div th:each="message : ${messages}"
            th:classappend="${message.senderUserId == sender.id} ? 'my-message' : 'other-message'"
            class="message">
         <div class="message-content" th:text="${message.content}"></div>
@@ -55,128 +54,101 @@
     </div>
   </div>
 
-<script>
-    // 【修正】HTML要素からデータを取得する
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    // HTML要素からデータを取得する
     const dataContainer = document.getElementById('data-container');
-    const senderId = Number(dataContainer.dataset.senderId) || 0;
-    const roomId = Number(dataContainer.dataset.roomId) || 0; 
-    // receiverIdはroomId取得に影響しないため、従来の書き方を維持
-    const receiverId = /*[[${receiver.id}]]*/ 0; 
+    const senderId = Number(dataContainer.dataset.senderId) || null; // null許容に変更
+    const roomId = Number(dataContainer.dataset.roomId) || null; // null許容に変更
+    // receiverId は HTML テンプレートから直接取得 (receiver.id -> receiver.getId())
+    const receiverId = /*[[${receiver?.id}]]*/ null; // null安全演算子を追加
 
-    console.log("Room ID loaded:", roomId); // デバッグ用ログ
-    
-    // DOM要素の取得
-    const messageForm = document.getElementById('messageForm');
-    const messageInput = document.getElementById('messageInput');
-    const messageArea = document.getElementById('messageArea');
-    const sendButton = document.getElementById('sendButton'); 
-    
-    let stompClient = null;
+    if (!senderId || !roomId) {
+        console.error("送信者IDまたはルームIDが取得できませんでした。");
+        // エラー表示などの処理を追加
+        document.body.innerHTML = '<div class="alert alert-danger">エラー: ページ情報を取得できませんでした。</div>';
+    } else {
+        console.log("Room ID loaded:", roomId); // デバッグ用ログ
 
-    /**
-     * メッセージを画面に追加し、スクロール
-     */
-    function appendMessage(content, isSender) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'message ' + (isSender ? 'my-message' : 'other-message');
-        
-        const contentDiv = document.createElement('div');
-        contentDiv.className = 'message-content';
-        contentDiv.textContent = content;
-        
-        messageDiv.appendChild(contentDiv);
-        messageArea.appendChild(messageDiv);
-        
-        scrollToBottom();
-    }
-    
-    /**
-     * 一番下までスクロール
-     */
-    function scrollToBottom() {
-        messageArea.scrollTop = messageArea.scrollHeight;
-    }
+        // DOM要素の取得
+        const messageForm = document.getElementById('messageForm');
+        const messageInput = document.getElementById('messageInput');
+        const messageArea = document.getElementById('messageArea');
+        const sendButton = document.getElementById('sendButton');
 
-    /**
-     * STOMPクライアントの接続と購読
-     */
-    function connect() {
-        // roomId が 0 (無効値) の場合は接続を試みない
-        if (!roomId || typeof roomId !== 'number' || roomId <= 0) {
-             console.error('Room ID is invalid or missing:', roomId, '. Skipping WebSocket connection.');
-             return;
+        let stompClient = null;
+
+        function appendMessage(content, isSender) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message ' + (isSender ? 'my-message' : 'other-message');
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.textContent = content;
+            messageDiv.appendChild(contentDiv);
+            messageArea.appendChild(messageDiv);
+            scrollToBottom();
         }
 
-        // 1. SockJSでWebSocket接続を確立
-        const socket = new SockJS('/ws');
-        stompClient = Stomp.over(socket);
-        
-        // 2. STOMP接続
-        stompClient.connect({}, (frame) => {
-            console.log('Connected to room: ' + roomId);
+        function scrollToBottom() {
+            messageArea.scrollTop = messageArea.scrollHeight;
+        }
 
-            // 3. メッセージトピックを購読（このルーム専用）
-            stompClient.subscribe('/topic/messages/' + roomId, (chatMessage) => {
-                const messageDto = JSON.parse(chatMessage.body);
-                
-                // 受信したメッセージが自分の送信したものでなければ画面に追加
-                if (messageDto.senderUserId !== senderId) { 
-                    appendMessage(messageDto.content, false); // 相手からのメッセージ
-                }
+        function connect() {
+            if (!roomId || typeof roomId !== 'number' || roomId <= 0) {
+                 console.error('Room ID is invalid or missing:', roomId, '. Skipping WebSocket connection.');
+                 return;
+            }
+            const socket = new SockJS('/ws');
+            stompClient = Stomp.over(socket);
+            stompClient.connect({}, (frame) => {
+                console.log('Connected to room: ' + roomId);
+                // ★★★ WebSocket購読トピックを group-chat と同じ /topic/group/ に変更 ★★★
+                stompClient.subscribe('/topic/group/' + roomId, (chatMessage) => {
+                    const messageDto = JSON.parse(chatMessage.body);
+                    // ★★★ senderUserId は ChatMessageDto.getSenderUserId() に対応 ★★★
+                    // ★★★ content は ChatMessageDto.getContent() に対応 ★★★
+                    if (String(messageDto.senderUserId) !== String(senderId)) {
+                        appendMessage(messageDto.content, false);
+                    }
+                });
+            }, (error) => {
+                console.error('STOMP Error: WebSocket接続に失敗しました。', error);
+                // 必要ならユーザーにエラー通知
             });
-            
-        }, (error) => {
-            // 【修正】CORSエラーが解消されても、WebSocket接続エラーはここでキャッチされる
-            console.error('STOMP Error: WebSocket接続に失敗しました。', error);
+        }
+
+        function sendMessage(event) {
+            if (event) {
+                event.preventDefault();
+            }
+            const content = messageInput.value.trim();
+            if (!content) return;
+
+            if (stompClient && stompClient.connected) {
+                const chatMessage = {
+                    roomId: roomId,
+                    senderUserId: senderId, // Users.id
+                    content: content      // message body
+                };
+                // ★★★ 送信先は /app/chat.send (変更なし) ★★★
+                stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));
+                appendMessage(content, true);
+                messageInput.value = '';
+            } else {
+                 console.error("STOMPクライアントが接続されていません。");
+                 alert("チャット接続が切断されています。ページをリロードして再接続してください。");
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            scrollToBottom();
+            connect();
+            if (messageForm) {
+                messageForm.addEventListener('submit', sendMessage);
+            }
         });
     }
-
-    /**
-     * メッセージ送信処理 (WebSocket)
-     */
-    function sendMessage(event) {
-        if (event) {
-            event.preventDefault(); // 【重要】フォームのデフォルト送信（リロード）をキャンセル
-        }
-        
-        const content = messageInput.value.trim();
-        
-        if (!content) {
-            return; // 内容がない場合は何もしない
-        }
-        
-        if (stompClient && stompClient.connected) {
-            const chatMessage = {
-                roomId: roomId, 
-                senderUserId: senderId,
-                content: content
-            };
-            
-            // 4. /app/chat.send にメッセージを送信 (ChatWebSocketControllerが処理)
-            stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));
-            
-            // 自分のメッセージは即座に画面に追加
-            appendMessage(content, true);
-            
-            // 入力欄をクリア
-            messageInput.value = '';
-        } else {
-             // 接続がない場合のアラートとエラーログ
-             console.error("STOMPクライアントが接続されていません。");
-             alert("チャット接続が切断されています。ページをリロードして再接続してください。");
-        }
-    }
-    
-    // 初期処理
-    document.addEventListener('DOMContentLoaded', () => {
-        scrollToBottom(); // ページロード時の初期スクロール
-        connect();        // WebSocket接続を開始
-        
-        // 1. フォームの submit イベント（Enterキー押下、または type="submit" ボタンクリック）
-        if (messageForm) {
-            messageForm.addEventListener('submit', sendMessage); 
-        }
-    });
+    /*]]>*/
 </script>
 </body>
 </html>

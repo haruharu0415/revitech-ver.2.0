@@ -3,8 +3,10 @@ package com.example.revitech.controller;
 import java.util.List;
 import java.util.Optional;
 
+// ★★★ 正しい import 文 ★★★
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+// ★★★ ここまで ★★★
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,38 +30,50 @@ public class ChatRoomController {
         this.usersService = usersService;
     }
 
-    @PostMapping("/chat-room/group/create")
-    public String createGroup(@RequestParam("name") String name, @RequestParam("memberIds") List<Long> memberIds) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        Users creator = usersService.findByEmail(auth.getName()).orElseThrow();
-        ChatRoom group = chatRoomService.createGroupRoom(creator.getId(), name, memberIds);
-        return "redirect:/chat/room/" + group.getId();
-    }
-
     @GetMapping("/chat/room/{roomId}")
     public String enterRoom(@PathVariable Long roomId, Model model) {
+        // ★★★ 正しい呼び出し方: getContext() ★★★
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        // ★★★ ここまで ★★★
+
+        // ログイン中のユーザー情報を取得
         Optional<Users> userOpt = usersService.findByEmail(auth.getName());
-        
         if (userOpt.isEmpty()) {
             return "redirect:/login";
         }
         Users currentUser = userOpt.get();
+        Long currentUserId = currentUser.getId();
 
-        if (!chatRoomService.isUserMemberOfRoom(currentUser.getId(), roomId)) {
-            return "redirect:/home?error=access_denied"; 
+        // メンバーシップチェック
+        if (!chatRoomService.isUserMemberOfRoom(currentUserId, roomId)) {
+            return "redirect:/group?error=access_denied";
         }
 
+        // 既読にする処理 (通知機能ありの場合)
+        chatRoomService.markRoomAsRead(currentUserId, roomId);
+
+        // ルーム情報を取得
         Optional<ChatRoom> roomOpt = chatRoomService.getRoomById(roomId);
         if (roomOpt.isEmpty()) {
-            return "redirect:/home?error=not_found";
+            return "redirect:/group?error=not_found";
         }
+        ChatRoom currentRoom = roomOpt.get();
 
-        model.addAttribute("userId", currentUser.getId());
+        // モデルに情報を追加
+        model.addAttribute("userId", currentUserId);
         model.addAttribute("userName", currentUser.getName());
-        model.addAttribute("roomId", roomOpt.get().getId());
-        model.addAttribute("roomName", roomOpt.get().getName());
-        chatRoomService.markRoomAsRead(currentUser.getId(), roomId);
-        return "group-chat";
+        model.addAttribute("roomId", currentRoom.getId());
+        model.addAttribute("roomName", currentRoom.getName());
+
+        return "group-chat"; // チャット画面を表示
+    }
+
+    // グループ作成処理
+    @PostMapping("/chat-room/group/create")
+    public String createGroup(@RequestParam("name") String name, @RequestParam("memberIds") List<Long> memberIds) {
+         Authentication auth = SecurityContextHolder.getContext().getAuthentication(); // ここも getContext()
+         Users creator = usersService.findByEmail(auth.getName()).orElseThrow();
+         ChatRoom group = chatRoomService.createGroupRoom(creator.getId(), name, memberIds);
+         return "redirect:/chat/room/" + group.getId();
     }
 }
