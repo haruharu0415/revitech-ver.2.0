@@ -1,23 +1,43 @@
 package com.example.revitech.controller;
 
+import java.util.Optional;
+// import java.util.UUID; // ★ UUID は使わない
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import com.example.revitech.entity.Users; // ★ id は Long
+import com.example.revitech.service.UsersService; // ★ findById(Long)
 
 @Controller
-@RequestMapping("/")
 public class CommentController {
 
-    /**
-     * URL: /comment へのGETリクエストを処理します。
-     * * 現状はどの教員か特定せずコメントページに遷移させるための最低限の実装です。
-     * 今後、特定の教員IDを受け取って処理を分岐させる必要があります。（後述の補足を参照）
-     * * @return "comment" (src/main/resources/templates/comment.html を指します)
-     */
+    @Autowired
+    private UsersService usersService;
+
     @GetMapping("/comment")
-    public String showCommentPage(Model model) {
-        // 必要に応じて、ここでコメント一覧のデータなどをModelに追加します
-        return "comment"; 
+    // ★ teacherId の型を Long に戻す ★
+    public String showCommentPage(@RequestParam("teacherId") Long teacherId,
+                                  Model model) {
+
+        // ★ usersService.findById は Long を受け取る ★
+        Optional<Users> teacherOpt = usersService.findById(teacherId);
+
+        if (teacherOpt.isPresent() && teacherOpt.get().getRole() != null && teacherOpt.get().getRole() == 2) {
+            Users teacher = teacherOpt.get();
+            model.addAttribute("teacher", teacher); // Users (id は Long)
+
+            // ★ commentService.getCommentsForTeacher(Long) を呼び出す (仮) ★
+            // List<CommentDto> comments = commentService.getCommentsForTeacher(teacherId);
+            // model.addAttribute("comments", comments);
+
+        } else {
+            return "redirect:/teacher-list?error=TeacherNotFound";
+        }
+
+        return "comment";
     }
 }

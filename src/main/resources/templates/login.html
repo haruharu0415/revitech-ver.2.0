@@ -13,43 +13,39 @@
         }
     </style>
 </head>
-<body class="bg-light">
-    <div class="container login-container">
-        <div class="card">
-            <div class="card-body">
-                <h2 class="card-title text-center mb-4">ログイン</h2>
+<body>
+    <div class="card login-card shadow-sm"> <div class="card-body p-4">
+            <h2 class="card-title text-center mb-4">ログイン</h2>
 
-                <!-- ログイン失敗時のエラーメッセージ -->
-                <div th:if="${param.error}" class="alert alert-danger" role="alert">
-                    ユーザー名またはパスワードが正しくありません。
+            <div th:if="${param.error}" class="alert alert-danger" role="alert">
+                メールアドレスまたはパスワードが正しくありません。
+            </div>
+            <div th:if="${param.logout}" class="alert alert-info" role="alert">
+                ログアウトしました。
+            </div>
+            <div th:if="${signupSuccess}" class="alert alert-success" role="alert" th:text="${signupSuccess}"></div>
+
+            <form th:action="@{/login}" method="post">
+                <div class="mb-3">
+                    <label for="usernameOrEmail" class="form-label">メールアドレスまたはユーザー名</label>
+                    <input type="text" id="usernameOrEmail" name="usernameOrEmail" class="form-control" required autofocus>
                 </div>
-
-                <!-- ★★★ ログアウト成功時のメッセージを追加 ★★★ -->
-                <div th:if="${param.logout}" class="alert alert-success" role="alert">
-                    ログアウトしました。
+                <div class="mb-3">
+                    <label for="password" class="form-label">パスワード</label>
+                    <input type="password" id="password" name="password" class="form-control" required>
                 </div>
-
-                <form th:action="@{/login}" method="post">
-                    <div class="mb-3">
-                        <label for="username" class="form-label">ユーザー名</label>
-                        <input type="text" id="username" name="username" class="form-control" required autofocus>
-                    </div>
-                    <div class="mb-3">
-                        <label for="password" class="form-label">パスワード</label>
-                        <input type="password" id="password" name="password" class="form-control" required>
-                    </div>
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary">ログイン</button>
-                    </div>
-                </form>
-
-                <div class="text-center mt-3">
-                    <a th:href="@{/signup}" class="btn btn-link">新規アカウント作成</a>
+                <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">ログイン</button>
                 </div>
+            </form>
+            <hr class="my-4">
+            <div class="text-center">
+                <p>アカウントをお持ちでないですか？</p>
+                <a th:href="@{/signup}" class="btn btn-outline-success">新規アカウント作成</a>
             </div>
         </div>
     </div>
     <script th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"></script>
 </body>
 </html>
-

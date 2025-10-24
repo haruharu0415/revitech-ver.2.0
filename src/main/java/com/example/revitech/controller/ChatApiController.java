@@ -1,67 +1,117 @@
-package com.example.revitech.controller;
+package com.example.revitech.controller; 
 
 import java.util.List;
+import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable; // Needed for getRoomMembers
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
-import com.example.revitech.dto.ChatRoomWithNotificationDto; // DTO with notification info
-import com.example.revitech.dto.UserSearchDto; // DTO for user info
+import com.example.revitech.dto.ChatMessageDto;
+// ★★★ 修正点: DTO の import をあなたのファイル名に変更 ★★★
+import com.example.revitech.dto.ChatRoomWithNotificationDto;
+import com.example.revitech.dto.RoomMemberDto;
+import com.example.revitech.dto.UserSearchDto;
 import com.example.revitech.entity.Users;
+import com.example.revitech.service.ChatMessageService;
 import com.example.revitech.service.ChatRoomService;
-import com.example.revitech.service.UsersService;
+import com.example.revitech.service.UsersService; 
 
 @RestController
-@RequestMapping("/api/chat-rooms") // Base path for all endpoints in this controller
+@RequestMapping("/api") 
 public class ChatApiController {
 
     private final ChatRoomService chatRoomService;
+    private final ChatMessageService chatMessageService;
     private final UsersService usersService;
 
-    // Constructor injection for required services
-    public ChatApiController(ChatRoomService chatRoomService, UsersService usersService) {
+    @Autowired
+    public ChatApiController(ChatRoomService chatRoomService,
+                             ChatMessageService chatMessageService,
+                             UsersService usersService) {
         this.chatRoomService = chatRoomService;
+        this.chatMessageService = chatMessageService;
         this.usersService = usersService;
     }
 
     /**
-     * API endpoint to get the list of rooms for the currently logged-in user.
-     * Returns data including unread counts and last message timestamps.
-     * Accessed via: GET /api/chat-rooms/my-rooms
+     * ログイン中のユーザーが参加しているルーム一覧を取得
      */
-    @GetMapping("/my-rooms")
-    public List<ChatRoomWithNotificationDto> getMyChatRooms() { // Returns the DTO list
-        // Get authentication details for the current user
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        // Find the user entity based on the authenticated email (or principal name)
-        Users currentUser = usersService.findByEmail(auth.getName())
-            .orElseThrow(() -> new RuntimeException("User not found for authentication: " + auth.getName()));
-        // Call the service method that calculates notifications
-        return chatRoomService.getRoomsForUserWithNotifications(currentUser.getId());
+    // ★★★ 修正点: 戻り値を List<ChatRoomWithNotificationDto> に変更 ★★★
+    @GetMapping("/rooms")
+    public ResponseEntity<List<ChatRoomWithNotificationDto>> getRooms() {
+        Users currentUser = getAuthenticatedUser();
+        
+        List<ChatRoomWithNotificationDto> rooms = chatRoomService.getRoomsForUser(currentUser.getId()); 
+        return ResponseEntity.ok(rooms);
     }
 
     /**
-     * API endpoint to get the list of members for a specific chat room.
-     * Accessed via: GET /api/chat-rooms/{roomId}/members
-     * @param roomId The ID of the room (extracted from the URL path)
-     * @return A list of UserSearchDto objects representing the members.
+     * 特定のルームのメンバー一覧を取得
      */
-    @GetMapping("/{roomId}/members")
-    public List<UserSearchDto> getRoomMembers(@PathVariable Long roomId) {
-        return chatRoomService.getRoomMembers(roomId);
+    @GetMapping("/room/{roomId}/members")
+    public ResponseEntity<List<RoomMemberDto>> getRoomMembers(@PathVariable Long roomId) {
+        Users currentUser = getAuthenticatedUser();
+
+        if (!chatRoomService.isUserMemberOfRoom(currentUser.getId(), roomId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        List<RoomMemberDto> members = chatRoomService.getRoomMembers(roomId);
+        return ResponseEntity.ok(members);
     }
 
-    /*
-    // This endpoint returns ALL chat rooms.
-    // It's generally not needed for regular users and could expose information.
-    // Consider removing it or adding security restrictions (e.g., only for ADMIN role).
-    @GetMapping
-    public List<ChatRoom> getAllChatRooms() {
-        return chatRoomService.getAllRooms();
+    /**
+     * 特定のルームのメッセージ履歴を取得
+     */
+    @GetMapping("/room/{roomId}/messages")
+    public ResponseEntity<List<ChatMessageDto>> getMessages(@PathVariable Long roomId) {
+        Users currentUser = getAuthenticatedUser();
+
+        if (!chatRoomService.isUserMemberOfRoom(currentUser.getId(), roomId)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        
+        List<ChatMessageDto> messages = chatMessageService.getMessagesByRoomId(roomId);
+        return ResponseEntity.ok(messages);
     }
-    */
+
+    /**
+     * ユーザー検索 (DM相手/グループメンバー検索用)
+     */
+    @GetMapping("/chat/search-users")
+    public ResponseEntity<List<UserSearchDto>> searchUsers(@RequestParam String keyword) {
+        Users currentUser = getAuthenticatedUser();
+        
+        List<UserSearchDto> users = usersService.findUsersByNameOrEmail(keyword).stream()
+                .filter(dto -> !dto.getId().equals(currentUser.getId()))
+                .toList();
+                
+        return ResponseEntity.ok(users);
+    }
+
+
+    /**
+     * 認証済みのユーザーエンティティを取得するヘルパーメソッド
+     */
+    private Users getAuthenticatedUser() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || auth.getName() == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Not authenticated");
+        }
+        
+        Optional<Users> userOpt = usersService.findByEmail(auth.getName());
+        if (userOpt.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found");
+        }
+        return userOpt.get();
+    }
 }

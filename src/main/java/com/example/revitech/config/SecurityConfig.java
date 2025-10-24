@@ -17,10 +17,10 @@ import org.springframework.web.filter.CorsFilter; // 【追加】
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+	  @Bean
+	    public PasswordEncoder passwordEncoder() {
+	        return new BCryptPasswordEncoder();
+	    }
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
@@ -55,42 +55,30 @@ public class SecurityConfig {
 
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            // 【修正】CorsFilter Beanを使用するためにCORSを有効化
-            .cors(cors -> {}) 
             .authorizeHttpRequests(authorize -> authorize
-                // 【最重要】静的リソース（WebJars, CSS, JS）を許可
-                .requestMatchers("/css/**", "/js/**", "/webjars/**", "/images/**").permitAll() 
-                
-                // 【最重要】ログイン画面、サインアップ、および公開ページを許可
-                .requestMatchers("/", "/option", "/login", "/signup", "/teacher-list", "/terms").permitAll()
-                
-                // WebSocketエンドポイントも許可
-                .requestMatchers("/ws/**", "/app/**").permitAll() 
-                
-                // 上記以外は認証が必要
+                // ★ /login, /signup, CSS/JSなどは認証なしでアクセス許可
+                .requestMatchers("/login", "/signup", "/css/**", "/js/**", "/webjars/**").permitAll()
+                // 他のURLは認証が必要
                 .anyRequest().authenticated()
             )
-            .formLogin(login -> login
-                .loginPage("/login") 
-                .loginProcessingUrl("/login")
-                .defaultSuccessUrl("/home", true)
-                .failureUrl("/login?error") 
+            .formLogin(formLogin -> formLogin
+                .loginPage("/login") // ログインページのパス
+                .loginProcessingUrl("/login") // ログインフォームのPOST先
+                // ★ ユーザー名として受け取るパラメータ名を変更
+                .usernameParameter("usernameOrEmail")
+                .defaultSuccessUrl("/home", true) // ログイン成功時の遷移先
+                .failureUrl("/login?error=true") // ログイン失敗時の遷移先
                 .permitAll()
             )
             .logout(logout -> logout
-            	    .logoutUrl("/logout") 
-            	    .logoutSuccessUrl("/login?logout")
-            	    .permitAll()
-            	)
-            
-            // WebSocket/STOMPのエンドポイントでCSRF保護を無効化
-            .csrf(csrf -> csrf
-                .ignoringRequestMatchers("/ws/**", "/app/**")
+                .logoutSuccessUrl("/login?logout=true") // ログアウト成功時の遷移先
+                .permitAll()
             );
-        
+            // .csrf(csrf -> csrf.disable()); // CSRF保護を無効にする場合 (非推奨)
 
         return http.build();
     }
 }
+  

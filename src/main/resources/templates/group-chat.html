@@ -128,7 +128,9 @@
 
         async function fetchRoomDetailsAndHistory() {
             try {
-                const membersResponse = await fetch(`/api/chat-rooms/${roomId}/members`);
+                // ★★★ 修正点 1 ★★★
+                // URL を /api/chat-rooms/... から /api/room/... に変更
+                const membersResponse = await fetch(`/api/room/${roomId}/members`);
                 if (!membersResponse.ok) throw new Error('メンバーリストの取得に失敗しました。');
                 const membersData = await membersResponse.json();
                 
@@ -140,7 +142,9 @@
                 });
                 memberCountSpan.textContent = membersData.length;
 
-                const historyResponse = await fetch(`/api/chat/messages/${roomId}`);
+                // ★★★ 修正点 2 ★★★
+                // URL を /api/chat/messages/... から /api/room/.../messages に変更
+                const historyResponse = await fetch(`/api/room/${roomId}/messages`);
                 if (!historyResponse.ok) throw new Error('メッセージ履歴の取得に失敗しました。');
                 const historyData = await historyResponse.json();
                 
