@@ -56,21 +56,19 @@
 
 <script th:inline="javascript">
     /*<![CDATA[*/
-    // HTML要素からデータを取得する
     const dataContainer = document.getElementById('data-container');
-    const senderId = Number(dataContainer.dataset.senderId) || null; // null許容に変更
-    const roomId = Number(dataContainer.dataset.roomId) || null; // null許容に変更
-    // receiverId は HTML テンプレートから直接取得 (receiver.id -> receiver.getId())
-    const receiverId = /*[[${receiver?.id}]]*/ null; // null安全演算子を追加
+    // ★ data属性から Long ID を Number として取得 (完璧なコード)
+    const senderId = Number(dataContainer.dataset.senderId) || null;
+    const roomId = Number(dataContainer.dataset.roomId) || null;
+    // ★ Thymeleaf から Long ID を Number として取得 (完璧なコード)
+    const receiverId = /*[[${receiver?.id}]]*/ null;
 
     if (!senderId || !roomId) {
         console.error("送信者IDまたはルームIDが取得できませんでした。");
-        // エラー表示などの処理を追加
         document.body.innerHTML = '<div class="alert alert-danger">エラー: ページ情報を取得できませんでした。</div>';
     } else {
-        console.log("Room ID loaded:", roomId); // デバッグ用ログ
+        console.log("Room ID loaded:", roomId);
 
-        // DOM要素の取得
         const messageForm = document.getElementById('messageForm');
         const messageInput = document.getElementById('messageInput');
         const messageArea = document.getElementById('messageArea');
@@ -94,6 +92,7 @@
         }
 
         function connect() {
+            // ★ roomId (Number) をチェック (完璧なコード)
             if (!roomId || typeof roomId !== 'number' || roomId <= 0) {
                  console.error('Room ID is invalid or missing:', roomId, '. Skipping WebSocket connection.');
                  return;
@@ -102,18 +101,16 @@
             stompClient = Stomp.over(socket);
             stompClient.connect({}, (frame) => {
                 console.log('Connected to room: ' + roomId);
-                // ★★★ WebSocket購読トピックを group-chat と同じ /topic/group/ に変更 ★★★
+                // ★ roomId (Number) を使って購読 (完璧なコード)
                 stompClient.subscribe('/topic/group/' + roomId, (chatMessage) => {
                     const messageDto = JSON.parse(chatMessage.body);
-                    // ★★★ senderUserId は ChatMessageDto.getSenderUserId() に対応 ★★★
-                    // ★★★ content は ChatMessageDto.getContent() に対応 ★★★
+                    // ★ DTOの senderUserId (Number) と senderId (Number) を String に変換して比較 (完璧なコード)
                     if (String(messageDto.senderUserId) !== String(senderId)) {
                         appendMessage(messageDto.content, false);
                     }
                 });
             }, (error) => {
                 console.error('STOMP Error: WebSocket接続に失敗しました。', error);
-                // 必要ならユーザーにエラー通知
             });
         }
 
@@ -126,11 +123,10 @@
 
             if (stompClient && stompClient.connected) {
                 const chatMessage = {
-                    roomId: roomId,
-                    senderUserId: senderId, // Users.id
-                    content: content      // message body
+                    roomId: roomId,         // ★ Long (Number)
+                    senderUserId: senderId, // ★ Long (Number)
+                    content: content
                 };
-                // ★★★ 送信先は /app/chat.send (変更なし) ★★★
                 stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));
                 appendMessage(content, true);
                 messageInput.value = '';

@@ -2,22 +2,18 @@ package com.example.revitech.repository;
 
 import java.util.List;
 
+// import java.util.UUID; // ★ UUID は使わない
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.example.revitech.entity.ChatMember;
-import com.example.revitech.entity.ChatMemberId;
+import com.example.revitech.entity.ChatMemberId; // ★ 主キー型 (Long, Long)
 
+// ★ 主キー型は ChatMemberId (Long, Long) なので変更なし ★
 public interface ChatMemberRepository extends JpaRepository<ChatMember, ChatMemberId> {
 
-    // 特定のルームIDに属するメンバーを取得
-    // メソッド名で id.roomId を指定
-    List<ChatMember> findByIdRoomId(Long roomId);
-
-    // 特定のユーザーIDが属するメンバーシップを取得
-    // メソッド名で id.userId を指定
+    // ★ userId の型を Long に戻す ★
     List<ChatMember> findByIdUserId(Long userId);
 
-    // 特定のユーザーが特定のルームに存在するかチェック
-    // メソッド名で id.userId と id.roomId を指定
+    // ★ userId の型を Long に戻す ★
     boolean existsByIdUserIdAndIdRoomId(Long userId, Long roomId);
 }

@@ -52,8 +52,8 @@
 
   <script th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"></script>
   <script th:inline="javascript">
-    /*<![CDATA[*/ // ← 開始コメントはこれでOK
-    // Controllerから渡されたログインユーザーIDを使用
+    /*<![CDATA[*/
+    // ★ Controllerから渡される userId は Long (Number) 型
     const authenticatedUserId = /*[[${userId}]]*/ null;
 
     if (!authenticatedUserId) {
@@ -76,16 +76,18 @@
         updateMemberIdsInput();
 
         function addSelectedMemberToUI(id, name) {
-            const userIdStr = String(id);
+            // ★ id は Long (Number) 型で渡ってくる
+            const userIdStr = String(id); // Setで比較するためにStringに変換
+            // ★ authenticatedUserId も Long (Number) 型なので String に変換して比較
             if (userIdStr === String(authenticatedUserId) || selectedMemberIds.has(userIdStr)) return;
             selectedMemberIds.add(userIdStr);
-            selectedMemberData.set(id, name);
+            selectedMemberData.set(id, name); // MapにはNumberで保持 (どちらでもよい)
             if (selectedMembersContainer.children.length === 1 && selectedMembersContainer.children[0].classList.contains('text-muted')) {
                 selectedMembersContainer.innerHTML = '';
             }
             const tag = document.createElement('span');
             tag.className = 'selected-member';
-            tag.setAttribute('data-id', id);
+            tag.setAttribute('data-id', id); // data-id に Long (Number) を設定
             tag.innerHTML = `
                 ${name}
                 <button type="button" class="remove-btn" data-id="${id}" aria-label="削除"><i class="bi bi-x-circle"></i></button>
@@ -95,6 +97,7 @@
         }
 
         function updateMemberIdsInput() {
+            // ★ Long (Number) のIDがカンマ区切りで送信される (Springが List<Long> に変換)
             memberIdsInput.value = Array.from(selectedMemberIds).join(',');
         }
 
@@ -105,9 +108,13 @@
                 return;
             }
             try {
-                const response = await fetch(`/api/users/search?keyword=${encodeURIComponent(keyword)}`);
+                // ★★★ 修正点 ★★★
+                // 前回のエラー (Ambiguous mapping) を避けるため、
+                // ChatApiController側で定義した /api/chat/search-users に変更
+                // (もし UsersApiController側の /api/users/search を使いたい場合は、ここを元に戻してください)
+                const response = await fetch(`/api/chat/search-users?keyword=${encodeURIComponent(keyword)}`);
                 if (!response.ok) throw new Error('ユーザー検索APIエラー');
-                const users = await response.json();
+                const users = await response.json(); // users の id は Long (Number)
                 renderSearchResults(users);
             } catch (error) {
                 console.error('検索エラー:', error);
@@ -120,18 +127,20 @@
             searchResultsDiv.innerHTML = '';
             let resultsFound = false;
             users.forEach(user => {
+                // ★ user.id は Long (Number) 型
                 const userIdStr = String(user.id);
+                // ★ authenticatedUserId も Long (Number) 型
                 if (userIdStr === String(authenticatedUserId) || selectedMemberIds.has(userIdStr)) return;
                 resultsFound = true;
                 const item = document.createElement('a');
                 item.href = '#';
                 item.className = 'list-group-item list-group-item-action py-2';
                 item.textContent = `${user.name} (${user.email})`;
-                item.setAttribute('data-id', user.id);
+                item.setAttribute('data-id', user.id); // Long (Number)
                 item.setAttribute('data-name', user.name);
                 item.addEventListener('click', (e) => {
                     e.preventDefault();
-                    addSelectedMemberToUI(user.id, user.name);
+                    addSelectedMemberToUI(user.id, user.name); // Long (Number) を渡す
                     searchResultsDiv.style.display = 'none';
                     searchInput.value = '';
                     searchInput.focus();
@@ -157,9 +166,9 @@
         selectedMembersContainer.addEventListener('click', (e) => {
             const removeBtn = e.target.closest('.remove-btn');
             if (removeBtn) {
-                const idToRemove = removeBtn.getAttribute('data-id');
+                const idToRemove = removeBtn.getAttribute('data-id'); // String
                 selectedMemberIds.delete(idToRemove);
-                selectedMemberData.delete(Number(idToRemove));
+                selectedMemberData.delete(Number(idToRemove)); // Number
                 const tagToRemove = removeBtn.closest('.selected-member');
                 if (tagToRemove) tagToRemove.remove();
                 updateMemberIdsInput();
@@ -177,7 +186,6 @@
             }
         });
     }
-    // ★★★ 終了コメントを修正 ★★★
     /*]]>*/
   </script>
 </body>

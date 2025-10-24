@@ -1,46 +1,29 @@
 package com.example.revitech.dto;
 
-import com.example.revitech.entity.Users;
+import com.example.revitech.entity.Users; // ★ Users の id は Long
+// import java.util.UUID; // ★ UUID は使わない
 
-// ルームメンバーの情報をAPIで返すためのDTO
 public class RoomMemberDto {
-    private Long id;
+    private Long id; // ★ 型を Long に戻す
     private String name;
     private String email;
-    
-    // Usersエンティティから変換するためのコンストラクタ
+
+    // ★ Usersエンティティ (getId() は Long を返す) から変換 ★
     public RoomMemberDto(Users user) {
-        this.id = user.getId();
+        this.id = user.getId(); // ★ user.getId() は Long を返す
         this.name = user.getName();
         this.email = user.getEmail();
     }
 
-    // デフォルトコンストラクタ (Jacksonで必須)
     public RoomMemberDto() {}
 
     // Getters
-    public Long getId() {
-        return id;
-    }
+    public Long getId() { return id; }
+    public String getName() { return name; }
+    public String getEmail() { return email; }
 
-    public String getName() {
-        return name;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-    
-    // Setters (省略可だが、Jacksonやフレームワークによっては必要)
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
+    // Setters
+    public void setId(Long id) { this.id = id; }
+    public void setName(String name) { this.name = name; }
+    public void setEmail(String email) { this.email = email; }
 }

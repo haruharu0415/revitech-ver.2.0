@@ -36,21 +36,28 @@
         function getAvatarText(name){ return name ? name.charAt(0).toUpperCase() : "?"; }
 
         try {
-          const response = await fetch('/api/chat-rooms/my-rooms');
+          // ★ /api/rooms から DTO のリストを取得
+          const response = await fetch('/api/rooms'); 
           if (!response.ok) throw new Error('ルームリストの取得に失敗しました。');
-          let rooms = await response.json();
+          let rooms = await response.json(); // ★ DTOのリスト
           chatRoomList.innerHTML = ''; // クリア
 
           if (rooms.length === 0) {
               chatRoomList.innerHTML = '<p class="empty-list-message">参加しているグループチャットはありません。</p>';
           } else {
-              // リスト並び替え
+              
+              // ★★★ 修正点 1: DTOの未読件数と最終時刻でソート ★★★
               rooms.sort((a, b) => {
-                  if (a.unreadCount > 0 && b.unreadCount === 0) return -1;
-                  if (b.unreadCount > 0 && a.unreadCount === 0) return 1;
+                  // null チェックを追加
+                  const unreadA = a.unreadCount || 0;
+                  const unreadB = b.unreadCount || 0;
+                  
+                  if (unreadA > 0 && unreadB === 0) return -1;
+                  if (unreadB > 0 && unreadA === 0) return 1;
+                  
                   const timeA = a.lastMessageTimestamp ? new Date(a.lastMessageTimestamp) : new Date(0);
                   const timeB = b.lastMessageTimestamp ? new Date(b.lastMessageTimestamp) : new Date(0);
-                  return timeB - timeA;
+                  return timeB - timeA; // 最終メッセージ時刻で降順
               });
 
               // リスト描画
@@ -67,18 +74,16 @@
                 info.className = 'chat-info';
                 const name = document.createElement('div');
                 name.className = 'chat-name';
-                name.textContent = room.name || 'DM';
+                name.textContent = room.name || 'DM'; 
                 info.appendChild(name);
 
                 const type = document.createElement('div');
                 type.className = 'chat-type';
-                // ★★★ room.type を数値で比較 (Integer 型になったため) ★★★
-                // (値は ChatRoomService の getOrCreateDmRoom, createGroupRoom で設定した値に合わせる)
                 type.textContent = room.type === 1 ? 'ダイレクトメッセージ' : (room.type === 2 ? 'グループチャット' : '不明');
                 info.appendChild(type);
                 div.appendChild(info);
 
-                // 未読バッジ
+                // ★★★ 修正点 2: 未読バッジ (通知機能) を復活 ★★★
                 if (room.unreadCount > 0) {
                     const badge = document.createElement('span');
                     badge.className = 'notification-badge';
@@ -86,7 +91,7 @@
                     div.appendChild(badge);
                 }
 
-                // クリックイベント (room.id は ChatRoom の主キー)
+                // ★ room.id は DTO の id (Long)
                 div.addEventListener('click', () => { window.location.href = `/chat/room/${room.id}`; });
                 chatRoomList.appendChild(div);
               });

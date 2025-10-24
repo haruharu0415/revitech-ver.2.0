@@ -1,73 +1,96 @@
 package com.example.revitech.controller;
 
-import java.util.Optional; // Optional をインポート
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+// import java.util.UUID; // ★ UUID は使わない
+import java.util.stream.Collectors;
 
-import org.springframework.beans.factory.annotation.Autowired; // Autowired をインポート
-// SecurityContextHolder と Authentication をインポート
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model; // Model をインポート
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
-import com.example.revitech.dto.UserProfileDto; // ★ UserProfileDto をインポート
-// Profile 関連の Entity, Repository, DTO をインポート
+import com.example.revitech.dto.TeacherListDto; // ★ id は Long
+import com.example.revitech.dto.UserProfileDto; // ★ id は Long
 import com.example.revitech.entity.StudentProfile;
 import com.example.revitech.entity.TeacherProfile;
-// Users と UsersService をインポート
-import com.example.revitech.entity.Users;
-import com.example.revitech.repository.StudentProfileRepository;
-import com.example.revitech.repository.TeacherProfileRepository;
-import com.example.revitech.service.UsersService;
+import com.example.revitech.entity.Users; // ★ id は Long
+import com.example.revitech.repository.StudentProfileRepository; // ★ 主キー型は Long
+import com.example.revitech.repository.TeacherProfileRepository; // ★ 主キー型は Long
+import com.example.revitech.service.UsersService; // ★ findById(Long)
+// import com.example.revitech.service.ReviewService;
 
 @Controller
 public class UserController {
 
     @Autowired
     private UsersService usersService;
-
-    // ★ プロフィールリポジトリをインジェクション ★
     @Autowired
     private TeacherProfileRepository teacherProfileRepository;
     @Autowired
     private StudentProfileRepository studentProfileRepository;
+    // @Autowired
+    // private ReviewService reviewService;
 
-    // 利用規約ページ
+    // --- terms, group, groupCreate ---
     @GetMapping("/terms")
-    public String terms() {
-        return "terms";
-    }
-
-    // グループ一覧ページ (JavaScript で内容を読み込む想定)
+    public String terms() { return "terms"; }
     @GetMapping("/group")
-    public String group() {
-        return "group";
-    }
-
-    // グループ作成ページ
+    public String group() { return "group"; }
+    
     @GetMapping("/group-create")
     public String groupCreate(Model model) {
-        // ログインユーザーIDを Model に追加
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Optional<Users> userOpt = usersService.findByEmail(auth.getName());
         if (userOpt.isPresent()) {
-            model.addAttribute("userId", userOpt.get().getId());
+            model.addAttribute("userId", userOpt.get().getId()); // ★ Long 型の ID
         } else {
-            return "redirect:/login"; // ログインページへ
+            return "redirect:/login";
         }
         return "group-create";
     }
 
-    // 教員一覧ページ (内容は Thymeleaf で表示する想定)
+    // --- teacher-list ---
     @GetMapping("/teacher-list")
-    public String showTeacherList(Model model) {
-        // ★ 必要に応じて教員リストを取得して Model に追加 ★
-        // List<Users> teachers = usersService.findUsersByRole(2); // 例: Role=2 が教員の場合
-        // model.addAttribute("teachers", teachers);
+    public String showTeacherList(@RequestParam(name = "keyword", required = false, defaultValue = "") String keyword,
+                                  Model model) {
+        List<Users> teachers = usersService.findAllUsers().stream()
+                .filter(u -> u.getRole() != null && u.getRole() == 2) // Role 2 is Teacher
+                .toList();
+
+        List<TeacherListDto> teacherDtos = new ArrayList<>();
+        for (Users teacher : teachers) {
+            // ★ findIconUrl に Long を渡す ★
+            String iconUrl = findIconUrl(teacher.getId(), teacher.getRole());
+            // double averageRating = reviewService.getAverageRatingForTeacher(teacher.getId()); // ★ Long を渡す
+            double averageRating = Math.round((Math.random() * 4.0 + 1.0) * 10.0) / 10.0; // Placeholder
+
+            // ★ TeacherListDto コンストラクタに Long を渡す ★
+            teacherDtos.add(new TeacherListDto(teacher.getId(), teacher.getName(), iconUrl, averageRating));
+        }
+
+        List<TeacherListDto> filteredTeachers;
+        if (!keyword.isBlank()) {
+            String lowerKeyword = keyword.toLowerCase();
+            filteredTeachers = teacherDtos.stream()
+                .filter(t -> t.getName().toLowerCase().contains(lowerKeyword))
+                .collect(Collectors.toList());
+            model.addAttribute("message", filteredTeachers.isEmpty() ? "「" + keyword + "」に一致する教員は見つかりません。" : null);
+        } else {
+            filteredTeachers = teacherDtos;
+        }
+
+        model.addAttribute("teachers", filteredTeachers);
+        model.addAttribute("keyword", keyword);
+
         return "teacher-list";
     }
 
-    // オプションページ
+    // --- option ---
     @GetMapping("/option")
     public String option(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -75,17 +98,16 @@ public class UserController {
 
         if (userOpt.isPresent()) {
             Users user = userOpt.get();
-            // ★ アイコンURLを取得 ★
+            // ★ findIconUrl に Long を渡す ★
             String iconUrl = findIconUrl(user.getId(), user.getRole());
-            // ★ UserProfileDto を作成して Model に追加 ★
+            // ★ UserProfileDto コンストラクタに Long を渡す ★
             UserProfileDto userDto = new UserProfileDto(user.getId(), user.getName(), iconUrl);
-            model.addAttribute("user", userDto); // "user" という名前で渡す
+            model.addAttribute("user", userDto);
         }
-        // ログインしていなければ Security Config で /login にリダイレクトされるはず
         return "option";
     }
 
-    // プロフィール編集ページ (フォーム表示)
+    // --- profile/edit form ---
     @GetMapping("/profile/edit")
     public String profileEditForm(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -93,45 +115,32 @@ public class UserController {
 
         if (userOpt.isPresent()) {
             Users user = userOpt.get();
-            // ★ アイコンURLを取得 ★
+            // ★ findIconUrl に Long を渡す ★
             String iconUrl = findIconUrl(user.getId(), user.getRole());
-             // ★ UserProfileDto を作成して Model に追加 ★
+             // ★ UserProfileDto コンストラクタに Long を渡す ★
             UserProfileDto userDto = new UserProfileDto(user.getId(), user.getName(), iconUrl);
-            model.addAttribute("user", userDto); // "user" という名前で渡す
+            model.addAttribute("user", userDto);
         } else {
-            return "redirect:/login"; // ログインページへ
+            return "redirect:/login";
         }
         return "edit_profile";
     }
 
-    // ★★★ ユーザーIDと役割に基づいてアイコンURLを取得するヘルパーメソッド ★★★
+    // --- Helper method: findIconUrl ---
+    // ★ userId の型を Long に戻す ★
     private String findIconUrl(Long userId, Integer role) {
         String iconUrl = null;
-        // role の値は実際の定義に合わせる (例: 2=Teacher, 3=Student)
         if (role != null) {
-            if (role == 2) { // 教員の場合
-                // TeacherProfile を検索 (主キーは userId)
+            if (role == 2) { // Teacher
+                // ★ findById に Long を渡す ★
                 Optional<TeacherProfile> profileOpt = teacherProfileRepository.findById(userId);
-                if (profileOpt.isPresent()) {
-                    // TeacherProfile の icon_picture カラムに対応する Getter を呼び出す
-                    iconUrl = profileOpt.get().getIconPicture();
-                }
-            } else if (role == 3) { // 学生の場合
-                // StudentProfile を検索 (主キーは userId)
+                if (profileOpt.isPresent()) iconUrl = profileOpt.get().getIconPicture();
+            } else if (role == 3) { // Student
+                // ★ findById に Long を渡す ★
                 Optional<StudentProfile> profileOpt = studentProfileRepository.findById(userId);
-                if (profileOpt.isPresent()) {
-                    // StudentProfile の icon_picture カラムに対応する Getter を呼び出す
-                    iconUrl = profileOpt.get().getIconPicture();
-                }
+                if (profileOpt.isPresent()) iconUrl = profileOpt.get().getIconPicture();
             }
         }
-        // アイコンが見つからない場合は null を返す (HTML側でデフォルト画像を表示)
         return iconUrl;
     }
-    // ★★★ ヘルパーメソッドここまで ★★★
-
-    // (注意: プロフィール更新処理 @PostMapping("/profile/edit") は別途実装が必要です)
-    // このメソッドでは、フォームから name や iconFile を受け取り、
-    // Users と TeacherProfile/StudentProfile の両方を更新する必要があります。
-
 }
