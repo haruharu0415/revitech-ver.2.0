@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-// ★ あなたのDTO (ChatRoomWithNotificationDto) をインポート
 import com.example.revitech.dto.ChatRoomWithNotificationDto;
 import com.example.revitech.dto.RoomMemberDto;
 import com.example.revitech.entity.ChatMember;
@@ -59,9 +58,13 @@ public class ChatRoomService {
             LocalDateTime lastMessageTime = chatMessageRepository.findLatestMessageTimestampByRoomId(room.getId())
                     .orElse(room.getCreatedAt()); 
 
+            // ★★★ 修正点: orElse の値を変更 ★★★
+            // (SQL Server が扱える一番古い日付にする)
             LocalDateTime lastReadTime = chatReadStatusRepository.findByUserIdAndRoomId(userId, room.getId())
                     .map(ChatReadStatus::getLastReadAt)
-                    .orElse(LocalDateTime.MIN); 
+                    // ↓↓↓ LocalDateTime.MIN ではなく、西暦1年1月1日 0時0分 を指定
+                    .orElse(LocalDateTime.of(1, 1, 1, 0, 0)); 
+            // ★★★ 修正ここまで ★★★
 
             int unreadCount = chatMessageRepository.countUnreadMessages(room.getId(), lastReadTime);
 
@@ -102,8 +105,6 @@ public class ChatRoomService {
             }
         }
         Users user1 = usersService.findById(userId1).orElseThrow(() -> new RuntimeException("User not found: " + userId1));
-        
-        // ★★★ 構文エラーを修正 ★★★
         Users user2 = usersService.findById(userId2).orElseThrow(() -> new RuntimeException("User not found: " + userId2));
         
         ChatRoom newRoom = new ChatRoom(1, userId1);
