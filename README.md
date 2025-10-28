@@ -24,7 +24,11 @@ git checkout 自分の名前
 git branch
 
 git add .
+
 git commit -m "ここにコメント"
+
 git push -u origin 自分の名前
+
 もしくは
+
 git pull origin 自分の名前
