@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.example.revitech.dto.ChatRoomWithNotificationDto;
 import com.example.revitech.dto.UserSearchDto;
 import com.example.revitech.entity.ChatMember;
+import com.example.revitech.entity.ChatMemberId;
 import com.example.revitech.entity.ChatMessage;
 import com.example.revitech.entity.ChatReadStatus;
 import com.example.revitech.entity.ChatRoom;
@@ -19,7 +20,6 @@ import com.example.revitech.repository.ChatMemberRepository;
 import com.example.revitech.repository.ChatMessageRepository;
 import com.example.revitech.repository.ChatReadStatusRepository;
 import com.example.revitech.repository.ChatRoomRepository;
-import com.example.revitech.repository.UsersRepository;
 
 @Service
 @Transactional
@@ -27,35 +27,67 @@ public class ChatRoomService {
 
     private final ChatRoomRepository chatRoomRepository;
     private final ChatMemberRepository chatMemberRepository;
-    private final UsersRepository usersRepository;
     private final ChatReadStatusRepository chatReadStatusRepository;
     private final ChatMessageRepository chatMessageRepository;
+    private final UsersService usersService;
 
-    public ChatRoomService(ChatRoomRepository chatRoomRepository, ChatMemberRepository chatMemberRepository, UsersRepository usersRepository, ChatReadStatusRepository chatReadStatusRepository, ChatMessageRepository chatMessageRepository) {
+    public ChatRoomService(ChatRoomRepository chatRoomRepository, ChatMemberRepository chatMemberRepository,
+                           ChatReadStatusRepository chatReadStatusRepository, ChatMessageRepository chatMessageRepository,
+                           UsersService usersService) {
         this.chatRoomRepository = chatRoomRepository;
         this.chatMemberRepository = chatMemberRepository;
-        this.usersRepository = usersRepository;
         this.chatReadStatusRepository = chatReadStatusRepository;
         this.chatMessageRepository = chatMessageRepository;
+        this.usersService = usersService;
     }
 
-    public List<ChatRoomWithNotificationDto> getRoomsForUserWithNotifications(Integer userId) {
-        // ★ 修正: findByUserId を使用
-        List<ChatMember> memberships = chatMemberRepository.findByUserId(userId);
+    public ChatRoom getOrCreateDmRoom(Integer userId1, Integer userId2) {
+        Integer u1 = Math.min(userId1, userId2);
+        Integer u2 = Math.max(userId1, userId2);
 
+        return chatRoomRepository.findDmRoomBetweenUsers(u1, u2).orElseGet(() -> {
+            // ★★★ 修正: usersService.findById を使用する ★★★
+            Users user2 = usersService.findById(userId2).orElseThrow();
+            
+            ChatRoom newDmRoom = new ChatRoom();
+            newDmRoom.setType(1);
+            newDmRoom.setCreatorId(userId1);
+            newDmRoom.setName(user2.getName());
+            ChatRoom savedRoom = chatRoomRepository.save(newDmRoom);
+
+            ChatMemberId memberId1 = new ChatMemberId(savedRoom.getRoomId(), userId1);
+            ChatMemberId memberId2 = new ChatMemberId(savedRoom.getRoomId(), userId2);
+
+            chatMemberRepository.save(new ChatMember(memberId1));
+            chatMemberRepository.save(new ChatMember(memberId2));
+
+            return savedRoom;
+        });
+    }
+
+    public List<UserSearchDto> getRoomMembers(Integer roomId) {
+        List<ChatMember> members = chatMemberRepository.findById_RoomId(roomId);
+        return members.stream()
+            .map(member -> {
+                // ★★★ 修正: usersService.findById を使用する ★★★
+                Users user = usersService.findById(member.getId().getUserId()).orElseThrow();
+                return new UserSearchDto(user.getUsersId(), user.getName(), user.getEmail());
+            })
+            .collect(Collectors.toList());
+    }
+
+    // --- 以下の既存メソッドは変更ありません ---
+
+    public List<ChatRoomWithNotificationDto> getRoomsForUserWithNotifications(Integer userId) {
+        List<ChatMember> memberships = chatMemberRepository.findById_UserId(userId);
         return memberships.stream().map(member -> {
-            ChatRoom room = chatRoomRepository.findById(member.getRoomId()).orElseThrow();
-            
-            // ★ 修正: findByUserIdAndRoomId を使用
+            ChatRoom room = chatRoomRepository.findById(member.getId().getRoomId()).orElseThrow();
             Optional<ChatReadStatus> readStatusOpt = chatReadStatusRepository.findByUserIdAndRoomId(userId, room.getRoomId());
-            
             long unreadCount = readStatusOpt
                 .map(status -> chatMessageRepository.countByRoomIdAndCreatedAtAfter(room.getRoomId(), status.getLastReadAt()))
                 .orElseGet(() -> chatMessageRepository.countByRoomIdAndCreatedAtAfter(room.getRoomId(), LocalDateTime.MIN));
-
             LocalDateTime lastMessageTimestamp = chatMessageRepository.findFirstByRoomIdOrderByCreatedAtDesc(room.getRoomId())
                 .map(ChatMessage::getCreatedAt).orElse(room.getCreatedAt());
-
             return new ChatRoomWithNotificationDto(room, unreadCount, lastMessageTimestamp);
         }).collect(Collectors.toList());
     }
@@ -64,51 +96,19 @@ public class ChatRoomService {
         ChatRoom group = new ChatRoom();
         group.setName(name);
         group.setType(2);
-        group.setCreatorId(creatorId); // ★ 修正: setCreatorId を使用
+        group.setCreatorId(creatorId);
         ChatRoom savedGroup = chatRoomRepository.save(group);
-
-        // ★ 修正: ChatMember のコンストラクタ引数を修正
-        chatMemberRepository.save(new ChatMember(savedGroup.getRoomId(), creatorId));
         
+        chatMemberRepository.save(new ChatMember(new ChatMemberId(savedGroup.getRoomId(), creatorId)));
         memberIds.forEach(memberId -> {
             if (!memberId.equals(creatorId)) {
-                 chatMemberRepository.save(new ChatMember(savedGroup.getRoomId(), memberId));
+                 chatMemberRepository.save(new ChatMember(new ChatMemberId(savedGroup.getRoomId(), memberId)));
             }
         });
-
         return savedGroup;
     }
 
-    public ChatRoom getOrCreateDmRoom(Integer userId1, Integer userId2) {
-        return chatRoomRepository.findDmRoomBetweenUsers(userId1, userId2).orElseGet(() -> {
-            Users user2 = usersRepository.findById(userId2).orElseThrow();
-
-            ChatRoom dmRoom = new ChatRoom();
-            dmRoom.setType(1);
-            dmRoom.setCreatorId(userId1); // ★ 修正: setCreatorId を使用
-            dmRoom.setName(user2.getName());
-            ChatRoom savedRoom = chatRoomRepository.save(dmRoom);
-
-            // ★ 修正: ChatMember のコンストラクタ引数を修正
-            chatMemberRepository.save(new ChatMember(savedRoom.getRoomId(), userId1));
-            chatMemberRepository.save(new ChatMember(savedRoom.getRoomId(), userId2));
-            return savedRoom;
-        });
-    }
-
-    public List<UserSearchDto> getRoomMembers(Integer roomId) {
-        List<ChatMember> members = chatMemberRepository.findByRoomId(roomId);
-        return members.stream()
-            .map(member -> {
-                // ★ 修正: member.getUserId() を使用
-                Users user = usersRepository.findById(member.getUserId()).orElseThrow();
-                return new UserSearchDto(user.getUsersId(), user.getName(), user.getEmail());
-            })
-            .collect(Collectors.toList());
-    }
-
     public void markRoomAsRead(Integer userId, Integer roomId) {
-        // ★ 修正: findByUserIdAndRoomId と ChatReadStatusコンストラクタ引数を修正
         ChatReadStatus status = chatReadStatusRepository.findByUserIdAndRoomId(userId, roomId)
             .orElse(new ChatReadStatus(userId, roomId));
         status.setLastReadAt(LocalDateTime.now());
@@ -120,7 +120,6 @@ public class ChatRoomService {
     }
 
     public boolean isUserMemberOfRoom(Integer userId, Integer roomId) {
-        // ★ 修正: existsByUserIdAndRoomId を使用
-        return chatMemberRepository.existsByUserIdAndRoomId(userId, roomId);
+        return chatMemberRepository.existsById_UserIdAndId_RoomId(userId, roomId);
     }
 }

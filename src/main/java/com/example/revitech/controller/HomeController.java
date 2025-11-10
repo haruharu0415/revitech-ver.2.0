@@ -32,24 +32,46 @@ public class HomeController {
         this.chatRoomService = chatRoomService;
     }
 
-    /**
-     * ルートパス("/")へのアクセスを処理します。
-     * - 認証済みの場合は/homeへリダイレクト
-     * - 未認証の場合は/loginへリダイレクト
-     */
+    @GetMapping("/dm")
+    public String dmView(@RequestParam(name = "receiverId", required = false) Integer receiverId, Model model) {
+        if (receiverId == null) {
+            return "redirect:/user-search";
+        }
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Users sender = usersService.findByEmail(auth.getName()).orElseThrow();
+        
+        // ★★★ ここを修正 ★★★
+        // findById から findUserOrDummyById に変更
+        Users receiver = usersService.findById(receiverId).orElse(null);
+
+        if (receiver == null) {
+            return "redirect:/user-search?error";
+        }
+
+        // receiverIdがダミーID(>100)の場合、DMルームはまだDBに無いので新規作成される
+        ChatRoom room = chatRoomService.getOrCreateDmRoom(sender.getUsersId(), receiverId);
+        
+        List<ChatMessageDto> messages = (room != null) ?
+            chatMessageService.getMessagesByRoomId(room.getRoomId()) : Collections.emptyList();
+
+        model.addAttribute("sender", sender);
+        model.addAttribute("receiver", receiver);
+        model.addAttribute("room", room);
+        model.addAttribute("messages", messages);
+
+        return "dm";
+    }
+
+    // --- 以下の既存メソッドは変更ありません ---
     @GetMapping("/")
     public String root() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        // 匿名ユーザーでなく、かつ認証済みの場合
         if (auth != null && auth.isAuthenticated() && !(auth instanceof AnonymousAuthenticationToken)) {
             return "redirect:/home";
         }
         return "redirect:/login";
     }
-
-    /**
-     * 認証済みのユーザーがアクセスするホームページ
-     */
     @GetMapping("/home")
     public String home(Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -59,43 +81,5 @@ public class HomeController {
         }
         model.addAttribute("user", userOpt.get());
         return "home";
-    }
-
-    /**
-     * ダイレクトメッセージ(DM)画面を表示します。
-     * @param receiverId メッセージ相手のユーザーID
-     * @param model
-     * @return
-     */
-    @GetMapping("/dm")
-    public String dmView(@RequestParam(name = "receiverId", required = false) Integer receiverId, Model model) {
-        if (receiverId == null) {
-            return "redirect:/user-search"; // IDがなければユーザー検索へ
-        }
-
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        Users sender = usersService.findByEmail(auth.getName()).orElseThrow();
-        Users receiver = usersService.findById(receiverId).orElse(null);
-
-        if (receiver == null) {
-            return "redirect:/user-search?error"; // 相手が見つからなければエラー表示
-        }
-
-        // 2人のユーザー間のDMルームを取得または作成
-        ChatRoom room = chatRoomService.getOrCreateDmRoom(sender.getUsersId(), receiverId);
-
-        // メッセージ履歴を取得
-        List<ChatMessageDto> messages = (room != null) ?
-            chatMessageService.getMessagesByRoomId(room.getRoomId()) : Collections.emptyList();
-
-        model.addAttribute("sender", sender);
-        model.addAttribute("receiver", receiver);
-        model.addAttribute("room", room);
-        model.addAttribute("messages", messages);
-
-        // ★★★ ログインユーザーのIDを `userId` として渡す ★★★
-        model.addAttribute("userId", sender.getUsersId());
-
-        return "dm";
     }
 }

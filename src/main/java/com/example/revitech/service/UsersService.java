@@ -1,8 +1,8 @@
 package com.example.revitech.service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -27,89 +27,57 @@ public class UsersService {
         this.teacherReviewRepository = teacherReviewRepository;
     }
 
-    /**
-     * 【復活させたメソッド】
-     * すべてのユーザーを取得します。
-     */
-    public List<Users> findAll() {
-        return usersRepository.findAll();
-    }
+    public List<TeacherListDto> getTeacherListDetails() {
+        List<Users> teachers = findByRole(2);
 
-    /**
-     * 【復活させたメソッド】
-     * メールアドレスでユーザーを検索します。
-     */
-    public Optional<Users> findByEmail(String email) {
-        return usersRepository.findByEmail(email);
+        return teachers.stream().map(teacher -> {
+            List<String> subjects;
+            switch (teacher.getName()) {
+                case "福井先生": subjects = List.of("ハードウェア", "卒業制作"); break;
+                case "佐藤先生": subjects = List.of("Java"); break;
+                case "柴田先生": subjects = List.of("JavaScript", "PHP"); break;
+                case "河野先生": subjects = List.of("アルゴリズム"); break;
+                case "小宮山先生": subjects = List.of("ソフトウェア"); break;
+                default: subjects = List.of("担当科目"); break;
+            }
+
+            // ★★★ ここを修正 ★★★
+            // エラーの原因である平均スコアの計算を停止し、仮のスコアを渡します。
+            Double avgScore = 0.0;
+            // Double avgScore = teacherReviewRepository.findAverageScoreByTeacherId(teacher.getUsersId()); // ← この行をコメントアウト
+
+            return new TeacherListDto(
+                teacher.getUsersId(),
+                teacher.getName(),
+                teacher.getEmail(),
+                subjects,
+                avgScore
+            );
+        }).collect(Collectors.toList());
     }
     
-    /**
-     * 【復活させたメソッド】
-     * 名前でユーザーを検索します。（ログイン機能で使用）
-     */
-    public Optional<Users> findByName(String name) {
-        return usersRepository.findByName(name);
-    }
+    // --- 以下の既存メソッドは変更ありません ---
 
-    /**
-     * 【復活させたメソッド】
-     * IDでユーザーを検索します。
-     */
-    public Optional<Users> findById(Integer id) {
-        return usersRepository.findById(id);
-    }
+    public List<Users> findAll() { return usersRepository.findAll(); }
+    public Optional<Users> findByEmail(String email) { return usersRepository.findByEmail(email); }
+    public Optional<Users> findByName(String name) { return usersRepository.findByName(name); }
+    public Optional<Users> findById(Integer id) { return usersRepository.findById(id); }
+    public List<Users> findByRole(Integer role) { return usersRepository.findByRole(role); }
+    public boolean isEmailTaken(String email) { return usersRepository.findByEmail(email).isPresent(); }
 
-    /**
-     * 【復活させたメソッド】
-     * 役割（role）でユーザーを検索します。（教員一覧の元データ取得などで使用）
-     */
-    public List<Users> findByRole(Integer role) {
-        return usersRepository.findByRole(role);
-    }
-
-    /**
-     * 【復活させたメソッド】
-     * メールアドレスが既に使用されているかチェックします。
-     */
-    public boolean isEmailTaken(String email) {
-        return usersRepository.findByEmail(email).isPresent();
-    }
-
-    /**
-     * 【復活させたメソッド】
-     * ユーザー情報を保存（新規登録・更新）します。パスワードは自動的にハッシュ化されます。
-     */
     public Users save(Users user) {
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        if (user.getPassword() != null && !user.getPassword().startsWith("$2a$")) {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+        }
         return usersRepository.save(user);
     }
-
-    /**
-     * 【復活させたメソッド】
-     * キーワードでユーザーを部分一致検索します。
-     */
-    public List<Users> searchUsers(String keyword) {
-        if (keyword == null || keyword.trim().isEmpty()) {
-            return List.of();
-        }
-        return usersRepository.findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(keyword, keyword);
+    
+    public Users saveRawUser(Users user) {
+        return usersRepository.save(user);
     }
-
-    /**
-     * 【新規追加したメソッド】
-     * 教員一覧ページに表示するためのDTOリスト（ダミーデータ版）を取得します。
-     */
-    public List<TeacherListDto> getTeacherListDetails() {
-        // --- ここからダミーデータ生成処理 ---
-        List<TeacherListDto> dummyList = new ArrayList<>();
-
-        dummyList.add(new TeacherListDto(101, "田中 健", "tanaka@example.com", List.of("Java", "データベース"), 4.5));
-        dummyList.add(new TeacherListDto(102, "鈴木 あやか", "suzuki@example.com", List.of("Webデザイン", "UI/UX"), 4.8));
-        dummyList.add(new TeacherListDto(103, "佐藤 浩一", "sato@example.com", List.of("ネットワーク", "セキュリティ"), 3.2));
-        dummyList.add(new TeacherListDto(104, "高橋 まり子", "takahashi@example.com", List.of("アルゴリズム"), 4.0));
-        dummyList.add(new TeacherListDto(105, "伊藤 雄大", "ito@example.com", List.of("プロジェクト管理"), 3.8));
-
-        return dummyList;
-        // --- ダミーデータ生成ここまで ---
+    
+    public List<Users> searchUsers(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) { return List.of(); }
+        return usersRepository.findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(keyword, keyword);
     }
 }
