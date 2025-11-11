@@ -44,23 +44,25 @@ public class SecurityConfig {
         http
             .cors(cors -> {})
             .authorizeHttpRequests(authorize -> authorize
-                // ★ 修正: CSSやJSなどの静的リソースへのアクセスを許可
+                // 静的リソースへのアクセスを許可
                 .requestMatchers("/css/**", "/js/**", "/webjars/**", "/images/**").permitAll()
                 
-                // ★ 最重要修正: ログイン、新規登録、利用規約など、認証なしでアクセスできるページを明示的に許可
-                .requestMatchers("/", "/login", "/signup", "/option", "/terms").permitAll()
+                // ★★★ ここに /role-select と /role-check を追加します ★★★
+                .requestMatchers(
+                    "/", "/login", "/terms", "/option",
+                    "/role-select", // 役割選択ページ
+                    "/role-check",  // 役割チェック処理
+                    "/signup"       // 登録ページ
+                ).permitAll()
                 
-                // WebSocketエンドポイントを許可
                 .requestMatchers("/ws/**").permitAll()
-                
-                // 上記以外のすべてのリクエストは認証が必要
                 .anyRequest().authenticated()
             )
             .formLogin(login -> login
                 .loginPage("/login")
-                .loginProcessingUrl("/login") // フォームの送信先
-                .usernameParameter("username") // ★ フォームのメールアドレス入力欄のname属性
-                .passwordParameter("password") // ★ フォームのパスワード入力欄のname属性
+                .loginProcessingUrl("/login")
+                .usernameParameter("username")
+                .passwordParameter("password")
                 .defaultSuccessUrl("/home", true)
                 .failureUrl("/login?error")
                 .permitAll()

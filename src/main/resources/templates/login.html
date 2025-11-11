@@ -18,7 +18,6 @@
                 <div th:if="${param.error}" class="alert alert-danger" role="alert">
                     名前、メールアドレス、またはパスワードが正しくありません。
                 </div>
-
                 <div th:if="${param.logout}" class="alert alert-success" role="alert">
                     ログアウトしました。
                 </div>
@@ -38,7 +37,7 @@
                 </form>
 
                 <div class="text-center mt-3">
-                    <a th:href="@{/signup}" class="btn btn-link">新規アカウント作成</a>
+                    <a th:href="@{/role-select}" class="btn btn-link">新規アカウント作成</a>
                 </div>
             </div>
         </div>
