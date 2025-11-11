@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!-- option.html -->
 <html xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
@@ -7,66 +6,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" rel="stylesheet" />
     <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css}">
-    <link th:href="@{/css/menu.css}" rel="stylesheet" />
-    <title>オプション</title>
+    <link th:href="@{/css/menu.css}" rel="stylesheet" /> <title>オプション</title>
+    <style>
+        /* menu.css に定義がない場合のフォールバック */
+        .back-arrow { font-size: 1.5rem; color: #0d6efd; text-decoration: none; }
+        .menu-container { max-width: 400px; margin: auto; }
+        .user-icon-container { width: 100px; height: 100px; } /* アイコンコンテナサイズ指定 */
+        .user-icon-img { width: 100%; height: 100%; object-fit: cover; }
+    </style>
 </head>
 <body>
-   <div class="d-flex pt-3">
-        <a th:href="@{/}" class="text-primary me-4"> 
+   <div class="d-flex pt-3 px-3"> <a th:href="@{/home}" class="text-primary me-4">
             <i class="bi bi-arrow-left back-arrow"></i>
         </a>
-        <div class="menu-container text-center">
-            
-            <!-- アイコン表示部分の修正: imgタグを使用してユーザーアイコンを表示 -->
-            <!-- 【重要】Controllerから渡されたuserオブジェクトのiconUrlを使用します -->
-            <div class="user-icon-container mx-auto mb-3">
-                <img th:if="${user != null}"
-                     th:src="${user.iconUrl != null ? user.iconUrl : '/images/default-icon.png'}" 
+        <div class="menu-container text-center flex-grow-1"> <h2 class="mb-4">オプション</h2>
+
+            <div class="user-icon-container mx-auto mb-3 border rounded-circle overflow-hidden shadow-sm">
+                 <img th:if="${user?.iconUrl != null}"
+                     th:src="${user.iconUrl}"
                      alt="ユーザーアイコン"
-                     class="rounded-circle user-icon-img"
-                     style="width: 100px; height: 100px; object-fit: cover;">
-                
-                <!-- userオブジェクトがない、または未ログイン時のフォールバック -->
-                <div th:unless="${user != null and user.iconUrl != null}" class="user-icon rounded-circle d-flex align-items-center justify-content-center mx-auto">
-                    アイコン
-                </div>
-            </div>
+                     class="user-icon-img">
+                <img th:unless="${user?.iconUrl != null}"
+                      th:src="@{/images/default-icon.png}"
+                      alt="デフォルトアイコン"
+                      class="user-icon-img"
+                      style="background-color: #eee;"> </div>
 
             <div class="login-info mx-auto mb-4 fw-bold fs-5">
-                <!-- ================================== -->
-                <!-- ★ 未ログイン時の表示ブロック ★ -->
-                <!-- ================================== -->
                 <div sec:authorize="isAnonymous()">
-                    <a th:href="@{/login}" class="text-decoration-none text-dark">ログイン</a>
+                    <a th:href="@{/login}" class="btn btn-primary">ログイン</a>
                 </div>
-                
-                <!-- ================================== -->
-                <!-- ★ ログイン済みの時の表示ブロック ★ -->
-                <!-- ================================== -->
+
                 <div sec:authorize="isAuthenticated()">
-                    <!-- ユーザー名を表示 -->
-                    <div class="mb-3">
-                        <span th:text="${user != null ? user.username : 'ユーザー名'}"></span>
+                    <div class="mb-2">
+                        <span th:text="${user?.name ?: 'ユーザー名'}"></span>
                     </div>
-                    
-                    <!-- プロフィール編集ボタンの追加 -->
+
                     <a th:href="@{/profile/edit}" class="btn btn-sm btn-outline-primary mb-3">プロフィールを編集</a>
 
-                    <!-- ログアウトボタン -->
                     <form th:action="@{/logout}" method="post" class="d-inline">
-                        <button type="submit" class="btn btn-sm btn-outline-danger">ログアウト</button>
+                        <input type="hidden" th:name="${_csrf?.parameterName}" th:value="${_csrf?.token}" />
+                        <button type="submit" class="btn btn-sm btn-outline-danger mb-3">ログアウト</button>
                     </form>
                 </div>
             </div>
 
-            <div class="d-flex justify-content-center">
-                <i class="bi bi-brightness-high-fill text-primary fs-2 mt-2 me-3"></i>
-                <div>
-                    <!-- ★★★ ボタンのクラスを変更してサイズを調整 ★★★ -->
-                    <a th:href="@{/terms}" class="btn btn-sm btn-outline-secondary">利用規約</a>
-                </div>
+            <div class="d-flex justify-content-center align-items-center border-top pt-3 mt-3">
+                 <i class="bi bi-file-text-fill text-secondary fs-4 me-2"></i>
+                 <a th:href="@{/terms}" class="btn btn-link text-decoration-none">利用規約</a>
             </div>
-        </div>
+            </div>
     </div>
     <script th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"></script>
 </body>

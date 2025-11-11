@@ -1,20 +1,40 @@
 package com.example.revitech.entity;
 
-import jakarta.persistence.*;
-import lombok.Data;
+import jakarta.persistence.EmbeddedId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "review_question")
-@Data
 public class ReviewQuestion {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+    @EmbeddedId
+    private ReviewQuestionId id;
 
-    @Column(name = "review_id", nullable = false)
-    private Integer reviewId;
+    // // 関連エンティティへのマッピング (任意)
+    // @ManyToOne
+    // @MapsId("reviewId")
+    // @JoinColumn(name = "review_id")
+    // private TeacherReview review;
 
-    @Column(name = "question_id", nullable = false)
-    private Integer questionId;
+    // @ManyToOne
+    // @MapsId("questionId")
+    // @JoinColumn(name = "question_id")
+    // private Question question;
+
+    // ★ レビュー評価の値を保存する列が必要 (例: rating INT)
+
+    public ReviewQuestion() {}
+
+    public ReviewQuestion(ReviewQuestionId id) {
+        this.id = id;
+    }
+
+    public ReviewQuestion(Long reviewId, Long questionId) {
+        this.id = new ReviewQuestionId(reviewId, questionId);
+    }
+
+    // Getters and Setters
+    public ReviewQuestionId getId() { return id; }
+    public void setId(ReviewQuestionId id) { this.id = id; }
 }

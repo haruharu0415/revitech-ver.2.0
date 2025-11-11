@@ -4,80 +4,93 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.revitech.dto.TeacherListDto;
+import com.example.revitech.dto.UserSearchDto;
 import com.example.revitech.entity.Users;
-import com.example.revitech.repository.TeacherReviewRepository;
-import com.example.revitech.repository.UsersRepository;
+import com.example.revitech.repository.UsersRepository; 
 
 @Service
-@Transactional
+@Transactional // ★ DB書き込み(save)と読み取り(find)両方あるのでクラスに付与
 public class UsersService {
 
     private final UsersRepository usersRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final TeacherReviewRepository teacherReviewRepository;
 
-    public UsersService(UsersRepository usersRepository, PasswordEncoder passwordEncoder, TeacherReviewRepository teacherReviewRepository) {
+    @Autowired
+    public UsersService(UsersRepository usersRepository) {
         this.usersRepository = usersRepository;
-        this.passwordEncoder = passwordEncoder;
-        this.teacherReviewRepository = teacherReviewRepository;
     }
 
-    public List<TeacherListDto> getTeacherListDetails() {
-        List<Users> teachers = findByRole(2);
-
-        return teachers.stream().map(teacher -> {
-            List<String> subjects;
-            switch (teacher.getName()) {
-                case "福井先生": subjects = List.of("ハードウェア", "卒業制作"); break;
-                case "佐藤先生": subjects = List.of("Java"); break;
-                case "柴田先生": subjects = List.of("JavaScript", "PHP"); break;
-                case "河野先生": subjects = List.of("アルゴリズム"); break;
-                case "小宮山先生": subjects = List.of("ソフトウェア"); break;
-                default: subjects = List.of("担当科目"); break;
-            }
-
-            // ★★★ ここを修正 ★★★
-            // エラーの原因である平均スコアの計算を停止し、仮のスコアを渡します。
-            Double avgScore = 0.0;
-            // Double avgScore = teacherReviewRepository.findAverageScoreByTeacherId(teacher.getUsersId()); // ← この行をコメントアウト
-
-            return new TeacherListDto(
-                teacher.getUsersId(),
-                teacher.getName(),
-                teacher.getEmail(),
-                subjects,
-                avgScore
-            );
-        }).collect(Collectors.toList());
+    /**
+     * メールアドレスでユーザーを検索します。
+     */
+    public Optional<Users> findByEmail(String email) {
+        return usersRepository.findByEmail(email);
     }
-    
-    // --- 以下の既存メソッドは変更ありません ---
 
-    public List<Users> findAll() { return usersRepository.findAll(); }
-    public Optional<Users> findByEmail(String email) { return usersRepository.findByEmail(email); }
-    public Optional<Users> findByName(String name) { return usersRepository.findByName(name); }
-    public Optional<Users> findById(Integer id) { return usersRepository.findById(id); }
-    public List<Users> findByRole(Integer role) { return usersRepository.findByRole(role); }
-    public boolean isEmailTaken(String email) { return usersRepository.findByEmail(email).isPresent(); }
+    /**
+     * ID (users_id) でユーザーを検索します。
+     */
+    public Optional<Users> findById(Long userId) {
+        return usersRepository.findById(userId);
+    }
 
+    /**
+     * 名前でユーザーを検索します。
+     */
+    public Optional<Users> findByName(String name) {
+        return usersRepository.findByName(name);
+    }
+
+    /**
+     * メールアドレスが既に他のユーザーに使用されているかチェックします。
+     */
+    public boolean isEmailTaken(String email) {
+        // ★ .isPresent() より高速な existsByEmail を使う
+        return usersRepository.existsByEmail(email);
+    }
+
+    // ★★★ これが LoginController から呼ばれるメソッド ★★★
+    /**
+     * ユーザー名 (name) が既に他のユーザーに使用されているかチェックします。
+     */
+    public boolean isNameTaken(String name) {
+        // findByName メソッドを再利用
+        return usersRepository.findByName(name).isPresent();
+    }
+    // ★★★ ここまで ★★★
+
+    /**
+     * 新規ユーザーを保存するか、既存ユーザーを更新します。
+     */
     public Users save(Users user) {
-        if (user.getPassword() != null && !user.getPassword().startsWith("$2a$")) {
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
+        return usersRepository.save(user);
+    }
+
+    /**
+     * 全てのユーザーのリストを取得します。
+     */
+    public List<Users> findAllUsers() {
+        return usersRepository.findAll();
+    }
+
+    /**
+     * 名前またはメールアドレスでユーザーを検索します (DTO)。
+     */
+    public List<UserSearchDto> findUsersByNameOrEmail(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return List.of();
         }
-        return usersRepository.save(user);
-    }
-    
-    public Users saveRawUser(Users user) {
-        return usersRepository.save(user);
-    }
-    
-    public List<Users> searchUsers(String keyword) {
-        if (keyword == null || keyword.trim().isEmpty()) { return List.of(); }
-        return usersRepository.findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(keyword, keyword);
+        
+        // ★ UsersRepository の findByNameContaining... メソッドを呼び出す
+        // (DB側で検索するので高速)
+        List<Users> users = usersRepository.findByNameContainingOrEmailContaining(keyword, keyword);
+
+        // 見つかった Users エンティティを UserSearchDto に変換
+        return users.stream()
+                .map(user -> new UserSearchDto(user.getId(), user.getName(), user.getEmail()))
+                .collect(Collectors.toList());
     }
 }

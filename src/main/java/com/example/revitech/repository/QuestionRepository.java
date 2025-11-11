@@ -1,9 +1,8 @@
 package com.example.revitech.repository;
 
-import com.example.revitech.entity.Question;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
-@Repository
-public interface QuestionRepository extends JpaRepository<Question, Integer> {
+import com.example.revitech.entity.Question;
+
+public interface QuestionRepository extends JpaRepository<Question, Long> {
 }

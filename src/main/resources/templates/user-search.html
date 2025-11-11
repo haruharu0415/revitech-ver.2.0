@@ -19,10 +19,6 @@
     <main class="container p-3">
         <h1 class="mb-4">DM相手を検索</h1>
         
-        <div th:if="${param.error}" class="alert alert-danger" role="alert">
-            指定されたユーザーが見つからなかったため、DMを開始できませんでした。
-        </div>
-
         <form th:action="@{/user-search}" method="get" class="mb-4">
             <div class="input-group">
                 <input type="text" name="keyword" th:value="${keyword}" class="form-control" placeholder="名前またはメールアドレスを入力" required>
@@ -33,22 +29,26 @@
         </form>
 
         <div th:if="${searchResults != null}" class="mt-4">
-            <h2 th:text="'検索結果: ' + (${#lists.isEmpty(searchResults)} ? '0件' : ${#lists.size(searchResults)} + '件')" class="fs-5 mb-3">検索結果</h2>
+            <h2 th:text="'検索結果: ' + (${searchResults.size()} == 0 ? '0件' : ${searchResults.size()} + '件')" class="fs-5 mb-3">検索結果</h2>
 
-            <div th:if="${!#lists.isEmpty(searchResults)}" class="list-group">
-                <a th:each="user : ${searchResults}" th:href="@{/dm(receiverId=${user.usersId})}" class="list-group-item list-group-item-action text-dark">
-                    <div>
-                        <span class="fw-bold" th:text="${user.name}"></span>
-                        <small class="text-muted" th:text="'(' + ${user.email} + ')'"></small>
-                    </div>
-                    <i class="bi bi-chat-dots-fill text-primary"></i>
-                </a>
+            <div th:if="${searchResults.size() > 0}" class="list-group">
+                <div th:each="user : ${searchResults}" class="list-group-item list-group-item-action">
+                    <a th:href="@{/dm(receiverId=${user.id})}" class="text-dark">
+                        <div>
+                            <span class="fw-bold" th:text="${user.name}">学生 太郎</span> 
+                            <small class="text-muted" th:text="'(' + ${user.email} + ')'"></small>
+                        </div>
+                        <i class="bi bi-chat-dots-fill text-primary fs-4"></i>
+                    </a>
+                </div>
             </div>
             
-            <div th:if="${#lists.isEmpty(searchResults)}" class="alert alert-info" role="alert">
+            <div th:unless="${searchResults.size() > 0}" class="alert alert-info" role="alert">
                 該当するユーザーが見つかりませんでした。
             </div>
         </div>
     </main>
+
+    <script th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"></script>
 </body>
 </html>

@@ -1,50 +1,62 @@
 package com.example.revitech.entity;
 
 import java.time.LocalDateTime;
+// import java.util.UUID; // ★ UUID は使わない
+
+import org.hibernate.annotations.CreationTimestamp;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "chat_messages")
-@Data
-@NoArgsConstructor
 public class ChatMessage {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "message_id")
-    private Integer messageId;
+    private Long messageId; // メッセージID (PK)
 
     @Column(name = "room_id", nullable = false)
-    private Integer roomId;
+    private Long roomId; // ルームID (FK)
 
-    // ★ フィールド名を userId に修正
+    // ★ DB の users_id 列 (送信者ID) に対応 ★
     @Column(name = "users_id", nullable = false)
-    private Integer userId;
+    private Long senderUserId; // ★ 型を Long に
 
-    @Column(name = "body", columnDefinition = "TEXT", nullable = false)
-    private String body;
+    @Column(columnDefinition = "TEXT", nullable = false)
+    private String body; // メッセージ本文
 
-    @Column(name = "created_at", nullable = false)
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
-    }
+    // --- コンストラクタ ---
+    public ChatMessage() {}
 
-    // ★ コンストラクタの引数名も修正
-    public ChatMessage(Integer roomId, Integer userId, String body) {
+    public ChatMessage(Long roomId, Long senderUserId, String body) {
         this.roomId = roomId;
-        this.userId = userId;
+        this.senderUserId = senderUserId;
         this.body = body;
     }
+
+    // --- Getters and Setters ---
+    public Long getMessageId() { return messageId; }
+    public void setMessageId(Long messageId) { this.messageId = messageId; }
+
+    public Long getRoomId() { return roomId; }
+    public void setRoomId(Long roomId) { this.roomId = roomId; }
+
+    public Long getSenderUserId() { return senderUserId; }
+    public void setSenderUserId(Long senderUserId) { this.senderUserId = senderUserId; }
+
+    public String getBody() { return body; }
+    public void setBody(String body) { this.body = body; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

@@ -2,14 +2,14 @@ package com.example.revitech.repository;
 
 import java.util.Optional;
 
+// import java.util.UUID; // ★ UUID は使わない
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
 import com.example.revitech.entity.ChatReadStatus;
 
-@Repository
-public interface ChatReadStatusRepository extends JpaRepository<ChatReadStatus, Integer> {
+// ★ ChatReadStatus の主キー型 (id) は Long (BIGINT) なので変更なし ★
+public interface ChatReadStatusRepository extends JpaRepository<ChatReadStatus, Long> {
 
-    // ★ メソッド名を findByUserIdAndRoomId に修正
-    Optional<ChatReadStatus> findByUserIdAndRoomId(Integer userId, Integer roomId);
+    // ★ userId と roomId の型を Long に戻す ★
+    Optional<ChatReadStatus> findByUserIdAndRoomId(Long userId, Long roomId);
 }

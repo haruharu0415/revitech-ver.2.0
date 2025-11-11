@@ -2,17 +2,20 @@ package com.example.revitech.controller;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessageSendingOperations;
 import org.springframework.stereotype.Controller;
 
-import com.example.revitech.dto.ChatMessageDto;
-import com.example.revitech.dto.IncomingMessageDto;
-import com.example.revitech.entity.ChatMessage;
-import com.example.revitech.entity.Users;
-import com.example.revitech.service.ChatMessageService;
-import com.example.revitech.service.ChatRoomService;
-import com.example.revitech.service.UsersService;
+// import java.util.UUID; // ★ UUID は使わない
+
+import com.example.revitech.dto.ChatMessageDto; // ★ senderUserId は Long
+import com.example.revitech.dto.IncomingMessageDto; // ★ senderId は Long
+import com.example.revitech.entity.ChatMessage; // ★ senderUserId は Long
+import com.example.revitech.entity.Users; // ★ id は Long
+import com.example.revitech.service.ChatMessageService; // ★ sendMessage の引数は Long
+import com.example.revitech.service.ChatRoomService; // ★ markRoomAsRead の引数は Long
+import com.example.revitech.service.UsersService; // ★ findById の引数は Long
 
 @Controller
 public class ChatWebSocketController {
@@ -23,7 +26,12 @@ public class ChatWebSocketController {
     private final UsersService usersService;
     private final ChatRoomService chatRoomService;
 
-    public ChatWebSocketController(SimpMessageSendingOperations messagingTemplate, ChatMessageService chatMessageService, UsersService usersService, ChatRoomService chatRoomService) {
+    @Autowired
+    public ChatWebSocketController(
+            SimpMessageSendingOperations messagingTemplate,
+            ChatMessageService chatMessageService,
+            UsersService usersService,
+            ChatRoomService chatRoomService) {
         this.messagingTemplate = messagingTemplate;
         this.chatMessageService = chatMessageService;
         this.usersService = usersService;
@@ -31,29 +39,48 @@ public class ChatWebSocketController {
     }
 
     @MessageMapping("/chat.send")
-    public void sendMessage(IncomingMessageDto messageDto) {
-        // ★ 修正: messageDto.getUserId() を使用
-        logger.info("Received message: RoomId={}, SenderId={}", messageDto.getRoomId(), messageDto.getUserId());
+    public void sendMessage(IncomingMessageDto messageDto) { // ★ DTO (senderId は Long)
+
+        // ★ DTO から Long 型の senderId を取得 ★
+        Long senderId = messageDto.getSenderId();
+        Long roomId = messageDto.getRoomId();
+        String content = messageDto.getContent();
+
+        logger.info("Received message: RoomId={}, SenderId={}", roomId, senderId);
+
+        if (senderId == null || roomId == null || content == null || content.isBlank()) {
+             logger.warn("Invalid message received: {}", messageDto);
+             return;
+        }
+
         try {
-            // ★ 修正: messageDto.getUserId() を渡す
+            // 1. メッセージをDBに保存
+            // ★ chatMessageService.sendMessage の第二引数に Long を渡す ★
             ChatMessage savedMessage = chatMessageService.sendMessage(
-                messageDto.getRoomId(),
-                messageDto.getUserId(),
-                messageDto.getContent()
+                roomId,
+                senderId, // Long 型
+                content
             );
 
-            // ★ 修正: savedMessage.getUserId() を使用
-            chatRoomService.markRoomAsRead(savedMessage.getUserId(), savedMessage.getRoomId());
+            // 2. 送信者自身は既読にする
+            // ★ chatRoomService.markRoomAsRead の第一引数に Long を渡す ★
+            chatRoomService.markRoomAsRead(senderId, roomId);
 
-            // ★ 修正: savedMessage.getUserId() を使用
-            String senderName = usersService.findById(savedMessage.getUserId())
-                                             .map(Users::getName).orElse("不明なユーザー");
+            // 3. 送信者名を取得してDTOを作成
+            // ★ usersService.findById の引数に Long を渡す ★
+            String senderName = usersService.findById(senderId)
+                                      .map(Users::getName)
+                                      .orElse("不明なユーザー");
+
+            // ★ ChatMessageDto コンストラクタ (senderUserId は Long) ★
             ChatMessageDto broadcastDto = new ChatMessageDto(savedMessage, senderName);
-            
-            messagingTemplate.convertAndSend("/topic/room/" + savedMessage.getRoomId(), broadcastDto);
+
+            // 4. ブロードキャスト
+            messagingTemplate.convertAndSend("/topic/group/" + roomId, broadcastDto);
 
         } catch (Exception e) {
-            logger.error("Error sending WebSocket message: {}", e.getMessage(), e);
+            logger.error("Error processing WebSocket message: RoomId={}, SenderId={}: {}",
+                         roomId, senderId, e.getMessage(), e);
         }
     }
 }

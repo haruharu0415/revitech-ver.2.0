@@ -1,23 +1,26 @@
 package com.example.revitech.repository;
 
-import java.util.List;
+import java.util.List; // ★ インポート追加
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
 import com.example.revitech.entity.Users;
 
-@Repository
-public interface UsersRepository extends JpaRepository<Users, Integer> {
+// ★ 主キーの型は Long
+public interface UsersRepository extends JpaRepository<Users, Long> {
 
+    // (ログイン用)
     Optional<Users> findByEmail(String email);
-
-    // ★★★ 新規追加 ★★★
-    // 名前でユーザーを検索するメソッド
+    
+    // (名前重複チェック / ログイン用)
     Optional<Users> findByName(String name);
 
-    List<Users> findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(String nameKeyword, String emailKeyword);
-
-    List<Users> findByRole(Integer role);
+    // ★★★ 以下2つを追加 ★★★
+    
+    // (メール重複チェック (isEmailTaken) 用)
+    boolean existsByEmail(String email);
+    
+    // (ユーザー検索 (findUsersByNameOrEmail) 用)
+    List<Users> findByNameContainingOrEmailContaining(String name, String email);
 }

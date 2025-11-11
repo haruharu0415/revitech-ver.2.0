@@ -1,9 +1,10 @@
 package com.example.revitech.repository;
 
-import com.example.revitech.entity.StudentProfile;
+// import java.util.UUID; // ★ UUID は使わない
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
-@Repository
-public interface StudentProfileRepository extends JpaRepository<StudentProfile, Integer> {
+import com.example.revitech.entity.StudentProfile;
+
+// ★ 主キーの型を Long に戻す ★
+public interface StudentProfileRepository extends JpaRepository<StudentProfile, Long> {
 }

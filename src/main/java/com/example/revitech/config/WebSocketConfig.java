@@ -1,4 +1,6 @@
-package com.example.revitech.config;
+// WebSocketConfig.java の修正後の全文（configureWebSocketTransport を削除）
+
+package com.example.revitech.config; // パッケージ名は適宜修正してください
 
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.MessageBrokerRegistry;
@@ -15,9 +17,13 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
         config.enableSimpleBroker("/topic");
         config.setApplicationDestinationPrefixes("/app");
     }
+    
+    // 【重要】configureWebSocketTransport(WebSocketTransportRegistration registration) メソッドを削除
 
     @Override
     public void registerStompEndpoints(StompEndpointRegistry registry) {
-        registry.addEndpoint("/ws").withSockJS(); 
+        // CORS設定はSecurityConfigに任せる
+        registry.addEndpoint("/ws")
+                .withSockJS(); 
     }
 }

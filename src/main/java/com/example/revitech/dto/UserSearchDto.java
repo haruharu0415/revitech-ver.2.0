@@ -1,15 +1,18 @@
 package com.example.revitech.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
 public class UserSearchDto {
-    // ★ 修正: private Long id; -> private Integer usersId;
-    private Integer usersId;
+    private Long id;
     private String name;
     private String email;
+
+    public UserSearchDto(Long id, String name, String email) {
+        this.id = id;
+        this.name = name;
+        this.email = email;
+    }
+
+    // Getters
+    public Long getId() { return id; }
+    public String getName() { return name; }
+    public String getEmail() { return email; }
 }

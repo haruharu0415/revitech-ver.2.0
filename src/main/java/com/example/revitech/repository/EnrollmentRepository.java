@@ -1,9 +1,9 @@
 package com.example.revitech.repository;
 
-import com.example.revitech.entity.Enrollment;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
-@Repository
-public interface EnrollmentRepository extends JpaRepository<Enrollment, Integer> {
+import com.example.revitech.entity.Enrollment;
+
+public interface EnrollmentRepository extends JpaRepository<Enrollment, Long> {
+     // DB設計修正後、findByTeacherUserId や findByStudentUserId を追加
 }
