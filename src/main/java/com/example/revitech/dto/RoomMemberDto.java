@@ -1,29 +1,23 @@
 package com.example.revitech.dto;
 
-import com.example.revitech.entity.Users; // ★ Users の id は Long
-// import java.util.UUID; // ★ UUID は使わない
+import com.example.revitech.entity.Users;
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
 public class RoomMemberDto {
-    private Long id; // ★ 型を Long に戻す
+
+    // ★ 修正: private Long id; -> private Integer usersId;
+    private Integer usersId;
     private String name;
     private String email;
 
-    // ★ Usersエンティティ (getId() は Long を返す) から変換 ★
     public RoomMemberDto(Users user) {
-        this.id = user.getId(); // ★ user.getId() は Long を返す
+        // ★ 修正: this.id = user.getId(); -> this.usersId = user.getUsersId();
+        this.usersId = user.getUsersId();
         this.name = user.getName();
         this.email = user.getEmail();
     }
-
-    public RoomMemberDto() {}
-
-    // Getters
-    public Long getId() { return id; }
-    public String getName() { return name; }
-    public String getEmail() { return email; }
-
-    // Setters
-    public void setId(Long id) { this.id = id; }
-    public void setName(String name) { this.name = name; }
-    public void setEmail(String email) { this.email = email; }
 }

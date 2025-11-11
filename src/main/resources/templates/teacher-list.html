@@ -6,190 +6,78 @@
     <title>教員一覧</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    
     <style th:replace="~{header :: header-styles}"></style>
-    
     <style>
-        /* ページ全体の背景色 */
-        body {
-            background-color: #f8f9fa;
-        }
-
-        /* 検索バーのスタイル */
-        .search-bar .form-control {
-            border-right: none;
-        }
-        .search-bar .input-group-text {
-            background-color: white;
-            border-left: none;
-        }
-        
-        /* 教員カードのスタイル */
-        .teacher-card {
-            display: flex;
-            align-items: center;
-            padding: 1rem;
-            margin-bottom: 1rem;
-            background-color: #fff;
-            border: 1px solid #dee2e6;
-            border-radius: 0.5rem;
-            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-        }
-
-        /* アイコンのスタイル */
-        .teacher-icon {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin-right: 1rem;
-            border: 2px solid #007bff; /* アイコンに枠線を追加 */
-        }
-        
-        /* 教員情報の部分 */
-        .teacher-info {
-            flex-grow: 1;
-        }
-
-        /* 評価・コメント・DMボタンのコンテナ */
-        .action-btns {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-        }
-
-        /* カテゴリ検索ボックス */
-        #categoryBox {
-            position: absolute;
-            z-index: 1000;
-            background: white;
-            border: 1px solid #ccc;
-            border-top: none;
-            width: calc(100% - 2rem);
-            max-height: 200px;
-            overflow-y: auto;
-            display: none; /* 初期は非表示 */
-        }
-        
-        .hashtag-link {
-            display: block;
-            padding: 8px 15px;
+        .teacher-card-link {
             text-decoration: none;
-            color: #333;
+            color: inherit;
+            display: block;
+            transition: transform 0.2s ease-in-out;
         }
-        
-        .hashtag-link:hover {
-            background-color: #f0f0f0;
+        .teacher-card-link:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.15);
         }
+        .teacher-card {
+            background-color: #ffffff;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .teacher-icon { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; }
+        .star-rating .bi { color: #ffc107; }
+        .subject-badge { font-size: 0.8em; }
     </style>
 </head>
-<body>
+<body class="bg-light">
+    
     <div th:replace="~{header :: header-fragment}"></div>
 
     <main class="container p-3">
-        <h1 class="mb-4 text-center">教員一覧</h1>
+        <h1 class="mb-4">教員一覧</h1>
 
-        <div class="mb-4" id="categorySearchContainer" style="position: relative;">
-            <div class="input-group search-bar">
-                <input type="text" class="form-control" placeholder="ハッシュタグまたは教員名を検索" aria-label="Search" id="categorySearchInput">
-                <span class="input-group-text">
-                    <i class="bi bi-search"></i>
-                </span>
-            </div>
-            <div id="categoryBox">
-                <a href="#" class="hashtag-link">#プログラミング</a>
-                <a href="#" class="hashtag-link">#ウェブデザイン</a>
-                <a href="#" class="hashtag-link">#データベース</a>
-                <a href="#" class="hashtag-link">#セキュリティ</a>
-                <a href="#" class="hashtag-link">#ガチキチ</a> <a href="#" class="hashtag-link">#毒舌</a> </div>
-        </div>
+        <div th:if="${!#lists.isEmpty(teacherList)}">
+            <div th:each="teacher : ${teacherList}">
+                <a th:href="@{/review/{teacherId}(teacherId=${teacher.usersId})}" class="teacher-card-link mb-3">
+                    <div class="teacher-card p-3">
+                        <div class="row align-items-center w-100">
+                            
+                            <div class="col-auto">
+                                <img th:src="@{/images/default-icon.png}" alt="教員アイコン" class="teacher-icon">
+                            </div>
 
-        <div class="teacher-card" th:each="teacher, iterStat : ${T(java.util.List).of(
-             T(com.example.revitech.entity.Users).of(1L, '佐藤 太郎', 'Java/Spring', 'TEACHER'),
-             T(com.example.revitech.entity.Users).of(2L, '田中 花子', 'Webデザイン/UI', 'TEACHER'),
-             T(com.example.revitech.entity.Users).of(3L, '山本 一郎', 'データベース/SQL', 'TEACHER')
-        )}">
-            
-            <a th:href="@{/profile/show/{userId}(userId=${teacher.id})}">
-                <img th:src="@{/images/default-icon.png}" alt="教員アイコン" class="teacher-icon">
-            </a>
+                            <div class="col">
+                                <h5 class="mb-1" th:text="${teacher.name}">教員名</h5>
+                                <div>
+                                    <span th:each="subject : ${teacher.subjects}"
+                                          class="badge rounded-pill bg-secondary me-1 subject-badge"
+                                          th:text="${subject}"></span>
+                                </div>
+                            </div>
 
-            <div class="teacher-info">
-                <h5 class="mb-0" th:text="${teacher.name}">教員名</h5>
-                <p class="text-muted mb-0" th:text="${teacher.specialty}">専門分野</p>
-            </div>
+                            <div class="col-md-3 text-md-center">
+                                <div class="star-rating">
+                                    <span th:each="i : ${#numbers.sequence(1, teacher.getStarsFull())}"><i class="bi bi-star-fill"></i></span>
+                                    <span th:if="${teacher.isHasHalfStar()}"><i class="bi bi-star-half"></i></span>
+                                    <span th:each="i : ${#numbers.sequence(1, teacher.getStarsEmpty())}"><i class="bi bi-star"></i></span>
+                                </div>
+                                <small class="text-muted" th:text="${#numbers.formatDecimal(teacher.averageReviewScore, 1, 1)}"></small>
+                            </div>
 
-            <div class="action-btns">
-                <a th:href="@{/comment}" class="btn btn-sm btn-outline-warning">
-                    <i class="bi bi-star-fill"></i> 評価
-                </a>
-                
-                <a th:href="@{/dm(receiverId=${teacher.id})}" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-chat-dots-fill"></i> DM
+                            <div class="col-md-3 d-flex justify-content-md-end mt-2 mt-md-0">
+                                <a th:href="@{/dm(receiverId=${teacher.usersId})}" class="btn btn-primary" onclick="event.stopPropagation()">DM</a>
+                            </div>
+
+                        </div>
+                    </div>
                 </a>
             </div>
         </div>
-        
-        <th:block th:if="${false}">
-             <script th:inline="javascript">
-                 /*<![CDATA[*/
-                 // ダミーのUsersクラスの代わり
-                 // Spring BootのControllerから渡される実際のUsersオブジェクトを使用してください
-                 var dummyUsers = [
-                     { id: 1, name: '佐藤 太郎', specialty: 'Java/Spring' },
-                     { id: 2, name: '田中 花子', specialty: 'Webデザイン/UI' },
-                     { id: 3, name: '山本 一郎', specialty: 'データベース/SQL' }
-                 ];
-                 /*]]>*/
-             </script>
-        </th:block>
 
+        <div th:if="${#lists.isEmpty(teacherList)}" class="alert alert-info">
+            現在、登録されている教員はいません。
+        </div>
     </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // 必要なHTML要素を取得します
-        const searchContainer = document.getElementById('categorySearchContainer');
-        const searchInput = document.getElementById('categorySearchInput');
-        const categoryBox = document.getElementById('categoryBox');
-        // ハッシュタグのリンク要素を取得
-        const hashtagLinks = document.querySelectorAll('.hashtag-link');
-
-        // 検索バーがフォーカスされた時の処理 (ボックス表示)
-        searchInput.addEventListener('focus', () => {
-            categoryBox.style.display = 'block';
-        });
-
-        // ページ上のどこかでクリックされた時の処理 (ボックス非表示)
-        document.addEventListener('mousedown', (event) => {
-            if (!searchContainer.contains(event.target)) {
-                categoryBox.style.display = 'none';
-            }
-        });
-        
-        // --- ハッシュタグ入力機能 ---
-        
-        // 各ハッシュタグリンクにクリックイベントリスナーを設定
-        hashtagLinks.forEach(link => {
-            link.addEventListener('click', (event) => {
-                // aタグのデフォルト動作（ページ遷移）をキャンセル
-                event.preventDefault(); 
-                
-                const hashtagText = link.textContent.trim();
-                
-                // 検索入力欄にハッシュタグのテキストを設定
-                searchInput.value = hashtagText;
-                
-                // カテゴリボックスを非表示
-                categoryBox.style.display = 'none';
-                
-                // 検索入力欄にフォーカス
-                searchInput.focus();
-                
-                // 【TODO: 検索処理をここに実装】
-                // ハッシュタグで絞り込みを行うJavaScriptまたはサーバーへのリクエストを実装
-            });
-        });
-    </script>
 </body>
 </html>

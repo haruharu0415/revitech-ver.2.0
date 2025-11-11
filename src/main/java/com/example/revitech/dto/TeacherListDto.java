@@ -1,30 +1,39 @@
 package com.example.revitech.dto;
 
-// import java.util.UUID; // ★ UUID は使わない
+import lombok.Data;
+import java.util.List;
 
+@Data
 public class TeacherListDto {
-    private Long id; // ★ 型を Long に戻す
-    private String name;
-    private String iconUrl;
-    private double averageRating;
 
-    // ★ コンストラクタの第一引数の型を Long に戻す ★
-    public TeacherListDto(Long id, String name, String iconUrl, double averageRating) {
-        this.id = id;
+    private Integer usersId;
+    private String name;
+    private String email;
+    private List<String> subjects;
+    private Double averageReviewScore;
+
+    public TeacherListDto(Integer usersId, String name, String email, List<String> subjects, Double averageReviewScore) {
+        this.usersId = usersId;
         this.name = name;
-        this.iconUrl = iconUrl;
-        this.averageRating = averageRating;
+        this.email = email;
+        this.subjects = subjects;
+        this.averageReviewScore = averageReviewScore != null ? averageReviewScore : 0.0; // NULLの場合は0.0に
     }
 
-    // Getters
-    public Long getId() { return id; } // ★ 戻り値の型を Long に
-    public String getName() { return name; }
-    public String getIconUrl() { return iconUrl; }
-    public double getAverageRating() { return averageRating; }
+    // レビューの星評価（整数部）を取得するヘルパーメソッド
+    public int getStarsFull() {
+        return averageReviewScore.intValue();
+    }
 
-    // Setters
-    public void setId(Long id) { this.id = id; } // ★ 引数の型を Long に
-    public void setName(String name) { this.name = name; }
-    public void setIconUrl(String iconUrl) { this.iconUrl = iconUrl; }
-    public void setAverageRating(double averageRating) { this.averageRating = averageRating; }
+    // レビューの星評価（小数部が0.5以上か）を取得するヘルパーメソッド
+    public boolean isHasHalfStar() {
+        return (averageReviewScore - getStarsFull()) >= 0.5;
+    }
+
+    // レビューの空の星の数を取得するヘルパーメソッド
+    public int getStarsEmpty() {
+        int full = getStarsFull();
+        boolean half = isHasHalfStar();
+        return 5 - full - (half ? 1 : 0);
+    }
 }

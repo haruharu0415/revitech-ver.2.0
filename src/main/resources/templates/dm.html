@@ -1,253 +1,139 @@
 <!DOCTYPE html>
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title th:text="${receiver != null} ? 'DMチャット - ' + ${receiver.name} : 'DMチャット'"></title>
-  <link th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" rel="stylesheet" />
-  <script th:src="@{/webjars/sockjs-client/1.5.1/sockjs.min.js}"></script>
-  <script th:src="@{/webjars/stomp-websocket/2.3.4/stomp.min.js}"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-  <style>
-   body { font-family: 'Helvetica', 'Arial', sans-serif; background:#e5ddd5; margin:0; padding:0; }
-.chat-container { max-width:600px; margin:0 auto; background:#fff; border-radius:0; display:flex; flex-direction:column; height:100vh; overflow:hidden; }
-.chat-header { background:#075e54; color:white; padding:15px; font-size:18px; font-weight:bold; display:flex; align-items:center; }
-.chat-header a { color:white; margin-right: 15px; text-decoration: none; }
-.message-area { flex-grow:1; overflow-y:scroll; padding:15px; }
-.message { display:flex; margin-bottom:10px; }
-.my-message { justify-content:flex-end; } /* Align right */
-.other-message { justify-content:flex-start; } /* Align left */
-.message-content {
-    padding:8px 12px;
-    border-radius:15px;
-    max-width:70%; /* Max width */
-    word-wrap:break-word;
-    position: relative;
-    width: -moz-fit-content; /* Fit content width (Firefox) */
-    width: fit-content;      /* Fit content width (Standard) */
-}
-.my-message .message-content {
-    background:#dcf8c6;
-    color:#000;
-    border-bottom-right-radius:2px;
-    box-shadow: 0 1px 1px rgba(0,0,0,0.1);
-    text-align: left; /* Text aligns left inside bubble */
-}
-.other-message .message-content {
-    background:#fff;
-    color:#000;
-    border:1px solid #ddd;
-    border-bottom-left-radius:2px;
-    box-shadow: 0 1px 1px rgba(0,0,0,0.1);
-    text-align: left;
-}
-.message-time {
-    font-size: 0.7rem;
-    color: #999;
-    margin-top: 5px;
-    display: block; /* Put time on new line */
-    text-align: right; /* Align time to the right */
-}
-.input-area { padding:10px; background:#f0f0f0; border-top:1px solid #ddd; display:flex; }
-.input-area input { flex-grow:1; padding:10px; border-radius:20px; border:none; margin-right:10px; }
-.input-area button { background:#075e54; color:white; border:none; border-radius:50%; width:40px; height:40px; font-size:20px; line-height:1; cursor:pointer; }
-.date-separator {
-    text-align: center;
-    margin: 15px 0;
-    font-size: 0.8rem;
-    color: #555;
-    background-color: rgba(210, 210, 210, 0.7);
-    padding: 3px 10px;
-    border-radius: 10px;
-    display: inline-block;
-    left: 50%;
-    position: relative;
-    transform: translateX(-50%);
-    box-shadow: 0 1px 1px rgba(0,0,0,0.1);
-}
-  </style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="${receiver != null} ? 'DMチャット - ' + ${receiver.name} : 'DMチャット'"></title>
+    <link th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" rel="stylesheet" />
+    <script th:src="@{/webjars/sockjs-client/1.5.1/sockjs.min.js}"></script>
+    <script th:src="@{/webjars/stomp-websocket/2.3.4/stomp.min.js}"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        body { font-family: 'Helvetica', 'Arial', sans-serif; background:#e5ddd5; margin:0; padding:0; }
+        .chat-container { max-width:600px; margin:0 auto; background:#fff; border-radius:0; display:flex; flex-direction:column; height:100vh; overflow:hidden; }
+        .chat-header { background:#075e54; color:white; padding:15px; font-size:18px; font-weight:bold; display:flex; align-items:center; }
+        .chat-header a { color:white; margin-right: 15px; text-decoration: none; }
+        .message-area { flex-grow:1; overflow-y:scroll; padding:15px; }
+        .message { display:flex; margin-bottom:10px; }
+        .my-message { justify-content:flex-end; }
+        .other-message { justify-content:flex-start; }
+        .message-content { padding:8px 12px; border-radius:15px; max-width:70%; word-wrap:break-word; }
+        .my-message .message-content { background:#dcf8c6; color:#000; border-bottom-right-radius:2px; }
+        .other-message .message-content { background:#fff; color:#000; border:1px solid #ddd; border-bottom-left-radius:2px; }
+        .input-area { padding:10px; background:#f0f0f0; border-top:1px solid #ddd; display:flex; }
+        .input-area input { flex-grow:1; padding:10px; border-radius:20px; border:none; margin-right:10px; }
+        .input-area button { background:#075e54; color:white; border:none; border-radius:50%; width:40px; height:40px; font-size:20px; line-height:1; cursor:pointer; }
+    </style>
 </head>
 <body>
+  
+    <div class="chat-container">
+        
+        <div class="chat-header">
+            <a th:href="@{/teacher-list}"><i class="bi bi-arrow-left"></i></a>
+            <span th:text="${receiver != null} ? ${receiver.name} : 'DMチャット'"></span>
+        </div>
 
-  <div id="data-container"
-       th:data-room-id="${room?.id}"
-       th:data-sender-id="${sender?.id}">
-  </div>
+        <div class="message-area" id="messageArea">
+            <div th:each="message : ${messages}" 
+                 th:classappend="${message.userId == sender.usersId} ? 'my-message' : 'other-message'"
+                 class="message">
+                <div class="message-content" th:text="${message.body}"></div>
+            </div>
+        </div>
 
-  <div class="chat-container">
-
-    <div class="chat-header">
-      <a th:href="@{/user-search}"><i class="bi bi-arrow-left"></i></a>
-      <span th:text="${receiver != null} ? ${receiver.name} : 'DMチャット'"></span>
+        <div class="input-area">
+            <form id="messageForm" style="display:flex; width:100%;">
+                <input type="text" id="messageInput" placeholder="メッセージを入力..." autocomplete="off" />
+                <button type="submit" id="sendButton"><i class="bi bi-send-fill"></i></button>
+            </form>
+        </div>
     </div>
-
-    <div class="message-area" id="messageArea">
-      </div>
-
-    <div class="input-area">
-      <form id="messageForm" style="display:flex; width:100%;">
-        <input type="text" id="messageInput" placeholder="メッセージを入力..." autocomplete="off" />
-        <button type="submit" id="sendButton"><i class="bi bi-send-fill"></i></button> </form>
-    </div>
-  </div>
 
 <script th:inline="javascript">
     /*<![CDATA[*/
-    const dataContainer = document.getElementById('data-container');
-    const senderId = Number(dataContainer.dataset.senderId) || null; 
-    const roomId = Number(dataContainer.dataset.roomId) || null; 
-    const receiverId = /*[[${receiver?.id}]]*/ null; 
     
-    // ★★★ Thymeleafからメッセージ履歴を取得 (JSで日付処理するため) ★★★
-    const initialMessages = /*[[${messages}]]*/ []; 
+    // ★★★ ThymeleafからJavaScriptへの値の受け渡しを全面的に修正 ★★★
+    const currentUserId = /*[[${sender.usersId}]]*/ 0;
+    const roomId = /*[[${room.roomId}]]*/ 0;
 
-    if (!senderId || !roomId) {
-        console.error("送信者IDまたはルームIDが取得できませんでした。");
-        document.body.innerHTML = '<div class="alert alert-danger">エラー: ページ情報を取得できませんでした。</div>';
-    } else {
-        console.log("Room ID loaded:", roomId);
+    const messageForm = document.getElementById('messageForm');
+    const messageInput = document.getElementById('messageInput');
+    const messageArea = document.getElementById('messageArea');
+    
+    let stompClient = null;
 
-        const messageForm = document.getElementById('messageForm');
-        const messageInput = document.getElementById('messageInput');
-        const messageArea = document.getElementById('messageArea');
-        const sendButton = document.getElementById('sendButton');
+    function appendMessage(messageDto) {
+        const isMyMessage = messageDto.userId === currentUserId;
 
-        let stompClient = null;
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message ' + (isMyMessage ? 'my-message' : 'other-message');
         
-        // ★★★ 最後に表示した日付を記録する変数 ★★★
-        let lastDisplayedDate = null; 
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
+        contentDiv.textContent = messageDto.body;
+        
+        messageDiv.appendChild(contentDiv);
+        messageArea.appendChild(messageDiv);
+        
+        scrollToBottom();
+    }
+    
+    function scrollToBottom() {
+        messageArea.scrollTop = messageArea.scrollHeight;
+    }
 
-        // ★★★ 日付をフォーマットするヘルパー関数 ★★★
-        function formatDate(dateString) {
-            const date = new Date(dateString);
-            const today = new Date();
-            const yesterday = new Date(today);
-            yesterday.setDate(yesterday.getDate() - 1);
-
-            const isSameDate = (d1, d2) => 
-                d1.getFullYear() === d2.getFullYear() &&
-                d1.getMonth() === d2.getMonth() &&
-                d1.getDate() === d2.getDate();
-
-            if (isSameDate(date, today)) {
-                return "今日";
-            } else if (isSameDate(date, yesterday)) {
-                return "昨日";
-            } else {
-                return `${date.getMonth() + 1}月${date.getDate()}日`; 
-            }
+    function connect() {
+        if (!roomId || roomId <= 0) {
+             console.error('Room ID is invalid. Skipping WebSocket connection.');
+             return;
         }
 
-        // ★★★ メッセージ表示関数 (appendMessage -> displayMessage に名前変更 & 日付処理追加) ★★★
-        function displayMessage(messageDto, isInitialLoad = false) {
-            const messageDateStr = new Date(messageDto.createdAt || Date.now()).toLocaleDateString();
+        const socket = new SockJS('/ws');
+        stompClient = Stomp.over(socket);
+        
+        stompClient.connect({}, (frame) => {
+            console.log('Connected: ' + frame);
 
-            // --- 日付区切り線の挿入 ---
-            if (lastDisplayedDate !== messageDateStr) {
-                const dateSeparator = document.createElement('div');
-                dateSeparator.classList.add('date-separator');
-                dateSeparator.textContent = formatDate(messageDto.createdAt || Date.now());
-                messageArea.appendChild(dateSeparator);
-                lastDisplayedDate = messageDateStr; 
-            }
-            // --- ここまで ---
-            
-            const messageDiv = document.createElement('div');
-            // ★ messageDto.senderUserId と比較
-            const isSender = String(messageDto.senderUserId) === String(senderId); 
-            messageDiv.className = 'message ' + (isSender ? 'my-message' : 'other-message');
-            
-            const contentDiv = document.createElement('div');
-            contentDiv.className = 'message-content';
-            contentDiv.textContent = messageDto.content; // ★ messageDto.content を使用
-            
-            // 時刻を追加
-            const timeElement = document.createElement('span');
-            timeElement.classList.add('message-time');
-            timeElement.textContent = new Date(messageDto.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            contentDiv.appendChild(timeElement); // contentDiv の中に入れる
-            
-            messageDiv.appendChild(contentDiv);
-            messageArea.appendChild(messageDiv);
-            
-            // 初回ロード時以外 or 初回ロードの最後のメッセージの時だけスクロール
-            if (!isInitialLoad || (isInitialLoad && messageDto === initialMessages[initialMessages.length - 1])) {
-                 scrollToBottom();
-            }
-        }
-
-        function scrollToBottom() {
-            messageArea.scrollTop = messageArea.scrollHeight;
-        }
-
-        function connect() {
-            if (!roomId || typeof roomId !== 'number' || roomId <= 0) {
-                 console.error('Room ID is invalid or missing:', roomId, '. Skipping WebSocket connection.');
-                 return;
-            }
-            const socket = new SockJS('/ws');
-            stompClient = Stomp.over(socket);
-            stompClient.connect({}, (frame) => {
-                console.log('Connected to room: ' + roomId);
-                stompClient.subscribe('/topic/group/' + roomId, (chatMessage) => {
-                    const messageDto = JSON.parse(chatMessage.body);
-                    if (String(messageDto.senderUserId) !== String(senderId)) {
-                        displayMessage(messageDto); // ★ displayMessage を呼び出す
-                    }
-                });
-            }, (error) => {
-                console.error('STOMP Error: WebSocket接続に失敗しました。', error);
+            stompClient.subscribe('/topic/room/' + roomId, (chatMessage) => {
+                const messageDto = JSON.parse(chatMessage.body);
+                appendMessage(messageDto);
             });
-        }
-
-        function sendMessage(event) {
-            if (event) {
-                event.preventDefault();
-            }
-            const content = messageInput.value.trim();
-            if (!content) return;
-
-            if (stompClient && stompClient.connected) {
-                const chatMessage = {
-                    roomId: roomId,
-                    // ★ senderUserId ではなく senderId を使用 (IncomingMessageDto に合わせる)
-                    senderId: senderId, 
-                    content: content
-                };
-                stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));
-                
-                // ★ 送信したメッセージも DTO 形式で displayMessage に渡す
-                const sentMessageDto = {
-                     roomId: roomId,
-                     senderUserId: senderId, // 自分自身のID
-                     senderName: 'You', // (表示されないので適当でOK)
-                     content: content,
-                     createdAt: new Date().toISOString() // 現在時刻
-                };
-                displayMessage(sentMessageDto); 
-                
-                messageInput.value = '';
-            } else {
-                 console.error("STOMPクライアントが接続されていません。");
-                 alert("チャット接続が切断されています。ページをリロードして再接続してください。");
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            // ★★★ 初回メッセージ履歴を表示 ★★★
-            lastDisplayedDate = null; // 日付追跡をリセット
-            initialMessages.forEach((msg, index) => {
-                displayMessage(msg, true); // 第2引数 true で初回ロードを示す
-            });
-            // ★★★ ここまで ★★★
             
-            // scrollToBottom(); // displayMessage内でスクロールするので不要
-            connect();
-            if (messageForm) {
-                messageForm.addEventListener('submit', sendMessage);
-            }
+        }, (error) => {
+            console.error('STOMP Error:', error);
         });
     }
+
+    function sendMessage(event) {
+        event.preventDefault();
+        const content = messageInput.value.trim();
+        
+        if (content && stompClient) {
+            const chatMessage = {
+                roomId: roomId, 
+                userId: currentUserId,
+                content: content
+            };
+            
+            stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));
+            
+            const myMessageDto = {
+                userId: currentUserId,
+                body: content
+            };
+            appendMessage(myMessageDto);
+
+            messageInput.value = '';
+        }
+    }
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        scrollToBottom();
+        connect();
+        messageForm.addEventListener('submit', sendMessage); 
+    });
+
     /*]]>*/
 </script>
 </body>

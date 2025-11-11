@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
@@ -14,11 +15,69 @@
         .main-content {
             padding: 1rem;
         }
-        .info-box {
-            border: 1px solid #dee2e6;
+
+        /* テキストベースのカルーセル用コンテナスタイルを定義 */
+        .info-carousel {
+            background-color: #e9ecef; /* 明るい灰色 */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* 影を付けて目立たせる */
+            
             padding: 1rem;
             margin-bottom: 1rem;
-            border-radius: 0.25rem;
+            border-radius: 0.5rem; /* 角を丸くする */
+            height: 80px; /* 高さを固定 */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            transition: box-shadow 0.3s ease; 
+        }
+        
+        /* ホバーで影を濃くする */
+        .info-carousel:hover {
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* ページインジケーターの位置を調整 */
+        .carousel-indicators {
+            bottom: -20px; /* デフォルトの配置からさらに20px下に移動 */
+        }
+
+        /* カルーセルのキャプションを中央に配置するためのスタイル */
+        .carousel-caption {
+            /* Bootstrapのデフォルトの絶対配置を解除し、相対配置で中央に配置 */
+            position: relative !important;
+            left: auto !important;
+            right: auto !important;
+            bottom: auto !important;
+            padding: 0;
+            color: #343a40; /* テキストの色を濃いグレーに */
+            text-align: center;
+        }
+
+        .carousel-caption h5 {
+            font-weight: bold; /* タイトルを強調 */
+        }
+
+        .carousel-caption h5,
+        .carousel-caption p {
+            margin: 0;
+            color: inherit; 
+        }
+
+        /* リンク（aタグ）のスタイルをリセットし、青いボタン表示を解除 */
+        .carousel-item a {
+            color: inherit;
+            text-decoration: none;
+            display: block;
+            width: 100%;
+            height: 100%; 
+        }
+
+        /* カルーセルコントロール（矢印）を濃い色にして見やすくする */
+        .carousel-control-prev,
+        .carousel-control-next {
+            width: 5%;
+            filter: invert(30%); 
         }
     </style>
 </head>
@@ -26,10 +85,52 @@
     <div th:replace="~{header :: header-fragment}"></div>
 
     <main class="main-content">
-        <div class="info-box text-center">
-            <h4>学校からのお知らせ</h4>
-        </div>
+        <div id="schoolNewsCarousel" class="carousel slide info-carousel" data-bs-ride="carousel" data-bs-interval="5000">
+            
+            <div class="carousel-indicators">
+                <button type="button" data-bs-target="#schoolNewsCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Slide 1"></button>
+                <button type="button" data-bs-target="#schoolNewsCarousel" data-bs-slide-to="1" aria-label="Slide 2"></button>
+                <button type="button" data-bs-target="#schoolNewsCarousel" data-bs-slide-to="2" aria-label="Slide 3"></button>
+            </div>
 
+            <div class="carousel-inner">
+                <div class="carousel-item active">
+                    <a th:href="@{'https://www.youtube.com/@brianjesse'}">
+                        <div class="carousel-caption d-block">
+                            <h5>📺Youtubeで元気を出しませんか？</h5>
+                            <p class="d-none d-sm-block">更新は不定期！お金なくなったら動画をUPするよ！</p>
+                        </div>
+                    </a>
+                </div>
+                
+                <div class="carousel-item">
+                    <a th:href="@{'https://www.youtube.com/@briangames5771'}">
+                        <div class="carousel-caption d-block">
+                            <h5>🎮ゲームを楽しみませんか？</h5>
+                            <p class="d-none d-sm-block">いろいろなゲームが見れる！みんなで楽しもう。</p>
+                        </div>
+                    </a>
+                </div>
+                
+                <div class="carousel-item">
+                    <a th:href="@{'https://tokyocrafts.jp/collections/ranking?srsltid=AfmBOop2K8GqaneLpPRYhtzrszs2xIByw-0D4V_iWJSlHETSc2TH1Xne'}">
+                        <div class="carousel-caption d-block">
+                            <h5>🏕キャンプしませんか？</h5>
+                            <p class="d-none d-sm-block">おすすめのキャンプギアランキング！いいギアあるかな⚙</p>
+                        </div>
+                    </a>
+                </div>
+            </div>
+
+            <button class="carousel-control-prev" type="button" data-bs-target="#schoolNewsCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#schoolNewsCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Next</span>
+            </button>
+        </div>
         <div class="d-flex justify-content-around mb-3">
             <a th:href="@{/teacher-list}" class="btn btn-secondary">教員一覧</a>
             <a th:href="@{/group}" class="btn btn-secondary">グループ</a>

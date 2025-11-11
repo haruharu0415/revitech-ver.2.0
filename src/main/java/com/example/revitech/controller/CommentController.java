@@ -1,43 +1,41 @@
 package com.example.revitech.controller;
 
 import java.util.Optional;
-// import java.util.UUID; // ★ UUID は使わない
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.PathVariable;
 
-import com.example.revitech.entity.Users; // ★ id は Long
-import com.example.revitech.service.UsersService; // ★ findById(Long)
+import com.example.revitech.entity.Users;
+import com.example.revitech.service.UsersService;
 
 @Controller
 public class CommentController {
 
-    @Autowired
-    private UsersService usersService;
+    private final UsersService usersService;
 
-    @GetMapping("/comment")
-    // ★ teacherId の型を Long に戻す ★
-    public String showCommentPage(@RequestParam("teacherId") Long teacherId,
-                                  Model model) {
+    public CommentController(UsersService usersService) {
+        this.usersService = usersService;
+    }
 
-        // ★ usersService.findById は Long を受け取る ★
+    @GetMapping("/review/{teacherId}")
+    public String showReviewPage(@PathVariable("teacherId") Integer teacherId, Model model) {
+        // ★★★ ここを修正 ★★★
+        // findById から findUserOrDummyById に変更
         Optional<Users> teacherOpt = usersService.findById(teacherId);
 
-        if (teacherOpt.isPresent() && teacherOpt.get().getRole() != null && teacherOpt.get().getRole() == 2) {
-            Users teacher = teacherOpt.get();
-            model.addAttribute("teacher", teacher); // Users (id は Long)
-
-            // ★ commentService.getCommentsForTeacher(Long) を呼び出す (仮) ★
-            // List<CommentDto> comments = commentService.getCommentsForTeacher(teacherId);
-            // model.addAttribute("comments", comments);
-
+        if (teacherOpt.isPresent()) {
+            model.addAttribute("teacher", teacherOpt.get());
         } else {
-            return "redirect:/teacher-list?error=TeacherNotFound";
+            model.addAttribute("teacher", null);
         }
+        
+        return "review";
+    }
 
+    @GetMapping("/comment")
+    public String showCommentPage(Model model) {
         return "comment";
     }
 }

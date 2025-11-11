@@ -1,15 +1,21 @@
 package com.example.revitech.repository;
 
+import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
 
 import com.example.revitech.entity.ChatRoom;
 
-// ★ ChatRoom の主キー型 (room_id) は Long なので変更なし ★
-public interface ChatRoomRepository extends JpaRepository<ChatRoom, Long> {
-    
-    // (UUID に関連する変更はなかったので、ここにあるカスタムメソッドもそのままのはず)
-    // 例:
-    // @Query("SELECT cr FROM ChatRoom cr JOIN cr.members m1 JOIN cr.members m2 " +
-    //        "WHERE cr.type = 1 AND m1.user.id = :userId1 AND m2.user.id = :userId2")
-    // Optional<ChatRoom> findDmRoomByUsers(@Param("userId1") Long userId1, @Param("userId2") Long userId2);
+@Repository
+public interface ChatRoomRepository extends JpaRepository<ChatRoom, Integer> {
+
+    @Query(value = "SELECT r.* FROM chat_rooms r " +
+                   "JOIN chat_members m1 ON r.room_id = m1.room_id " +
+                   "JOIN chat_members m2 ON r.room_id = m2.room_id " +
+                   "WHERE r.type = 1 AND m1.users_id = :userId1 AND m2.users_id = :userId2",
+           nativeQuery = true)
+    Optional<ChatRoom> findDmRoomBetweenUsers(@Param("userId1") Integer userId1, @Param("userId2") Integer userId2);
 }
