@@ -8,12 +8,10 @@ import lombok.Data;
 @Data
 public class SignupForm {
 
-    // ★ 修正: 'username' から 'name' に変更
     @NotBlank(message = "名前は必須です")
     @Size(max = 50, message = "名前は50文字以内で入力してください")
     private String name;
     
-    // ★ 新規追加: 'email' フィールドを追加
     @NotBlank(message = "メールアドレスは必須です")
     @Email(message = "有効なメールアドレスを入力してください")
     @Size(max = 50, message = "メールアドレスは50文字以内で入力してください")
@@ -25,4 +23,8 @@ public class SignupForm {
 
     @NotBlank(message = "確認用パスワードは必須です")
     private String passwordConfirm;
+
+    // ★★★ 新規追加 ★★★
+    // 役割ID (1:生徒, 2:先生, 3:管理者) を保持するフィールド
+    private Integer role;
 }
