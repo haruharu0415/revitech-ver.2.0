@@ -3,258 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>プロフィール詳細</title>
-    
+    <title>教員レビュー</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    
     <style th:replace="~{header :: header-styles}"></style>
-    
     <style>
-        body {
-            background-color: #f8f9fa; 
-        }
-        .profile-card {
-            background-color: #fff;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            padding: 2rem;
-            margin-bottom: 2rem;
-        }
-        .profile-image {
-            width: 150px;
-            height: 150px;
-            border-radius: 50%;
-            object-fit: cover;
-            margin: 0 auto 1.5rem auto;
-            display: block;
-            border: 4px solid #eee;
-        }
-        .user-details p {
-            margin-bottom: 0.5rem;
-            font-size: 1.1rem;
-        }
-        .user-details .label {
-            font-weight: 600;
-            color: #555;
-            min-width: 80px; 
-            display: inline-block;
-        }
-        
-        /* 「先生のひとこと」コンテナ */
-        .teacher-comment-container {
-            margin-bottom: 1.5rem; 
-        }
-        .teacher-comment-container .h6 {
-            font-weight: 600;
-            color: #333;
-        }
-        .teacher-comment-box {
-            background-color: #f9f9f9; 
-            border-radius: 8px; 
-            text-align: left; 
-            min-height: 120px;
-            padding: 1.5rem;
-        }
-
-        /* 「前評判」コンテナ */
-        .chart-container {
-            padding: 1.5rem;
-            background-color: #fff;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-        }
-        
-        /* コメント（一覧）のスタイル */
-        .review-item {
-            background-color: #fff;
-            border: none;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        }
-        .review-item .card-header {
-            background-color: #f9f9f9;
-            border-bottom: 1px solid #eee;
-            font-weight: 600;
-            color: #333;
-        }
-
-        /* コメント（投稿）のスタイル */
-        .comment-input-placeholder {
-            border-bottom: 2px solid #ddd;
-            padding: 8px 2px;
-            color: #777;
-            cursor: text;
-            transition: border-color 0.2s;
-        }
-        .comment-input-placeholder:hover {
-            border-bottom-color: #555;
-        }
-        #comment-input-active textarea {
-            border: none;
-            border-bottom: 2px solid #0d6efd; 
-            box-shadow: none;
-            border-radius: 0;
-            padding-left: 0;
-            margin-bottom: 0.5rem;
-        }
-        #comment-input-active textarea:focus {
-            box-shadow: none;
-        }
-        
-        /* ★★★ (修正) コメント一覧展開ボタンのスタイル ★★★ */
-        .reviews-section {
-            margin-top: 2rem;
-        }
-        /* (修正) 展開ボタンのスタイル */
-        #review-list-toggle-btn {
-            text-decoration: none; /* 下線を削除 */
-            font-weight: 500;
-            display: inline-flex; /* アイコンを隣に表示 */
-            align-items: center;
-        }
-        
-        /* (修正) 展開/折りたたみアイコンのスタイル */
-        #review-list-toggle-btn .toggle-icon {
-            transition: transform 0.3s ease-in-out;
-            margin-left: 0.25rem;
-        }
-        /* (修正) 展開時（collapsedクラスがない時）のアイコンの向き */
-        #review-list-toggle-btn:not(.collapsed) .toggle-icon {
-            transform: rotate(180deg);
-        }
-
+        .star-rating-input { display: flex; flex-direction: row-reverse; justify-content: flex-end; }
+        .star-rating-input input { display: none; }
+        .star-rating-input label { font-size: 2rem; color: #ccc; cursor: pointer; }
+        .star-rating-input input:checked ~ label,
+        .star-rating-input label:hover,
+        .star-rating-input label:hover ~ label { color: #ffc107; }
     </style>
 </head>
 <body class="bg-light">
     <div th:replace="~{header :: header-fragment}"></div>
 
-    <main class="container p-4">
-        <div class="row g-4">
-            
-            <div class="col-lg-4">
-                <div class="profile-card">
-                    <img src="https://via.placeholder.com/150" alt="プロフィール画像" class="profile-image">
-
-                    <div class="teacher-comment-container">
-                        <h5 class="h6 text-start">先生のひとこと</h5>
-                        <div class="teacher-comment-box">
-                            <p th:text="'イベント開催します！'">イベント開催します！</p>
-                        </div>
-                    </div>
-
-                    <div class="user-details text-start">
-                        <p><span class="label">氏名:</span> <span th:text="'塚田 陸'">塚田 陸</span></p>
-                        <p><span class="label">Email:</span> <span th:text="'24yn0112@jec.ac.jp'">24yn0112@jec.ac.jp</span></p>
-                        <p><span class="label">科目:</span> <span th:text="'情報処理科夜間部'">情報処理科夜間部</span></p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-8">
+    <main class="container p-3">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 col-md-10">
                 
-                <div class="chart-container mb-4 text-center">
-                    <h3 class="h5">前評判</h3>
-                    <div style="width:100%; height:300px; background:#fafafa; display:flex; align-items:center; justify-content:center; color:#999; border-radius: 8px;">
-                        (レーダーチャート表示エリア)
-                    </div>
-                </div>
-
-                <div class="card shadow-sm mb-4">
-                    <div class="card-body">
-                        <h3 class="h5 mb-3">レビューを投稿する</h3>
-                        
-                        <div id="comment-input-initial" class="comment-input-placeholder">
-                            <span>コメントを追加...</span>
-                        </div>
-            
-                        <form id="comment-input-active" th:action="@{/review/add}" method="post" style="display: none;">
-                            <div class="mb-2">
-                                <textarea class="form-control" name="comment" rows="3" placeholder="公開コメントとして追加..." required></textarea>
-                            </div>
-                            <div class="text-end">
-                                <button type="button" id="comment-cancel-btn" class="btn btn-sm btn-light border me-2">キャンセル</button>
-                                <button type="submit" class="btn btn-sm btn-primary">コメント</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-
-                <div class="reviews-section">
-                    <h3 class="h5 mb-3">レビューコメント</h3>
+                <div th:if="${teacher != null}">
+                    <h1 class="mb-4">
+                        <span th:text="${teacher.name}">教員名</span> 先生のレビュー
+                    </h1>
                     
-                    <a id="review-list-toggle-btn"
-                       class="mb-3 collapsed" 
-                       data-bs-toggle="collapse" 
-                       href="#review-list-wrapper" 
-                       role="button" 
-                       aria-expanded="false" 
-                       aria-controls="review-list-wrapper">
-                        
-                        <span>コメント (3件) を見る</span> 
-                        <i class="bi bi-chevron-down toggle-icon"></i>
-                    </a>
-                    
-                    <div class="collapse" id="review-list-wrapper">
-                        <div class="card review-item">
-                            <div class="card-header" th:text="'2025/10/30'">2025/10/30</div>
-                            <div class="card-body">
-                                <p class="card-text" th:text="'塚田先生のイベント告知'">塚田先生のイベント告知</p>
+                    <form th:action="@{/review/submit}" method="post">
+                        <input type="hidden" name="teacherId" th:value="${teacher.usersId}">
+
+                        <div class="mb-3">
+                            <label class="form-label">総合評価</label>
+                            <div class="star-rating-input">
+                                <input type="radio" id="star5" name="score" value="5"><label for="star5" title="5 stars">★</label>
+                                <input type="radio" id="star4" name="score" value="4"><label for="star4" title="4 stars">★</label>
+                                <input type="radio" id="star3" name="score" value="3"><label for="star3" title="3 stars">★</label>
+                                <input type="radio" id="star2" name="score" value="2"><label for="star2" title="2 stars">★</label>
+                                <input type="radio" id="star1" name="score" value="1"><label for="star1" title="1 star">★</label>
                             </div>
                         </div>
 
-                        <div class="card review-item">
-                            <div class="card-header" th:text="'2025/10/28'">2025/10/28</div>
-                            <div class="card-body">
-                                <p class="card-text" th:text="'たのしみ！'">たのしみ！</p>
-                            </div>
+                        <div class="mb-4">
+                            <label for="comment" class="form-label">コメント</label>
+                            <textarea id="comment" name="comment" class="form-control" rows="5" placeholder="授業の感想や先生へのメッセージなどを入力してください。"></textarea>
                         </div>
 
-                        <div class="card review-item">
-                            <div class="card-header" th:text="'2025/10/25'">2025/10/25</div>
-                            <div class="card-body">
-                                <p class="card-text" th:text="'絶対に行きます'">絶対に行きます</p>
-                            </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">レビューを投稿する</button>
                         </div>
-                    </div>
+                    </form>
                 </div>
-                
+
+                <div th:if="${teacher == null}" class="alert alert-danger">
+                    指定された教員が見つかりませんでした。
+                </div>
+
             </div>
         </div>
     </main>
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            
-            // --- 既存のコメント「投稿フォーム」のロジック ---
-            const initialInput = document.getElementById('comment-input-initial');
-            const activeForm = document.getElementById('comment-input-active');
-            const cancelBtn = document.getElementById('comment-cancel-btn');
-            const textarea = activeForm.querySelector('textarea');
-
-            if (initialInput && activeForm && cancelBtn && textarea) {
-                initialInput.addEventListener('click', () => {
-                    initialInput.style.display = 'none'; 
-                    activeForm.style.display = 'block';  
-                    textarea.focus(); 
-                });
-                cancelBtn.addEventListener('click', () => {
-                    activeForm.style.display = 'none';   
-                    initialInput.style.display = 'block'; 
-                    textarea.value = ''; 
-                });
-            }
-            
-            // --- (削除) コメント「一覧」の自前JSロジック ---
-            // (BootstrapのCollapse機能を使うため、自前のトグルロジックは不要になりました)
-            
-
-            // --- レーダーチャートのロジック (TODO) ---
-            // (この場所に Chart.js などのコードを記述します)
-        });
-    </script>
 </body>
 </html>
