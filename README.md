@@ -32,3 +32,6 @@ do
     sum=$(awk '{ total += $3 } END { print total }' "$file")
     echo "$file $sum"
 done
+
+
+awk ' ($1 % 2 == 0) && ($2 < 80) && ($3 >= 50)' "$@"
