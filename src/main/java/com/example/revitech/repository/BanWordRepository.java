@@ -1,13 +1,9 @@
 package com.example.revitech.repository;
 
+import com.example.revitech.entity.BanWord;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import com.example.revitech.entity.News;
-
 @Repository
-public interface BanWordRepository extends JpaRepository<News, Integer> {
-
-
-
+public interface BanWordRepository extends JpaRepository<BanWord, Integer> {
 }

@@ -28,6 +28,16 @@ public class ChatRoomController {
         this.usersService = usersService;
     }
 
+    /**
+     * ★★★ 新規追加: チャット一覧ページを表示 ★★★
+     */
+    @GetMapping("/chat-list")
+    public String showChatList() {
+        return "chat-list"; // templates/chat-list.html を表示
+    }
+
+    // --- 既存のメソッド (Integer型に対応済み) ---
+
     @PostMapping("/chat-room/group/create")
     public String createGroup(@RequestParam("name") String name, @RequestParam("memberIds") List<Integer> memberIds) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();

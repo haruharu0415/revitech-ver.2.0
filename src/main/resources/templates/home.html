@@ -14,68 +14,11 @@
         .main-content {
             padding: 1rem;
         }
-
-        /* ★★★ 変更点 ★★★ */
-        /* カルーセルコンテナのスタイル (白黒・シャドウ強調) */
-        .simple-carousel-container {
-            border: 1px solid #eee; /* 白背景に薄い境界線を追加 */
-            padding: 0;
-            margin-bottom: 1.5rem;
-            border-radius: 0.5rem;
-            /* 影を少し濃くして「浮いている感」を強調 */
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15); 
-            background-color: #ffffff; /* 背景色をクリーンな白に */
-            overflow: hidden;
-        }
-
-        /* カルーセルのアイテム（お知らせ）のスタイル */
-        .simple-carousel-item {
-            min-height: 90px; /* 高さは3行分程度を維持 */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0.5rem 1rem;
-            font-size: 0.95rem;
-            color: #333; /* 文字色を濃いグレーに */
-            text-align: center;
-        }
-        .simple-carousel-item p {
-            margin-bottom: 0;
-        }
-
-        /* カルーセルの矢印アイコンのスタイル (黒を強調) */
-        .carousel-control-prev-icon,
-        .carousel-control-next-icon {
-            background-color: #212529; /* アイコンの背景を濃い黒/グレーに */
-            border-radius: 50%;
-            padding: 10px; /* アイコンを少し大きく */
-            background-size: 50% 50%;
-        }
-        .carousel-control-prev, .carousel-control-next {
-            width: 10%;
-        }
-
-        /* お知らせタイトルのスタイル */
-        .carousel-title {
-            font-size: 1.1rem;
-            font-weight: 600; /* フォントを少し太く */
-            color: #212529; /* タイトル文字色を黒に */
-            padding: 0.75rem 0; /* タイトルの上下余白を調整 */
-            background-color: #ffffff; /* タイトル背景も白で統一 */
-            border-bottom: 1px solid #eee; /* 境界線を薄く */
-            border-radius: 0.5rem 0.5rem 0 0;
-        }
-        /* ★★★ 変更ここまで ★★★ */
-        
-        /* リンク全体がコンテンツを覆い、クリック可能であることを保証するためのCSS。*/
-        .simple-carousel-item-link {
-            text-decoration: none; /* リンクの下線を消す */
-            color: inherit; /* テキストの色を親要素から継承 */
-            display: block;
-        }
-        .simple-carousel-item {
-            padding: 15px; /* 元のコンテンツのパディングを維持 */
-            /* 他のスタイルがあれば追加 */
+        .info-box {
+            border: 1px solid #dee2e6;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 0.25rem;
         }
     </style>
 </head>
@@ -83,54 +26,17 @@
     <div th:replace="~{header :: header-fragment}"></div>
 
     <main class="main-content">
-
-        <div id="announcementCarousel" class="carousel slide simple-carousel-container" data-bs-ride="carousel" data-bs-interval="5000">
-            <h4 class="text-center carousel-title">学校からのお知らせ</h4>
-            <div class="carousel-inner">
-                <div class="carousel-item active">
-                    <a th:href="@{/news/register}" class="d-block w-100 simple-carousel-item-link">
-                        <div class="d-block w-100 simple-carousel-item">
-                            <p><strong>【重要】</strong><br>明日は体育祭のため短縮授業です。<br>詳細は学校ホームページをご確認ください。</p>
-                        </div>
-                    </a>
-                </div>
-
-                <div class="carousel-item">
-                    <a href="news/library.html" class="d-block w-100 simple-carousel-item-link">
-                        <div class="d-block w-100 simple-carousel-item">
-                            <p>図書館は来週月曜まで蔵書点検のため閉館です。<br>ご利用予定の方はお早めに。</p>
-                        </div>
-                    </a>
-                </div>
-            
-                <div class="carousel-item">
-                    <a href="news/culture_festival.html" class="d-block w-100 simple-carousel-item-link">
-                        <div class="d-block w-100 simple-carousel-item">
-                            <p>文化祭の実行委員を募集しています。<br>興味のある方は職員室まで。</p>
-                        </div>
-                    </a>
-                </div>
-            </div>
-            
-            <button class="carousel-control-prev" type="button" data-bs-target="#announcementCarousel" data-bs-slide="prev">
-                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                <span class="visually-hidden">前へ</span>
-            </button>
-            <button class="carousel-control-next" type="button" data-bs-target="#announcementCarousel" data-bs-slide="next">
-                <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                <span class="visually-hidden">次へ</span>
-            </button>
+        <div class="info-box text-center">
+            <h4>学校からのお知らせ</h4>
         </div>
-        
-        <div class="d-flex justify-content-around mb-4">
-            <a th:href="@{/news}" class="btn btn-info text-white">
-                <i class="bi bi-bell-fill"></i> お知らせ
-            </a>
-            
-            <a th:href="@{/teacher-list}" class="btn btn-secondary">教員一覧</a>
-            <a th:href="@{/group}" class="btn btn-secondary">グループ</a>
-            <a th:href="@{/user-search}" class="btn btn-secondary">DM</a>
-        </div>
+
+        <div class="d-flex justify-content-around mb-3">
+    <a th:href="@{/teacher-list}" class="btn btn-secondary">教員一覧</a>
+    
+    <a th:href="@{/chat-list}" class="btn btn-secondary">チャット一覧</a>
+    
+    <a th:href="@{/user-search}" class="btn btn-secondary">DM検索</a>
+</div>
 
         <div class="row">
             <div class="col-6">
@@ -146,7 +52,7 @@
                 <div class="list-group">
                     <a href="#" class="list-group-item list-group-item-action">田中先生</a>
                     <a href="#" class="list-group-item list-group-item-action">佐藤先生</a>
-                    <a href="#" class="list-group-item list-group-item-action">鈴木さん</a>
+                    <a href="#" class="list-group-item list-group-item-action">鈴木先生</a>
                 </div>
             </div>
         </div>
