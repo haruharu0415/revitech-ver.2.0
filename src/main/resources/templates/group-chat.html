@@ -4,236 +4,362 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${roomName ?: 'グループチャット'}"></title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <script th:src="@{/webjars/sockjs-client/1.5.1/sockjs.min.js}"></script>
     <script th:src="@{/webjars/stomp-websocket/2.3.4/stomp.min.js}"></script>
     
+    <style th:replace="~{header :: header-styles}"></style> 
+    
     <style>
-        body { display: flex; flex-direction: column; height: 100vh; margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #e5ddd5; }
+        body { display: flex; flex-direction: column; height: 100vh; margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa; }
         .chat-header { background-color: #075e54; color: white; padding: 15px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 5px rgba(0,0,0,0.1); z-index: 10; }
-        .chat-header h2 { margin: 0; font-size: 1.2rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .chat-header a { color: white; text-decoration: none; margin-right: 15px; }
+        .chat-header-title { font-size: 1.1rem; font-weight: 600; }
+        .chat-header-menu { font-size: 1.5rem; cursor: pointer; }
         
-        .chat-container { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .chat-body { display: flex; flex-grow: 1; overflow: hidden; }
         
-        .message { max-width: 70%; padding: 10px 15px; border-radius: 15px; position: relative; font-size: 0.95rem; line-height: 1.4; word-wrap: break-word; }
-        .message.my-message { align-self: flex-end; background-color: #dcf8c6; border-bottom-right-radius: 2px; }
-        .message.other-message { align-self: flex-start; background-color: #fff; border-bottom-left-radius: 2px; }
+        #messageArea { flex-grow: 1; overflow-y: auto; padding: 15px; background-color: #e5ddd5; }
         
-        .message-sender { font-size: 0.75rem; color: #555; margin-bottom: 3px; font-weight: bold; }
+        .message-bubble { max-width: 80%; width: fit-content; padding: 10px 15px; border-radius: 12px; margin-bottom: 8px; word-wrap: break-word; }
+        .message-row { display: flex; flex-direction: column; }
         
-        .input-area { background-color: #f0f0f0; padding: 10px; display: flex; align-items: center; border-top: 1px solid #ddd; }
-        .input-area input { flex: 1; padding: 10px; border-radius: 20px; border: 1px solid #ccc; margin-right: 10px; outline: none; }
-        .input-area button { background-color: #075e54; color: white; border: none; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s; }
-        .input-area button:hover { background-color: #064c44; }
+        /* 自分のメッセージ */
+        .message-row.my-message { align-items: flex-end; }
+        .my-message .message-bubble { background-color: #dcf8c6; box-shadow: 0 1px 1px rgba(0,0,0,0.05); }
+        .my-message .message-meta { text-align: right; }
+        
+        /* 他人のメッセージ */
+        .message-row.other-message { align-items: flex-start; }
+        .other-message .message-bubble { background-color: #ffffff; box-shadow: 0 1px 1px rgba(0,0,0,0.05); }
+        
+        .message-sender { font-size: 0.8rem; font-weight: 600; color: #555; margin-bottom: 2px; }
+        .message-time { font-size: 0.75rem; color: #888; margin-top: 4px; }
 
-        /* サイドバー（メンバーリスト用） */
-        .sidebar { position: fixed; right: -250px; top: 0; width: 250px; height: 100%; background: white; box-shadow: -2px 0 5px rgba(0,0,0,0.2); transition: right 0.3s; z-index: 20; padding-top: 60px; }
-        .sidebar.open { right: 0; }
-        .sidebar-header { position: absolute; top: 0; left: 0; width: 100%; padding: 15px; background: #075e54; color: white; display: flex; justify-content: space-between; align-items: center; }
-        .member-list { list-style: none; padding: 0; margin: 0; }
-        .member-list li { padding: 10px 15px; border-bottom: 1px solid #eee; display: flex; align-items: center; }
-        .member-icon { width: 30px; height: 30px; background: #ccc; border-radius: 50%; margin-right: 10px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; }
+        /* 日付区切り */
+        .date-separator { text-align: center; margin: 15px 0; }
+        .date-separator span { background-color: #d4eaf4; color: #555; padding: 5px 12px; border-radius: 10px; font-size: 0.8rem; font-weight: 600; }
+
+        /* フッター（入力欄） */
+        .chat-footer { background-color: #f0f0f0; padding: 10px 15px; display: flex; align-items: flex-end; border-top: 1px solid #ddd; }
+        #messageInput { flex-grow: 1; border-radius: 20px; border: 1px solid #ccc; padding: 10px 15px; resize: none; max-height: 100px; overflow-y: auto; margin-right: 10px; }
+        #sendMessageButton { border-radius: 50%; width: 45px; height: 45px; background-color: #075e54; border: none; font-size: 1.2rem; }
         
-        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 15; display: none; }
-        .overlay.open { display: block; }
+        /* サイドバー */
+        #userListSidebar { position: fixed; top: 0; right: -300px; width: 300px; height: 100%; background-color: white; box-shadow: -2px 0 5px rgba(0,0,0,0.1); z-index: 100; transition: right 0.3s ease; display: flex; flex-direction: column; }
+        #userListSidebar.open { right: 0; }
+        .sidebar-header { padding: 15px; background-color: #075e54; color: white; font-size: 1.1rem; font-weight: 600; }
+        .sidebar-body { flex-grow: 1; overflow-y: auto; padding: 10px; }
+        .sidebar-user { padding: 10px; border-bottom: 1px solid #f0f0f0; }
     </style>
 </head>
 <body>
 
-    <div class="chat-header">
-        <div class="d-flex align-items-center">
-            <a href="/group"><i class="bi bi-arrow-left fs-4"></i></a>
-            <h2 th:text="${roomName}">ルーム名</h2>
-        </div>
-        <button id="toggleSidebar" class="btn btn-link text-white p-0"><i class="bi bi-list fs-3"></i></button>
-    </div>
+    <header class="chat-header">
+        <a th:href="@{/group}" class="text-white"><i class="bi bi-arrow-left"></i></a>
+        <div class="chat-header-title" th:text="${roomName ?: 'チャット'}"></div>
+        <i class="bi bi-three-dots-vertical chat-header-menu" id="toggleSidebarButton"></i>
+    </header>
 
-    <div class="chat-container" id="messageArea">
-        </div>
+    <div class="chat-body">
+        <div id="messageArea">
+            </div>
 
-    <div class="input-area">
-        <input type="text" id="messageInput" placeholder="メッセージを入力..." autocomplete="off">
-        <button id="sendMessageButton"><i class="bi bi-send-fill"></i></button>
-    </div>
-
-    <div class="overlay" id="overlay"></div>
-    <div class="sidebar" id="userListSidebar">
-        <div class="sidebar-header">
-            <h5 class="m-0">メンバー</h5>
-            <button id="closeSidebar" class="btn-close btn-close-white"></button>
+        <div id="userListSidebar">
+            <div class="sidebar-header">参加メンバー</div>
+            <div class="sidebar-body" id="memberListArea">
+                </div>
         </div>
-        <ul class="member-list" id="memberList">
-            </ul>
     </div>
+    
+    <footer class="chat-footer">
+        <textarea id="messageInput" placeholder="メッセージを入力..." rows="1"></textarea>
+        <button class="btn btn-primary" id="sendMessageButton"><i class="bi bi-send-fill"></i></button>
+    </footer>
 
     <script th:inline="javascript">
     /*<![CDATA[*/
-    // ★★★ 変数名をJava側の変更に合わせて修正 ★★★
+    
+    // --- グローバル変数・定数 ---
     const roomId = /*[[${roomId}]]*/ 0;
-    const userId = /*[[${userId}]]*/ 0;
-    const userName = /*[[${userName}]]*/ '自分';
+    const currentUserId = /*[[${userId}]]*/ 0;
+    const currentUserName = /*[[${userName}]]*/ 'You';
+    
+    const messageArea = document.getElementById('messageArea');
+    const messageInput = document.getElementById('messageInput');
+    const sendMessageButton = document.getElementById('sendMessageButton');
+    const userListSidebar = document.getElementById('userListSidebar');
+    const toggleSidebarButton = document.getElementById('toggleSidebarButton');
+    const memberListArea = document.getElementById('memberListArea');
 
-    document.addEventListener('DOMContentLoaded', () => {
-        if (!roomId || roomId === 0) {
-            alert("ルームIDが無効です。");
-            window.location.href = '/group';
-            return;
-        }
-        initChat();
-    });
+    let stompClient = null;
+    let lastDisplayedDate = null; // 日付追跡用のグローバル変数
 
-    function initChat() {
-        const messageArea = document.getElementById('messageArea');
-        const messageInput = document.getElementById('messageInput');
-        const sendMessageButton = document.getElementById('sendMessageButton');
-        const userListSidebar = document.getElementById('userListSidebar');
-        const toggleSidebarButton = document.getElementById('toggleSidebar');
-        const closeSidebarButton = document.getElementById('closeSidebar');
-        const overlay = document.getElementById('overlay');
+    // --- 関数定義 ---
+
+    /**
+     * ★★★ 新規追加 ★★★
+     * 日付区切り線のテキストをフォーマットする（今日、昨日、または日付）
+     */
+    function formatDateSeparator(dateString) {
+        if (!dateString) return '';
         
-        let stompClient = null;
+        const messageDate = new Date(dateString);
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
 
-        // WebSocket接続
+        // 年月日を比較するために文字列化する (ja-JPロケールを指定)
+        const msgDateStr = messageDate.toLocaleDateString('ja-JP');
+        const todayStr = today.toLocaleDateString('ja-JP');
+        const yesterdayStr = yesterday.toLocaleDateString('ja-JP');
+
+        if (msgDateStr === todayStr) {
+            return '今日';
+        } else if (msgDateStr === yesterdayStr) {
+            return '昨日';
+        } else {
+            // それ以外はロケールに従った日付文字列（例: "2025/11/09"）
+            return msgDateStr;
+        }
+    }
+
+    /**
+     * メッセージを表示エリアに追加する
+     */
+    function displayMessage(messageDto) {
+        // 日付区切り線の処理
+        if (messageDto.createdAt) {
+            
+            // ★★★ 修正箇所 (1/2) ★★★
+            // 比較用の日付文字列 (ロケールを指定)
+            const messageDateStr = new Date(messageDto.createdAt).toLocaleDateString('ja-JP');
+            
+            if (lastDisplayedDate !== messageDateStr) {
+                lastDisplayedDate = messageDateStr;
+                
+                const dateDiv = document.createElement('div');
+                dateDiv.className = 'date-separator';
+                
+                const dateSpan = document.createElement('span');
+                
+                // ★★★ 修正箇所 (2/2) ★★★
+                // 新しいヘルパー関数を使って「今日」「昨日」表示に対応
+                dateSpan.textContent = formatDateSeparator(messageDto.createdAt);
+                
+                dateDiv.appendChild(dateSpan);
+                messageArea.appendChild(dateDiv);
+            }
+        }
+
+        const messageRow = document.createElement('div');
+        messageRow.className = 'message-row';
+
+        const isMyMessage = messageDto.userId === currentUserId;
+        messageRow.classList.add(isMyMessage ? 'my-message' : 'other-message');
+
+        const messageBubble = document.createElement('div');
+        messageBubble.className = 'message-bubble';
+
+        // 送信者名 (自分以外のメッセージにのみ表示)
+        if (!isMyMessage && messageDto.senderName) {
+            const senderDiv = document.createElement('div');
+            senderDiv.className = 'message-sender';
+            senderDiv.textContent = messageDto.senderName;
+            messageBubble.appendChild(senderDiv);
+        }
+
+        // メッセージ本文
+        const bodyDiv = document.createElement('div');
+        bodyDiv.textContent = messageDto.body;
+        messageBubble.appendChild(bodyDiv);
+
+        // タイムスタンプ
+        if (messageDto.createdAt) {
+            const timeDiv = document.createElement('div');
+            timeDiv.className = 'message-time';
+            timeDiv.textContent = formatTimestamp(messageDto.createdAt);
+            messageBubble.appendChild(timeDiv);
+        }
+        
+        messageRow.appendChild(messageBubble);
+        messageArea.appendChild(messageRow);
+
+        // 常に一番下にスクロール
+        messageArea.scrollTop = messageArea.scrollHeight;
+    }
+
+    /**
+     * タイムスタンプを HH:mm 形式にフォーマットする
+     */
+    function formatTimestamp(timestamp) {
+        if (!timestamp) return '';
+        const date = new Date(timestamp);
+        return date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    /**
+     * メンバー一覧をサイドバーに表示する
+     */
+    async function fetchAndDisplayMembers() {
+        if (!roomId || roomId <= 0) return;
+        try {
+            const response = await fetch(`/api/chat-rooms/${roomId}/members`);
+            if (!response.ok) throw new Error('メンバーの取得に失敗');
+            
+            const members = await response.json();
+            memberListArea.innerHTML = ''; // 一旦クリア
+            
+            members.forEach(member => {
+                const memberDiv = document.createElement('div');
+                memberDiv.className = 'sidebar-user';
+                memberDiv.textContent = member.name;
+                // (もしUserSearchDtoにemailが含まれているなら)
+                // memberDiv.innerHTML = `${member.name} <small class="text-muted d-block">${member.email}</small>`;
+                memberListArea.appendChild(memberDiv);
+            });
+            
+        } catch (error) {
+            console.error(error);
+            memberListArea.innerHTML = '<div class="alert alert-warning m-2">メンバーの取得に失敗しました。</div>';
+        }
+    }
+
+    /**
+     * WebSocket接続処理
+     */
+    function connect() {
+        if (stompClient) {
+             console.log("Already connected or connecting.");
+             return;
+        }
+        
+        if (!roomId || roomId <= 0) {
+             console.error('Room ID is invalid. Skipping WebSocket connection.');
+             return;
+        }
+
         const socket = new SockJS('/ws');
         stompClient = Stomp.over(socket);
         
-        // デバッグログを抑制したい場合はコメントアウト
-        // stompClient.debug = null;
-
         stompClient.connect({}, (frame) => {
             console.log('Connected: ' + frame);
-            
-            // ★★★ 購読URLを修正: /topic/room/{roomId} ★★★
-            stompClient.subscribe(`/topic/room/${roomId}`, (payload) => {
-                const message = JSON.parse(payload.body);
-                displayMessage(message);
+
+            // ルームのトピックを購読
+            stompClient.subscribe('/topic/room/' + roomId, (chatMessage) => {
+                const messageDto = JSON.parse(chatMessage.body);
+                displayMessage(messageDto);
             });
-            
-            // 接続完了後に履歴とメンバーを取得
-            fetchMessageHistory();
-            fetchRoomMembers();
             
         }, (error) => {
             console.error('STOMP Error:', error);
-            displayError("チャットサーバーへの接続に失敗しました。");
+            displayError("チャットサーバーへの接続に失敗しました。リロードしてください。");
         });
+    }
 
-        // メッセージ送信処理
-        function sendMessage() {
-            const content = messageInput.value.trim();
-            if (content && stompClient) {
-                // ★★★ 送信データのキーを修正: userId, roomId, content (bodyではない) ★★★
-                const chatMessage = {
-                    roomId: roomId,
-                    userId: userId, // 以前は senderId だった場所
-                    content: content
-                };
-                
-                stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));
-                
-                // 自分の画面には即時反映（二重表示防止のため、サーバーからのブロードキャストで統一しても良い）
-                // ここでは即時反映させて、入力欄をクリアする
-                // displayMessage({ userId: userId, senderName: userName, body: content, createdAt: new Date() });
-                
-                messageInput.value = '';
-            }
-        }
-
-        // メッセージ表示処理
-        function displayMessage(message) {
-            const isMyMessage = message.userId === userId;
+    /**
+     * メッセージ送信処理
+     */
+    function sendMessage() {
+        const content = messageInput.value.trim();
+        if (content && stompClient) {
+            const chatMessage = {
+                roomId: roomId,
+                userId: currentUserId, // 送信者ID
+                content: content
+            };
             
-            const messageDiv = document.createElement('div');
-            messageDiv.className = `message ${isMyMessage ? 'my-message' : 'other-message'}`;
+            // サーバーへメッセージ送信
+            stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));
             
-            // 他人のメッセージなら名前を表示
-            if (!isMyMessage) {
-                const senderDiv = document.createElement('div');
-                senderDiv.className = 'message-sender';
-                senderDiv.textContent = message.senderName || '不明';
-                messageDiv.appendChild(senderDiv);
-            }
+            // 自分の画面にも即時反映 (送信者名などは不要)
+            const myMessageDto = {
+                userId: currentUserId,
+                body: content,
+                createdAt: new Date().toISOString() // 即時反映のため現在時刻
+            };
+            // displayMessage(myMessageDto); // サーバーからの返却を待つ（二重表示を防ぐ）
+
+            messageInput.value = ''; // 入力欄をクリア
+            adjustTextareaHeight(); // 高さをリセット
+        }
+    }
+
+    /**
+     * 履歴の取得とWebSocket接続の開始
+     */
+    async function fetchHistoryAndConnect() {
+        if (!roomId || roomId <= 0) {
+            displayError("チャットルームIDが無効です。");
+            return;
+        }
+        
+        try {
+            // メッセージ履歴を取得
+            const historyResponse = await fetch(`/api/chat/messages/${roomId}`);
+            if (!historyResponse.ok) throw new Error('メッセージ履歴の取得に失敗しました。');
+            const historyData = await historyResponse.json();
             
-            const contentDiv = document.createElement('div');
-            // ★★★ DTOのフィールド名 body を使用 ★★★
-            contentDiv.textContent = message.body; 
-            messageDiv.appendChild(contentDiv);
+            lastDisplayedDate = null; // 日付追跡をリセット
+            historyData.forEach(displayMessage);
+            messageArea.scrollTop = messageArea.scrollHeight;
             
-            messageArea.appendChild(messageDiv);
-            messageArea.scrollTop = messageArea.scrollHeight; // 最下部へスクロール
+            // 履歴取得後にWebSocket接続を開始
+            connect(); 
+            
+        } catch (error) {
+            displayError(error.message);
         }
+    }
+    
+    /**
+     * エラーメッセージを表示エリアに表示する
+     */
+    function displayError(message) {
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-warning m-2';
+        errorDiv.textContent = 'エラー: ' + message;
+        messageArea.appendChild(errorDiv);
+    }
+    
+    /**
+     * テキストエリアの高さを自動調整する
+     */
+    function adjustTextareaHeight() {
+        messageInput.style.height = 'auto';
+        messageInput.style.height = (messageInput.scrollHeight) + 'px';
+    }
 
-        // 履歴取得
-        async function fetchMessageHistory() {
-            try {
-                const response = await fetch(`/api/chat/messages/${roomId}`);
-                if (!response.ok) throw new Error('Failed to fetch history');
-                const messages = await response.json();
-                messages.forEach(displayMessage);
-            } catch (error) {
-                console.error(error);
-                displayError("メッセージ履歴の取得に失敗しました。");
-            }
-        }
 
-        // メンバーリスト取得
-        async function fetchRoomMembers() {
-            try {
-                // ★★★ APIエンドポイントを確認: /api/chat-rooms/{roomId}/members ★★★
-                const response = await fetch(`/api/chat-rooms/${roomId}/members`);
-                if (!response.ok) throw new Error('Failed to fetch members');
-                const members = await response.json();
-                
-                const memberList = document.getElementById('memberList');
-                memberList.innerHTML = '';
-                
-                members.forEach(member => {
-                    const li = document.createElement('li');
-                    
-                    const icon = document.createElement('div');
-                    icon.className = 'member-icon';
-                    icon.textContent = member.name.charAt(0);
-                    
-                    const nameSpan = document.createElement('span');
-                    nameSpan.textContent = member.name;
-                    
-                    li.appendChild(icon);
-                    li.appendChild(nameSpan);
-                    memberList.appendChild(li);
-                });
-            } catch (error) {
-                console.error(error);
-            }
-        }
+    // --- イベントリスナーの登録 ---
 
-        function displayError(msg) {
-            const div = document.createElement('div');
-            div.className = 'alert alert-danger m-3';
-            div.textContent = msg;
-            messageArea.appendChild(div);
-        }
+    document.addEventListener('DOMContentLoaded', () => {
+        // ページ読み込み時に履歴取得＆WebSocket接続を開始
+        fetchHistoryAndConnect();
+        
+        // メンバー一覧も取得
+        fetchAndDisplayMembers();
 
-        // イベントリスナー
+        // 送信ボタン
         sendMessageButton.addEventListener('click', sendMessage);
         
-        messageInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
+        // Enterキーでの送信 (Shift+Enterで改行)
+        messageInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
                 sendMessage();
             }
         });
-
-        // サイドバー開閉
-        const toggleMenu = () => {
-            userListSidebar.classList.toggle('open');
-            overlay.classList.toggle('open');
-        };
         
-        toggleSidebarButton.addEventListener('click', toggleMenu);
-        closeSidebarButton.addEventListener('click', toggleMenu);
-        overlay.addEventListener('click', toggleMenu);
-    }
+        // 入力に応じた高さ調整
+        messageInput.addEventListener('input', adjustTextareaHeight);
+        
+        // サイドバー開閉
+        toggleSidebarButton.addEventListener('click', () => {
+            userListSidebar.classList.toggle('open');
+        });
+    });
+
     /*]]>*/
     </script>
 </body>

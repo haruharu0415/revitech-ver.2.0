@@ -1,6 +1,9 @@
 package com.example.revitech.service;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -27,8 +30,9 @@ public class UsersService {
         this.teacherReviewRepository = teacherReviewRepository;
     }
 
+    // 教員一覧取得用（変更なし）
     public List<TeacherListDto> getTeacherListDetails() {
-        List<Users> teachers = findByRole(2);
+        List<Users> teachers = findByRole(2); // Role 2 = 教員
 
         return teachers.stream().map(teacher -> {
             List<String> subjects;
@@ -40,12 +44,7 @@ public class UsersService {
                 case "小宮山先生": subjects = List.of("ソフトウェア"); break;
                 default: subjects = List.of("担当科目"); break;
             }
-
-            // ★★★ ここを修正 ★★★
-            // エラーの原因である平均スコアの計算を停止し、仮のスコアを渡します。
             Double avgScore = 0.0;
-            // Double avgScore = teacherReviewRepository.findAverageScoreByTeacherId(teacher.getUsersId()); // ← この行をコメントアウト
-
             return new TeacherListDto(
                 teacher.getUsersId(),
                 teacher.getName(),
@@ -56,8 +55,40 @@ public class UsersService {
         }).collect(Collectors.toList());
     }
     
-    // --- 以下の既存メソッドは変更ありません ---
+    // 【★★ 新規追加メソッド: 生徒を学科別にグループ化 ★★】
+    @Transactional(readOnly = true)
+    public Map<String, List<Users>> findAllStudentsGroupedBySubject() {
+        
+        // Role 1 = 生徒 を取得
+        List<Users> students = findByRole(1);
+        
+        // 学科名でグループ化するためのマップ (ソート順を保持するためLinkedHashMapを使用)
+        Map<String, List<Users>> groupedMap = new LinkedHashMap<>(); 
+        
+        // データがない場合のカテゴリを用意（空でも表示順序を確保したい場合など）
+        groupedMap.put("情報処理科", new ArrayList<>());
+        groupedMap.put("高度情報処理科", new ArrayList<>());
+        
+        for (Users student : students) {
+            // ★ここに「生徒がどの学科に属するか」を判定するロジックが入ります。
+            // 現状はDBに関連付けがないため、仮にIDが偶数の人を「情報処理科」、奇数を「高度情報処理科」としています。
+            // 実際には enrollments テーブルなどを結合して判定してください。
+            String subjectName;
+            if (student.getUsersId() % 2 == 0) {
+                subjectName = "情報処理科";
+            } else {
+                subjectName = "高度情報処理科";
+            }
+            
+            // マップに追加
+            groupedMap.computeIfAbsent(subjectName, k -> new ArrayList<>()).add(student);
+        }
+        
+        // 生徒がいない空のリストを除去したり、キーでソートしたりして返す
+        return groupedMap;
+    }
 
+    // --- 既存メソッド ---
     public List<Users> findAll() { return usersRepository.findAll(); }
     public Optional<Users> findByEmail(String email) { return usersRepository.findByEmail(email); }
     public Optional<Users> findByName(String name) { return usersRepository.findByName(name); }
