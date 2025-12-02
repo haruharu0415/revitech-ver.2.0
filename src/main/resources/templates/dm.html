@@ -53,7 +53,7 @@
 <script th:inline="javascript">
     /*<![CDATA[*/
     
-    // Thymeleafから値を受け取る (変数の型修正に対応済み)
+    // ★★★ ThymeleafからJavaScriptへの値の受け渡しを全面的に修正 ★★★
     const currentUserId = /*[[${sender.usersId}]]*/ 0;
     const roomId = /*[[${room.roomId}]]*/ 0;
 
@@ -63,7 +63,6 @@
     
     let stompClient = null;
 
-    // 画面にメッセージを追加する関数
     function appendMessage(messageDto) {
         const isMyMessage = messageDto.userId === currentUserId;
 
@@ -72,7 +71,7 @@
         
         const contentDiv = document.createElement('div');
         contentDiv.className = 'message-content';
-        contentDiv.textContent = messageDto.body; // DTOのフィールド名 'body' に対応
+        contentDiv.textContent = messageDto.body;
         
         messageDiv.appendChild(contentDiv);
         messageArea.appendChild(messageDiv);
@@ -80,12 +79,10 @@
         scrollToBottom();
     }
     
-    // 最下部へスクロール
     function scrollToBottom() {
         messageArea.scrollTop = messageArea.scrollHeight;
     }
 
-    // WebSocket接続
     function connect() {
         if (!roomId || roomId <= 0) {
              console.error('Room ID is invalid. Skipping WebSocket connection.');
@@ -98,7 +95,6 @@
         stompClient.connect({}, (frame) => {
             console.log('Connected: ' + frame);
 
-            // ルームごとのトピックを購読
             stompClient.subscribe('/topic/room/' + roomId, (chatMessage) => {
                 const messageDto = JSON.parse(chatMessage.body);
                 appendMessage(messageDto);
@@ -109,7 +105,6 @@
         });
     }
 
-    // メッセージ送信
     function sendMessage(event) {
         event.preventDefault();
         const content = messageInput.value.trim();
@@ -117,25 +112,17 @@
         if (content && stompClient) {
             const chatMessage = {
                 roomId: roomId, 
-                userId: currentUserId, // DTOに合わせて 'userId'
+                userId: currentUserId,
                 content: content
             };
             
             stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));
             
-            // 自分のメッセージは即座に画面に反映（サーバーからのブロードキャストを待たずに表示させたい場合）
-            // ここでは二重表示を防ぐため、サーバーからのブロードキャストで統一する場合はこの下3行をコメントアウトしてもOKですが、
-            // ユーザー体験向上のため残しておきます（ただしブロードキャスト受信時にID判定などで重複チェックが必要になる場合があります。
-            // 今回はシンプルな実装として、送信時は画面に追加せず、受信時のみ追加する形にするのが安全ですが、
-            // 元のコードに合わせて「送信時にも追加」しています。※二重表示になる場合はここを削除してください）
-            
-            /* // もし二重に表示される場合は、このブロックを削除してください
             const myMessageDto = {
                 userId: currentUserId,
                 body: content
             };
-            appendMessage(myMessageDto); 
-            */
+            appendMessage(myMessageDto);
 
             messageInput.value = '';
         }

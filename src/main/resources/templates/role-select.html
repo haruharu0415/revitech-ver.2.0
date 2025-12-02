@@ -7,7 +7,24 @@
     <link th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
-       
+        .role-card {
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .role-card:hover {
+            border-color: #0d6efd;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+        /* ラジオボタン自体は隠す */
+        .role-radio {
+            display: none;
+        }
+        /* 選択されたラジオボタンに対応するカードのスタイル */
+        .role-radio:checked + .role-card {
+            border-color: #0d6efd;
+            background-color: #f0f8ff;
+        }
         /* パスワード入力欄（最初は隠しておく） */
         #teacherPasswordSection, #adminPasswordSection {
             display: none;
