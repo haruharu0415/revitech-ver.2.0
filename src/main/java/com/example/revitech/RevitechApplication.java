@@ -15,6 +15,8 @@ public class RevitechApplication {
     public static void main(String[] args) {
         SpringApplication.run(RevitechApplication.class, args);
     }
+    
+    //aaaa
 
     /**
      * ★★★ このBeanをファイルの一番下に追加してください ★★★
