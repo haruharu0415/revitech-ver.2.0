@@ -12,85 +12,98 @@
       .avatar { width:50px; height:50px; background:#25d366; border-radius:50%; display:flex; align-items:center; justify-content:center; color:white; font-weight:bold; font-size:20px; margin-right:15px; user-select:none; }
       .chat-info { flex-grow:1; }
       .chat-name { font-weight:600; font-size:16px; color:#111; }
-      .chat-type { font-size:12px; color:#666; margin-top:3px; }
-      #createGroupBtn { position:fixed; bottom:30px; right:30px; width:60px; height:60px; background:#25d366; border-radius:50%; border:none; color:white; font-size:30px; font-weight:bold; cursor:pointer; }
-
-      /* --- 通知バッジのスタイル --- */
-      .notification-badge {
-          position: absolute; /* .chat-room基準で配置 */
-          top: 10px;          /* 位置は適宜調整 */
-          right: 15px;         /* 位置は適宜調整 */
-          background-color: #f44336; /* 赤色 */
-          color: white;
-          border-radius: 50%; /* 円形にする */
-          width: 22px;        /* 固定サイズ */
-          height: 22px;       /* 固定サイズ */
-          font-size: 12px;    /* 小さいフォント */
-          display: flex;      /* 中の数字を中央揃え */
-          justify-content: center;
-          align-items: center;
-          font-weight: bold;
-          line-height: 1;    /* 文字の縦位置調整 */
+      .chat-type { font-size:14px; color:#555; }
+      
+      /* フローティングボタン */
+      .fab {
+        position: fixed;
+        bottom: 25px;
+        right: 25px;
+        background-color: #25d366;
+        color: white;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 30px;
+        text-decoration: none;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        z-index: 1000;
       }
-      /* --- バッジスタイルここまで --- */
+      
+      /* --- 未読通知バッジのスタイル --- */
+      .notification-badge {
+        position: absolute;
+        top: 10px; /* 位置を調整 */
+        right: 15px; /* 位置を調整 */
+        background-color: #f44336; /* 赤色 */
+        color: white;
+        border-radius: 50%;
+        min-width: 24px; /* 最小幅 */
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        font-weight: bold;
+        padding: 2px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+      }
+      /* --- スタイル追加ここまで --- */
+      
     </style>
 </head>
 <body>
-    <header>グループチャットルーム</header>
+
+    <header>
+      グループ一覧
+    </header>
+
     <div id="chatRoomList">
-        <p style="text-align: center; padding: 20px; color: #666;">ルームを読み込んでいます...</p>
-    </div>
-    <button id="createGroupBtn">＋</button>
+      </div>
+    
+    <a href="/group-create" class="fab">+</a>
 
     <script>
-      document.addEventListener('DOMContentLoaded', async () => {
+      async function fetchChatRooms() {
         const chatRoomList = document.getElementById('chatRoomList');
-        const createGroupBtn = document.getElementById('createGroupBtn');
-
-        function getAvatarText(name){ return name ? name.charAt(0).toUpperCase() : "?"; }
-
+        
         try {
-          // 1. ルームリストを取得 (未読件数 unreadCount と 最新メッセージ時刻 lastMessageTimestamp が含まれる)
+          // ※ APIエンドポイントは /api/chat-rooms/my-rooms であると仮定しています
           const response = await fetch('/api/chat-rooms/my-rooms');
+          
           if (!response.ok) {
-              throw new Error('ルームリストの取得に失敗しました。');
+            if (response.status === 401) {
+              throw new Error('認証に失敗しました。再ログインしてください。');
+            }
+            throw new Error(`サーバーエラー: ${response.statusText} (${response.status})`);
           }
-          let rooms = await response.json(); // データは List<ChatRoomWithNotificationDto> 形式
-          chatRoomList.innerHTML = ''; // 読み込み中表示をクリア
 
+          const rooms = await response.json();
+          
           if (rooms.length === 0) {
-            chatRoomList.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">参加しているグループチャットはありません。</p>';
-            return;
+             chatRoomList.innerHTML = '<p style="text-align: center; padding: 20px; color: #555;">参加しているグループチャットやDMはありません。</p>';
+             return;
           }
 
-          // --- リストの並び替え ---
+          // 最終メッセージ時刻で降順ソート
           rooms.sort((a, b) => {
-              // ルール1：未読があるルームを最優先で上に表示
-              if (a.unreadCount > 0 && b.unreadCount === 0) {
-                  return -1; // a を b より前に置く
-              }
-              if (b.unreadCount > 0 && a.unreadCount === 0) {
-                  return 1;  // b を a より前に置く
-              }
-              // ルール2：未読状況が同じ場合は、最新メッセージの時刻で降順（新しいものが上）にソート
-              const timeA = a.lastMessageTimestamp ? new Date(a.lastMessageTimestamp) : new Date(0);
-              const timeB = b.lastMessageTimestamp ? new Date(b.lastMessageTimestamp) : new Date(0);
-              return timeB - timeA; // 降順ソート
+            const timeA = a.lastMessageTimestamp ? new Date(a.lastMessageTimestamp) : new Date(0);
+            const timeB = b.lastMessageTimestamp ? new Date(b.lastMessageTimestamp) : new Date(0);
+            return timeB - timeA;
           });
-          // --- 並び替えここまで ---
 
-          // 3. 並び替えたルームリストを描画
-          rooms.forEach(room => { // room オブジェクトには unreadCount と lastMessageTimestamp が含まれる
+          rooms.forEach(room => {
             const div = document.createElement('div');
             div.className = 'chat-room';
-
-            // アバター
+            
             const avatar = document.createElement('div');
             avatar.className = 'avatar';
-            avatar.textContent = getAvatarText(room.name);
+            avatar.textContent = room.name ? room.name[0].toUpperCase() : 'D'; // 頭文字
             div.appendChild(avatar);
-
-            // ルーム情報 (名前とタイプ)
+            
             const info = document.createElement('div');
             info.className = 'chat-info';
             const name = document.createElement('div');
@@ -99,7 +112,8 @@
             info.appendChild(name);
             const type = document.createElement('div');
             type.className = 'chat-type';
-            type.textContent = room.type === 'DM' ? 'ダイレクトメッセージ' : 'グループチャット';
+            // ※ DTOの `type` が 1=DM, 2=GROUP の前提
+            type.textContent = room.type === 1 ? 'ダイレクトメッセージ' : 'グループチャット';
             info.appendChild(type);
             div.appendChild(info);
 
@@ -115,7 +129,9 @@
 
             // クリックイベント
             div.addEventListener('click', () => {
-              window.location.href = `/chat/room/${room.id}`;
+              // ★★★ エラー修正箇所 ★★★
+              // room.id を room.roomId に修正
+              window.location.href = `/chat/room/${room.roomId}`;
             });
 
             chatRoomList.appendChild(div);
@@ -126,12 +142,9 @@
           // エラーメッセージを表示
           chatRoomList.innerHTML = `<p style="color: red; text-align: center; padding: 20px;">${error.message}</p>`;
         }
+      }
 
-        // グループ作成ボタンのイベント
-        createGroupBtn.addEventListener('click', () => {
-          window.location.href = '/group-create';
-        });
-      });
+      document.addEventListener('DOMContentLoaded', fetchChatRooms);
     </script>
 </body>
 </html>
