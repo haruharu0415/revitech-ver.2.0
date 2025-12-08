@@ -4,155 +4,183 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ホーム</title>
-    <link th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" rel="stylesheet" />
-    <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css}">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     
     <th:block th:insert="~{header :: header-styles}"></th:block>
 
     <style>
-        /* メインコンテンツに必要なスタイルのみをここに残します */
         .main-content {
             padding: 1rem;
         }
 
-        /* ★★★ 変更点 ★★★ */
-        /* カルーセルコンテナのスタイル (白黒・シャドウ強調) */
+        /* カルーセルスタイル (前回調整した完璧なレイアウト) */
         .simple-carousel-container {
-            border: 1px solid #eee; /* 白背景に薄い境界線を追加 */
+            border: 1px solid #eee;
             padding: 0;
             margin-bottom: 1.5rem;
             border-radius: 0.5rem;
-            /* 影を少し濃くして「浮いている感」を強調 */
             box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15); 
-            background-color: #ffffff; /* 背景色をクリーンな白に */
+            background-color: #ffffff;
             overflow: hidden;
         }
-
-        /* カルーセルのアイテム（お知らせ）のスタイル */
         .simple-carousel-item {
-            min-height: 90px; /* 高さは3行分程度を維持 */
+            min-height: 90px;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 0.5rem 1rem;
             font-size: 0.95rem;
-            color: #333; /* 文字色を濃いグレーに */
+            color: #333;
             text-align: center;
         }
-        .simple-carousel-item p {
-            margin-bottom: 0;
-        }
-
-        /* カルーセルの矢印アイコンのスタイル (黒を強調) */
-        .carousel-control-prev-icon,
-        .carousel-control-next-icon {
-            background-color: #212529; /* アイコンの背景を濃い黒/グレーに */
+        .simple-carousel-item p { margin-bottom: 0; }
+        
+        .carousel-control-prev-icon, .carousel-control-next-icon {
+            background-color: #212529;
             border-radius: 50%;
-            padding: 10px; /* アイコンを少し大きく */
+            padding: 10px;
             background-size: 50% 50%;
         }
-        .carousel-control-prev, .carousel-control-next {
-            width: 10%;
-        }
-
-        /* お知らせタイトルのスタイル */
+        .carousel-control-prev, .carousel-control-next { width: 10%; }
+        
         .carousel-title {
             font-size: 1.1rem;
-            font-weight: 600; /* フォントを少し太く */
-            color: #212529; /* タイトル文字色を黒に */
-            padding: 0.75rem 0; /* タイトルの上下余白を調整 */
-            background-color: #ffffff; /* タイトル背景も白で統一 */
-            border-bottom: 1px solid #eee; /* 境界線を薄く */
+            font-weight: 600;
+            color: #212529;
+            padding: 0.75rem 0;
+            background-color: #ffffff;
+            border-bottom: 1px solid #eee;
             border-radius: 0.5rem 0.5rem 0 0;
+            margin-bottom: 0;
         }
-        /* ★★★ 変更ここまで ★★★ */
-        
-        /* リンク全体がコンテンツを覆い、クリック可能であることを保証するためのCSS。*/
         .simple-carousel-item-link {
-            text-decoration: none; /* リンクの下線を消す */
-            color: inherit; /* テキストの色を親要素から継承 */
+            text-decoration: none;
+            color: inherit;
             display: block;
         }
-        .simple-carousel-item {
-            padding: 15px; /* 元のコンテンツのパディングを維持 */
-            /* 他のスタイルがあれば追加 */
+        .news-date {
+            font-size: 0.8rem;
+            color: #6c757d;
+            display: block;
+            margin-top: 5px;
+        }
+
+        /* 通知リスト用のスタイル */
+        .list-group-item {
+            transition: background-color 0.2s;
+        }
+        .list-group-item:hover {
+            background-color: #f8f9fa;
         }
     </style>
 </head>
 <body>
     <div th:replace="~{header :: header-fragment}"></div>
 
-    <main class="main-content">
+    <main class="main-content container">
 
-        <div id="announcementCarousel" class="carousel slide simple-carousel-container" data-bs-ride="carousel" data-bs-interval="5000">
+        <div th:if="${carouselNews != null && !carouselNews.isEmpty()}" id="announcementCarousel" class="carousel slide simple-carousel-container" data-bs-ride="carousel" data-bs-interval="5000">
             <h4 class="text-center carousel-title">学校からのお知らせ</h4>
-            <div class="carousel-inner">
-                <div class="carousel-item active">
-                    <a th:href="@{/news/register}" class="d-block w-100 simple-carousel-item-link">
-                        <div class="d-block w-100 simple-carousel-item">
-                            <p><strong>【重要】</strong><br>明日は体育祭のため短縮授業です。<br>詳細は学校ホームページをご確認ください。</p>
-                        </div>
-                    </a>
-                </div>
-
-                <div class="carousel-item">
-                    <a href="news/library.html" class="d-block w-100 simple-carousel-item-link">
-                        <div class="d-block w-100 simple-carousel-item">
-                            <p>図書館は来週月曜まで蔵書点検のため閉館です。<br>ご利用予定の方はお早めに。</p>
-                        </div>
-                    </a>
-                </div>
             
-                <div class="carousel-item">
-                    <a href="news/culture_festival.html" class="d-block w-100 simple-carousel-item-link">
+            <div class="carousel-inner">
+                <div th:each="news, stat : ${carouselNews}" class="carousel-item" th:classappend="${stat.first} ? 'active'">
+                    <a th:href="@{/news/{id}(id=${news.newsId})}" class="d-block w-100 simple-carousel-item-link">
                         <div class="d-block w-100 simple-carousel-item">
-                            <p>文化祭の実行委員を募集しています。<br>興味のある方は職員室まで。</p>
+                            <p>
+                                <strong th:if="${stat.first}" class="text-danger">【NEW】</strong>
+                                <strong th:text="${news.title}">タイトル</strong>
+                                <br>
+                                <span class="news-date" th:text="${#temporals.format(news.newsDatetime, 'yyyy/MM/dd HH:mm')}">日時</span>
+                            </p>
                         </div>
                     </a>
                 </div>
             </div>
             
             <button class="carousel-control-prev" type="button" data-bs-target="#announcementCarousel" data-bs-slide="prev">
-                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                <span class="visually-hidden">前へ</span>
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span><span class="visually-hidden">前へ</span>
             </button>
             <button class="carousel-control-next" type="button" data-bs-target="#announcementCarousel" data-bs-slide="next">
-                <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                <span class="visually-hidden">次へ</span>
+                <span class="carousel-control-next-icon" aria-hidden="true"></span><span class="visually-hidden">次へ</span>
             </button>
         </div>
-        
-        <div class="d-flex justify-content-around mb-4">
-            <a th:href="@{/news}" class="btn btn-info text-white">
-                <i class="bi bi-bell-fill"></i> お知らせ
-            </a>
-            
-          
-    <a th:href="@{/teacher-list}" class="btn btn-secondary">教員一覧</a>
-    
-    <a th:href="@{/chat-list}" class="btn btn-secondary">チャット一覧</a>
-    
-    <a th:href="@{/user-search}" class="btn btn-secondary">DM検索</a>
-</div>
 
-        <div class="row">
-            <div class="col-6">
-                <h6>通知が来ているグループ</h6>
-                <div class="list-group">
-                    <a href="#" class="list-group-item list-group-item-action">グループA</a>
-                    <a href="#" class="list-group-item list-group-item-action">グループB</a>
-                    <a href="#" class="list-group-item list-group-item-action">グループC</a>
-                </div>
+        <div th:if="${carouselNews == null || carouselNews.isEmpty()}" class="carousel slide simple-carousel-container d-flex align-items-center justify-content-center">
+            <p class="text-muted m-0 p-4">現在、新しいお知らせはありません。</p>
+        </div>
+        
+        <div class="row justify-content-center mb-5 g-3">
+            <div class="col-6 col-md-3 d-grid">
+                <a th:href="@{/news}" class="btn btn-outline-primary py-3">
+                    <i class="bi bi-bell-fill d-block mb-1 fs-5"></i> お知らせ
+                </a>
             </div>
-            <div class="col-6">
-                <h6>未読のDM</h6>
-                <div class="list-group">
-                    <a href="#" class="list-group-item list-group-item-action">田中先生</a>
-                    <a href="#" class="list-group-item list-group-item-action">佐藤先生</a>
-                    <a href="#" class="list-group-item list-group-item-action">鈴木さん</a>
-                </div>
+            <div class="col-6 col-md-3 d-grid">
+                <a th:href="@{/teacher-list}" class="btn btn-outline-secondary py-3">
+                    <i class="bi bi-person-video3 d-block mb-1 fs-5"></i> 教員一覧
+                </a>
+            </div>
+            <div class="col-6 col-md-3 d-grid">
+                <a th:href="@{/chat-list}" class="btn btn-outline-secondary py-3">
+                    <i class="bi bi-chat-dots-fill d-block mb-1 fs-5"></i> チャット一覧
+                </a>
+            </div>
+            <div class="col-6 col-md-3 d-grid">
+                <a th:href="@{/user-search}" class="btn btn-outline-secondary py-3">
+                    <i class="bi bi-search d-block mb-1 fs-5"></i> DM検索
+                </a>
             </div>
         </div>
+
+        <div class="row g-4">
+            
+            <div class="col-md-6">
+                <div class="card shadow-sm h-100 border-0">
+                    <div class="card-header bg-white fw-bold border-bottom-0 pt-3">
+                        <i class="bi bi-people-fill text-success me-2"></i>通知が来ているグループ
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            <a th:each="group : ${unreadGroups}" 
+                               th:href="@{/chat/room/{id}(id=${group.roomId})}" 
+                               class="list-group-item list-group-item-action border-0 px-4 py-3 d-flex justify-content-between align-items-center">
+                                <span th:text="${group.name}">グループ名</span>
+                                <span class="badge bg-danger rounded-pill">!</span>
+                            </a>
+
+                            <div th:if="${#lists.isEmpty(unreadGroups)}" class="text-center py-4 text-muted">
+                                <small>通知はありません</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card shadow-sm h-100 border-0">
+                    <div class="card-header bg-white fw-bold border-bottom-0 pt-3">
+                        <i class="bi bi-envelope-fill text-warning me-2"></i>未読のDM
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            <a th:each="dm : ${unreadDms}" 
+                               th:href="@{/chat/room/{id}(id=${dm.roomId})}" 
+                               class="list-group-item list-group-item-action border-0 px-4 py-3 d-flex justify-content-between align-items-center">
+                                <span th:text="${dm.name}">相手の名前</span>
+                                <span class="badge bg-primary rounded-pill">New</span>
+                            </a>
+
+                            <div th:if="${#lists.isEmpty(unreadDms)}" class="text-center py-4 text-muted">
+                                <small>未読メッセージはありません</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
     </main>
     
     <script th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"></script>

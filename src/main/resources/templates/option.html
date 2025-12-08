@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!-- option.html -->
 <html xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
@@ -17,52 +16,45 @@
         </a>
         <div class="menu-container text-center">
             
-            <!-- アイコン表示部分の修正: imgタグを使用してユーザーアイコンを表示 -->
-            <!-- 【重要】Controllerから渡されたuserオブジェクトのiconUrlを使用します -->
             <div class="user-icon-container mx-auto mb-3">
-                <img th:if="${user != null}"
-                     th:src="${user.iconUrl != null ? user.iconUrl : '/images/default-icon.png'}" 
+                <img th:if="${currentUser != null}"
+                     th:src="${currentUser.iconUrl != null ? currentUser.iconUrl : '/images/default-icon.png'}" 
                      alt="ユーザーアイコン"
                      class="rounded-circle user-icon-img"
-                     style="width: 100px; height: 100px; object-fit: cover;">
+                     style="width: 100px; height: 100px; object-fit: cover;" />
                 
-                <!-- userオブジェクトがない、または未ログイン時のフォールバック -->
-                <div th:unless="${user != null and user.iconUrl != null}" class="user-icon rounded-circle d-flex align-items-center justify-content-center mx-auto">
-                    アイコン
+                <div th:unless="${currentUser != null}" class="user-icon rounded-circle d-flex align-items-center justify-content-center mx-auto" style="width: 100px; height: 100px; background-color: #eee;">
+                    <i class="bi bi-person fs-1 text-secondary"></i>
                 </div>
             </div>
 
             <div class="login-info mx-auto mb-4 fw-bold fs-5">
-                <!-- ================================== -->
-                <!-- ★ 未ログイン時の表示ブロック ★ -->
-                <!-- ================================== -->
                 <div sec:authorize="isAnonymous()">
                     <a th:href="@{/login}" class="text-decoration-none text-dark">ログイン</a>
                 </div>
                 
-                <!-- ================================== -->
-                <!-- ★ ログイン済みの時の表示ブロック ★ -->
-                <!-- ================================== -->
                 <div sec:authorize="isAuthenticated()">
-                    <!-- ユーザー名を表示 -->
                     <div class="mb-3">
-                        <span th:text="${user != null ? user.username : 'ユーザー名'}"></span>
+                        <span th:text="${currentUser != null ? currentUser.name : 'ユーザー名'}"></span>
                     </div>
                     
-                    <!-- プロフィール編集ボタンの追加 -->
                     <a th:href="@{/profile/edit}" class="btn btn-sm btn-outline-primary mb-3">プロフィールを編集</a>
 
-                    <!-- ログアウトボタン -->
                     <form th:action="@{/logout}" method="post" class="d-inline">
                         <button type="submit" class="btn btn-sm btn-outline-danger">ログアウト</button>
                     </form>
                 </div>
             </div>
+            
+            <div th:if="${currentUser != null and (currentUser.role == 2 or currentUser.role == 3)}" class="mb-4">
+                 <a th:href="@{/question/create}" class="btn btn-lg btn-warning">
+                    <i class="bi bi-card-checklist me-2"></i>アンケート作成
+                </a>
+            </div>
 
             <div class="d-flex justify-content-center">
                 <i class="bi bi-brightness-high-fill text-primary fs-2 mt-2 me-3"></i>
                 <div>
-                    <!-- ★★★ ボタンのクラスを変更してサイズを調整 ★★★ -->
                     <a th:href="@{/terms}" class="btn btn-sm btn-outline-secondary">利用規約</a>
                 </div>
             </div>

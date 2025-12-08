@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>お知らせ詳細</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        .news-body-content {
+            white-space: pre-wrap; 
+            font-size: 1.05rem;
+            line-height: 1.8;
+            color: #2c3e50;
+        }
+        .detail-header {
+            background-color: #f8f9fa;
+            padding: 1.5rem;
+            border-bottom: 1px solid #dee2e6;
+            border-radius: 0.5rem 0.5rem 0 0;
+        }
+        /* 画像スタイル */
+        .news-image {
+            width: 100%;
+            height: auto; 
+            cursor: pointer;
+            transition: transform 0.2s;
+            border: 1px solid #eaeaea;
+            border-radius: 4px;
+        }
+        .news-image:hover {
+            transform: scale(1.02);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container mt-5 mb-5">
+        
+        <div class="card shadow-sm border-0">
+            <div class="detail-header">
+                <h2 class="fw-bold mb-3" th:text="${news.title}">タイトル</h2>
+                
+                <div class="d-flex flex-wrap gap-3 text-muted">
+                    <span>
+                        <i class="bi bi-clock"></i> 
+                        <span th:text="${#temporals.format(news.newsDatetime, 'yyyy/MM/dd HH:mm')}">日時</span>
+                    </span>
+                    <span>
+                        <i class="bi bi-person-circle"></i> 
+                        送信者: <span th:text="${news.sender != null ? news.sender.name : '不明'}">先生名</span>
+                    </span>
+                    <span th:if="${news.recipientUserIds != null}">
+                        <i class="bi bi-people"></i> 
+                        対象: <span th:text="${news.recipientUserIds.size()}">0</span>名
+                    </span>
+                </div>
+            </div>
+
+            <div class="card-body p-4">
+                <div class="news-body-content mb-4" th:text="${news.newsBody}">
+                    ここにお知らせの本文が表示されます。
+                </div>
+
+                <div th:if="${!news.images.isEmpty()}">
+                    <hr class="text-secondary opacity-25 mb-4">
+                    <h5 class="fw-bold mb-3 text-secondary"><i class="bi bi-images"></i> 添付画像</h5>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-4 col-sm-6" th:each="image : ${news.images}">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <img th:src="${image.dataUri}" class="card-img-top news-image" alt="添付画像">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card-footer bg-white p-3 border-top-0 d-flex justify-content-center gap-3">
+                <a th:href="@{/news}" class="btn btn-outline-secondary px-4">
+                    <i class="bi bi-arrow-left"></i> 一覧に戻る
+                </a>
+
+                <form th:if="${canDelete}" th:action="@{/news/delete/{id}(id=${news.newsId})}" method="post">
+                    <button type="submit" class="btn btn-danger px-4" 
+                            onclick="return confirm('本当にこのお知らせを削除しますか？');">
+                        <i class="bi bi-trash"></i> 削除
+                    </button>
+                </form>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

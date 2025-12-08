@@ -30,12 +30,28 @@ public class UsersService {
         this.teacherReviewRepository = teacherReviewRepository;
     }
 
-    // 教員一覧取得用（変更なし）
+    // --- 検索機能 (ここが修正ポイント) ---
+    /**
+     * 名前またはメールアドレスでユーザーを曖昧検索します。
+     */
+    public List<Users> searchUsers(String keyword) {
+        // キーワードが空の場合は空リストを返す（全件表示防止）
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return List.of();
+        }
+        
+        String query = keyword.trim();
+        // 名前 OR メールアドレス で部分一致検索
+        return usersRepository.findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(query, query);
+    }
+
+    // --- 教員一覧取得ロジック ---
     public List<TeacherListDto> getTeacherListDetails() {
         List<Users> teachers = findByRole(2); // Role 2 = 教員
 
         return teachers.stream().map(teacher -> {
             List<String> subjects;
+            // 仮の担当科目ロジック
             switch (teacher.getName()) {
                 case "福井先生": subjects = List.of("ハードウェア", "卒業制作"); break;
                 case "佐藤先生": subjects = List.of("Java"); break;
@@ -44,6 +60,7 @@ public class UsersService {
                 case "小宮山先生": subjects = List.of("ソフトウェア"); break;
                 default: subjects = List.of("担当科目"); break;
             }
+            // 仮の平均スコア（本来はDBから算出）
             Double avgScore = 0.0;
             return new TeacherListDto(
                 teacher.getUsersId(),
@@ -55,40 +72,29 @@ public class UsersService {
         }).collect(Collectors.toList());
     }
     
-    // 【★★ 新規追加メソッド: 生徒を学科別にグループ化 ★★】
+    // --- 生徒を学科別にグループ化 ---
     @Transactional(readOnly = true)
     public Map<String, List<Users>> findAllStudentsGroupedBySubject() {
-        
-        // Role 1 = 生徒 を取得
-        List<Users> students = findByRole(1);
-        
-        // 学科名でグループ化するためのマップ (ソート順を保持するためLinkedHashMapを使用)
+        List<Users> students = findByRole(1); // Role 1 = 生徒
         Map<String, List<Users>> groupedMap = new LinkedHashMap<>(); 
         
-        // データがない場合のカテゴリを用意（空でも表示順序を確保したい場合など）
         groupedMap.put("情報処理科", new ArrayList<>());
         groupedMap.put("高度情報処理科", new ArrayList<>());
         
         for (Users student : students) {
-            // ★ここに「生徒がどの学科に属するか」を判定するロジックが入ります。
-            // 現状はDBに関連付けがないため、仮にIDが偶数の人を「情報処理科」、奇数を「高度情報処理科」としています。
-            // 実際には enrollments テーブルなどを結合して判定してください。
+            // 仮の学科判定ロジック（IDの偶奇）
             String subjectName;
             if (student.getUsersId() % 2 == 0) {
                 subjectName = "情報処理科";
             } else {
                 subjectName = "高度情報処理科";
             }
-            
-            // マップに追加
             groupedMap.computeIfAbsent(subjectName, k -> new ArrayList<>()).add(student);
         }
-        
-        // 生徒がいない空のリストを除去したり、キーでソートしたりして返す
         return groupedMap;
     }
 
-    // --- 既存メソッド ---
+    // --- 基本CRUDメソッド ---
     public List<Users> findAll() { return usersRepository.findAll(); }
     public Optional<Users> findByEmail(String email) { return usersRepository.findByEmail(email); }
     public Optional<Users> findByName(String name) { return usersRepository.findByName(name); }
@@ -105,10 +111,5 @@ public class UsersService {
     
     public Users saveRawUser(Users user) {
         return usersRepository.save(user);
-    }
-    
-    public List<Users> searchUsers(String keyword) {
-        if (keyword == null || keyword.trim().isEmpty()) { return List.of(); }
-        return usersRepository.findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(keyword, keyword);
     }
 }

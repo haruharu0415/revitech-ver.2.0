@@ -14,9 +14,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import com.example.revitech.dto.ChatMessageDto;
 import com.example.revitech.entity.ChatRoom;
+import com.example.revitech.entity.News;
 import com.example.revitech.entity.Users;
 import com.example.revitech.service.ChatMessageService;
 import com.example.revitech.service.ChatRoomService;
+import com.example.revitech.service.NewsService;
 import com.example.revitech.service.UsersService;
 
 @Controller
@@ -25,11 +27,51 @@ public class HomeController {
     private final ChatMessageService chatMessageService;
     private final UsersService usersService;
     private final ChatRoomService chatRoomService;
+    private final NewsService newsService;
 
-    public HomeController(ChatMessageService chatMessageService, UsersService usersService, ChatRoomService chatRoomService) {
+    public HomeController(ChatMessageService chatMessageService, 
+                          UsersService usersService, 
+                          ChatRoomService chatRoomService,
+                          NewsService newsService) {
         this.chatMessageService = chatMessageService;
         this.usersService = usersService;
         this.chatRoomService = chatRoomService;
+        this.newsService = newsService;
+    }
+
+    @GetMapping("/")
+    public String root() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !(auth instanceof AnonymousAuthenticationToken)) {
+            return "redirect:/home";
+        }
+        return "redirect:/login";
+    }
+
+    @GetMapping("/home")
+    public String home(Model model) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Optional<Users> userOpt = usersService.findByEmail(auth.getName());
+        
+        if (userOpt.isEmpty()) {
+            return "redirect:/login";
+        }
+        
+        Users loginUser = userOpt.get();
+        model.addAttribute("user", loginUser);
+        
+        // 1. お知らせカルーセル (上位3件)
+        List<News> carouselNews = newsService.findTopNewsForUser(loginUser, 3);
+        model.addAttribute("carouselNews", carouselNews);
+
+        // 2. 未読通知
+        List<ChatRoom> unreadGroups = chatRoomService.findUnreadGroupRooms(loginUser.getUsersId());
+        List<ChatRoom> unreadDms = chatRoomService.findUnreadDmRooms(loginUser.getUsersId());
+
+        model.addAttribute("unreadGroups", unreadGroups);
+        model.addAttribute("unreadDms", unreadDms);
+        
+        return "home";
     }
 
     @GetMapping("/dm")
@@ -41,15 +83,12 @@ public class HomeController {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         Users sender = usersService.findByEmail(auth.getName()).orElseThrow();
         
-        // ★★★ ここを修正 ★★★
-        // findById から findUserOrDummyById に変更
         Users receiver = usersService.findById(receiverId).orElse(null);
 
         if (receiver == null) {
             return "redirect:/user-search?error";
         }
 
-        // receiverIdがダミーID(>100)の場合、DMルームはまだDBに無いので新規作成される
         ChatRoom room = chatRoomService.getOrCreateDmRoom(sender.getUsersId(), receiverId);
         
         List<ChatMessageDto> messages = (room != null) ?
@@ -61,25 +100,5 @@ public class HomeController {
         model.addAttribute("messages", messages);
 
         return "dm";
-    }
-
-    // --- 以下の既存メソッドは変更ありません ---
-    @GetMapping("/")
-    public String root() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.isAuthenticated() && !(auth instanceof AnonymousAuthenticationToken)) {
-            return "redirect:/home";
-        }
-        return "redirect:/login";
-    }
-    @GetMapping("/home")
-    public String home(Model model) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        Optional<Users> userOpt = usersService.findByEmail(auth.getName());
-        if (userOpt.isEmpty()) {
-            return "redirect:/login";
-        }
-        model.addAttribute("user", userOpt.get());
-        return "home";
     }
 }
