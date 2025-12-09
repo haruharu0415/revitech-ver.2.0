@@ -31,6 +31,9 @@ public class ChatRoomService {
     private final ChatMessageRepository chatMessageRepository;
     private final UsersService usersService;
 
+    // SQL Server用の安全な最小日付
+    private static final LocalDateTime SAFE_MIN_DATE = LocalDateTime.of(1970, 1, 1, 0, 0);
+
     public ChatRoomService(ChatRoomRepository chatRoomRepository, ChatMemberRepository chatMemberRepository,
                            ChatReadStatusRepository chatReadStatusRepository, ChatMessageRepository chatMessageRepository,
                            UsersService usersService) {
@@ -41,14 +44,78 @@ public class ChatRoomService {
         this.usersService = usersService;
     }
 
+    /**
+     * ★★★ 新規追加: グループチャットの削除 ★★★
+     * 関連するデータ（メンバー、メッセージ、既読情報）も全て削除します。
+     */
+    public void deleteGroupRoom(Integer roomId) {
+        // 念のため存在確認とタイプ確認
+        Optional<ChatRoom> roomOpt = chatRoomRepository.findById(roomId);
+        if (roomOpt.isPresent()) {
+            ChatRoom room = roomOpt.get();
+            // グループチャット(type=2)のみ削除可能とする
+            if (room.getType() == 2) {
+                // 関連データの削除
+                chatMessageRepository.deleteByRoomId(roomId);
+                chatMemberRepository.deleteById_RoomId(roomId);
+                chatReadStatusRepository.deleteByRoomId(roomId);
+                
+                // 本体削除
+                chatRoomRepository.deleteById(roomId);
+            }
+        }
+    }
+
+    // --- 未読通知用メソッド ---
+
+    public List<ChatRoom> findUnreadGroupRooms(Integer userId) {
+        List<ChatRoom> myGroups = chatRoomRepository.findGroupRoomsByUserId(userId);
+        return myGroups.stream().filter(room -> {
+            return hasUnreadMessages(room.getRoomId(), userId);
+        }).collect(Collectors.toList());
+    }
+
+    public List<ChatRoom> findUnreadDmRooms(Integer userId) {
+        List<ChatRoom> myDms = chatRoomRepository.findDmRoomsByUserId(userId);
+        List<ChatRoom> unreadDms = myDms.stream().filter(room -> {
+            return hasUnreadMessages(room.getRoomId(), userId);
+        }).collect(Collectors.toList());
+
+        for (ChatRoom dm : unreadDms) {
+            String otherUserName = getOtherMemberName(dm.getRoomId(), userId);
+            if (otherUserName != null) {
+                dm.setName(otherUserName);
+            }
+        }
+        return unreadDms;
+    }
+
+    private boolean hasUnreadMessages(Integer roomId, Integer userId) {
+        Optional<ChatReadStatus> statusOpt = chatReadStatusRepository.findByUserIdAndRoomId(userId, roomId);
+        LocalDateTime lastRead = statusOpt.map(ChatReadStatus::getLastReadAt).orElse(SAFE_MIN_DATE);
+        long count = chatMessageRepository.countByRoomIdAndCreatedAtAfter(roomId, lastRead);
+        return count > 0;
+    }
+
+    private String getOtherMemberName(Integer roomId, Integer myUserId) {
+        List<ChatMember> members = chatMemberRepository.findById_RoomId(roomId);
+        for (ChatMember member : members) {
+            Integer memberId = member.getId().getUserId();
+            if (!memberId.equals(myUserId)) {
+                return usersService.findById(memberId).map(Users::getName).orElse("不明なユーザー");
+            }
+        }
+        return "自分用メモ";
+    }
+
+    // --- 既存メソッド ---
+
     public ChatRoom getOrCreateDmRoom(Integer userId1, Integer userId2) {
         Integer u1 = Math.min(userId1, userId2);
         Integer u2 = Math.max(userId1, userId2);
 
         return chatRoomRepository.findDmRoomBetweenUsers(u1, u2).orElseGet(() -> {
-            // ★★★ 修正: usersService.findById を使用する ★★★
             Users user2 = usersService.findById(userId2).orElseThrow();
-            
             ChatRoom newDmRoom = new ChatRoom();
             newDmRoom.setType(1);
             newDmRoom.setCreatorId(userId1);
@@ -69,14 +136,11 @@ public class ChatRoomService {
         List<ChatMember> members = chatMemberRepository.findById_RoomId(roomId);
         return members.stream()
             .map(member -> {
-                // ★★★ 修正: usersService.findById を使用する ★★★
                 Users user = usersService.findById(member.getId().getUserId()).orElseThrow();
                 return new UserSearchDto(user.getUsersId(), user.getName(), user.getEmail());
             })
             .collect(Collectors.toList());
     }
-
-    // --- 以下の既存メソッドは変更ありません ---
 
     public List<ChatRoomWithNotificationDto> getRoomsForUserWithNotifications(Integer userId) {
         List<ChatMember> memberships = chatMemberRepository.findById_UserId(userId);
@@ -85,7 +149,7 @@ public class ChatRoomService {
             Optional<ChatReadStatus> readStatusOpt = chatReadStatusRepository.findByUserIdAndRoomId(userId, room.getRoomId());
             long unreadCount = readStatusOpt
                 .map(status -> chatMessageRepository.countByRoomIdAndCreatedAtAfter(room.getRoomId(), status.getLastReadAt()))
-                .orElseGet(() -> chatMessageRepository.countByRoomIdAndCreatedAtAfter(room.getRoomId(), LocalDateTime.MIN));
+                .orElseGet(() -> chatMessageRepository.countByRoomIdAndCreatedAtAfter(room.getRoomId(), SAFE_MIN_DATE));
             LocalDateTime lastMessageTimestamp = chatMessageRepository.findFirstByRoomIdOrderByCreatedAtDesc(room.getRoomId())
                 .map(ChatMessage::getCreatedAt).orElse(room.getCreatedAt());
             return new ChatRoomWithNotificationDto(room, unreadCount, lastMessageTimestamp);

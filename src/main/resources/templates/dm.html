@@ -4,10 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title th:text="${receiver != null} ? 'DMチャット - ' + ${receiver.name} : 'DMチャット'"></title>
+    
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
+
     <link th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" rel="stylesheet" />
     <script th:src="@{/webjars/sockjs-client/1.5.1/sockjs.min.js}"></script>
     <script th:src="@{/webjars/stomp-websocket/2.3.4/stomp.min.js}"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
     <style>
         body { font-family: 'Helvetica', 'Arial', sans-serif; background:#e5ddd5; margin:0; padding:0; }
         .chat-container { max-width:600px; margin:0 auto; background:#fff; border-radius:0; display:flex; flex-direction:column; height:100vh; overflow:hidden; }
@@ -17,12 +22,20 @@
         .message { display:flex; margin-bottom:10px; }
         .my-message { justify-content:flex-end; }
         .other-message { justify-content:flex-start; }
-        .message-content { padding:8px 12px; border-radius:15px; max-width:70%; word-wrap:break-word; }
+        
+        /* メッセージバブルの調整 */
+        .message-content { padding:8px 12px; border-radius:15px; max-width:70%; word-wrap:break-word; display: inline-block;}
         .my-message .message-content { background:#dcf8c6; color:#000; border-bottom-right-radius:2px; }
         .other-message .message-content { background:#fff; color:#000; border:1px solid #ddd; border-bottom-left-radius:2px; }
-        .input-area { padding:10px; background:#f0f0f0; border-top:1px solid #ddd; display:flex; }
-        .input-area input { flex-grow:1; padding:10px; border-radius:20px; border:none; margin-right:10px; }
-        .input-area button { background:#075e54; color:white; border:none; border-radius:50%; width:40px; height:40px; font-size:20px; line-height:1; cursor:pointer; }
+        
+        /* リンクのスタイル調整 */
+        .message-content a { color: #007bff; text-decoration: underline; }
+        
+        .input-area { padding:10px; background:#f0f0f0; border-top:1px solid #ddd; display:flex; align-items: center; }
+        .input-area input[type=text] { flex-grow:1; padding:10px; border-radius:20px; border:none; margin-right:10px; }
+        .input-area button { background:#075e54; color:white; border:none; border-radius:50%; width:40px; height:40px; font-size:20px; line-height:1; cursor:pointer; flex-shrink: 0; }
+        
+        .chat-image { max-width: 100%; border-radius: 8px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -30,7 +43,7 @@
     <div class="chat-container">
         
         <div class="chat-header">
-            <a th:href="@{/teacher-list}"><i class="bi bi-arrow-left"></i></a>
+            <a th:href="@{/user-search}"><i class="bi bi-arrow-left"></i></a>
             <span th:text="${receiver != null} ? ${receiver.name} : 'DMチャット'"></span>
         </div>
 
@@ -38,12 +51,34 @@
             <div th:each="message : ${messages}" 
                  th:classappend="${message.userId == sender.usersId} ? 'my-message' : 'other-message'"
                  class="message">
-                <div class="message-content" th:text="${message.body}"></div>
+                 
+                <div class="message-content">
+                    <div th:if="${message.messageType == 'IMAGE'}">
+                        <img th:src="${message.body}" class="chat-image" onclick="window.open(this.src, '_blank')">
+                    </div>
+                    <div th:if="${message.messageType == 'FILE'}">
+                        <a th:href="${message.body}" target="_blank" class="text-decoration-none">
+                            <i class="bi bi-file-earmark-arrow-down-fill"></i> 
+                            <span th:text="${message.fileName != null ? message.fileName : 'ファイル'}"></span>
+                        </a>
+                    </div>
+                    <div th:if="${message.messageType == null || message.messageType == 'TEXT'}" th:text="${message.body}" style="white-space: pre-wrap;"></div>
+                </div>
+                
             </div>
         </div>
 
         <div class="input-area">
-            <form id="messageForm" style="display:flex; width:100%;">
+            <button th:if="${sender.role == 2}" type="button" class="btn btn-warning me-2" onclick="sendQuestionnaire()" title="アンケート依頼を送る">
+                <i class="bi bi-clipboard-check"></i>
+            </button>
+
+            <input type="file" id="fileInput" style="display: none;" />
+            <button type="button" class="btn btn-secondary me-2" onclick="document.getElementById('fileInput').click()" style="margin-right: 8px;">
+                <i class="bi bi-paperclip"></i>
+            </button>
+
+            <form id="messageForm" style="display:flex; width:100%; align-items: center; margin: 0;">
                 <input type="text" id="messageInput" placeholder="メッセージを入力..." autocomplete="off" />
                 <button type="submit" id="sendButton"><i class="bi bi-send-fill"></i></button>
             </form>
@@ -53,17 +88,37 @@
 <script th:inline="javascript">
     /*<![CDATA[*/
     
-    // Thymeleafから値を受け取る (変数の型修正に対応済み)
     const currentUserId = /*[[${sender.usersId}]]*/ 0;
     const roomId = /*[[${room.roomId}]]*/ 0;
 
     const messageForm = document.getElementById('messageForm');
     const messageInput = document.getElementById('messageInput');
     const messageArea = document.getElementById('messageArea');
+    const fileInput = document.getElementById('fileInput');
+
+    // CSRFトークン
+    const csrfToken = document.querySelector('meta[name="_csrf"]').content;
+    const csrfHeader = document.querySelector('meta[name="_csrf_header"]').content;
     
     let stompClient = null;
 
-    // 画面にメッセージを追加する関数
+    // ★★★ アンケート送信ボタンの処理 ★★★
+    function sendQuestionnaire() {
+        // レビューページのURLを生成
+        const reviewUrl = window.location.origin + '/review/' + currentUserId;
+        
+        const text = "【アンケートのお願い】\n授業の振り返りアンケートにご協力ください。\n以下のリンクから回答をお願いします。\n\n" + reviewUrl;
+        
+        // 入力欄にセットして、送信ボタンを押したことにする（または即送信）
+        messageInput.value = text;
+        
+        // ユーザーに確認させずに即送信したい場合は以下を実行
+        // document.getElementById('sendButton').click();
+        
+        // 入力欄にフォーカスを当てる（編集できるようにする）
+        messageInput.focus();
+    }
+
     function appendMessage(messageDto) {
         const isMyMessage = messageDto.userId === currentUserId;
 
@@ -72,7 +127,37 @@
         
         const contentDiv = document.createElement('div');
         contentDiv.className = 'message-content';
-        contentDiv.textContent = messageDto.body; // DTOのフィールド名 'body' に対応
+        
+        // ★★★ タイプ別表示 ★★★
+        if (messageDto.messageType === 'IMAGE') {
+            const img = document.createElement('img');
+            img.src = messageDto.body;
+            img.className = 'chat-image';
+            img.onclick = () => window.open(messageDto.body, '_blank');
+            contentDiv.appendChild(img);
+
+        } else if (messageDto.messageType === 'FILE') {
+            const link = document.createElement('a');
+            link.href = messageDto.body;
+            link.target = '_blank';
+            link.className = 'text-decoration-none';
+            const dispName = messageDto.fileName || 'ファイル';
+            link.innerHTML = `<i class="bi bi-file-earmark-arrow-down-fill"></i> ${dispName}`;
+            contentDiv.appendChild(link);
+
+        } else {
+            // URLが含まれていればリンクにする簡易処理
+            let text = messageDto.body;
+            // 簡易的なURLリンク化（セキュリティに注意が必要ですが、社内/学内アプリなら許容範囲）
+            const urlRegex = /(https?:\/\/[^\s]+)/g;
+            if (text.match(urlRegex)) {
+                contentDiv.innerHTML = text.replace(urlRegex, function(url) {
+                    return '<a href="' + url + '" target="_blank">' + url + '</a>';
+                }).replace(/\n/g, '<br>');
+            } else {
+                contentDiv.textContent = text; 
+            }
+        }
         
         messageDiv.appendChild(contentDiv);
         messageArea.appendChild(messageDiv);
@@ -80,36 +165,27 @@
         scrollToBottom();
     }
     
-    // 最下部へスクロール
     function scrollToBottom() {
         messageArea.scrollTop = messageArea.scrollHeight;
     }
 
-    // WebSocket接続
     function connect() {
-        if (!roomId || roomId <= 0) {
-             console.error('Room ID is invalid. Skipping WebSocket connection.');
-             return;
-        }
+        if (!roomId || roomId <= 0) return;
 
         const socket = new SockJS('/ws');
         stompClient = Stomp.over(socket);
         
         stompClient.connect({}, (frame) => {
             console.log('Connected: ' + frame);
-
-            // ルームごとのトピックを購読
             stompClient.subscribe('/topic/room/' + roomId, (chatMessage) => {
                 const messageDto = JSON.parse(chatMessage.body);
                 appendMessage(messageDto);
             });
-            
         }, (error) => {
             console.error('STOMP Error:', error);
         });
     }
 
-    // メッセージ送信
     function sendMessage(event) {
         event.preventDefault();
         const content = messageInput.value.trim();
@@ -117,29 +193,50 @@
         if (content && stompClient) {
             const chatMessage = {
                 roomId: roomId, 
-                userId: currentUserId, // DTOに合わせて 'userId'
-                content: content
+                userId: currentUserId, 
+                content: content,
+                messageType: 'TEXT',
+                fileName: null
             };
-            
             stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));
-            
-            // 自分のメッセージは即座に画面に反映（サーバーからのブロードキャストを待たずに表示させたい場合）
-            // ここでは二重表示を防ぐため、サーバーからのブロードキャストで統一する場合はこの下3行をコメントアウトしてもOKですが、
-            // ユーザー体験向上のため残しておきます（ただしブロードキャスト受信時にID判定などで重複チェックが必要になる場合があります。
-            // 今回はシンプルな実装として、送信時は画面に追加せず、受信時のみ追加する形にするのが安全ですが、
-            // 元のコードに合わせて「送信時にも追加」しています。※二重表示になる場合はここを削除してください）
-            
-            /* // もし二重に表示される場合は、このブロックを削除してください
-            const myMessageDto = {
-                userId: currentUserId,
-                body: content
-            };
-            appendMessage(myMessageDto); 
-            */
-
             messageInput.value = '';
         }
     }
+    
+    // ★★★ ファイルアップロード処理 ★★★
+    fileInput.addEventListener('change', async function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        try {
+            const response = await fetch('/api/chat/upload', {
+                method: 'POST',
+                headers: { [csrfHeader]: csrfToken },
+                body: formData
+            });
+            
+            if (!response.ok) throw new Error('Upload failed');
+            const data = await response.json();
+
+            if (stompClient) {
+                const chatMessage = {
+                    roomId: roomId,
+                    userId: currentUserId,
+                    content: data.url,
+                    messageType: data.type,
+                    fileName: data.originalName
+                };
+                stompClient.send("/app/chat.send", {}, JSON.stringify(chatMessage));
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('ファイルのアップロードに失敗しました');
+        }
+        this.value = '';
+    });
     
     document.addEventListener('DOMContentLoaded', () => {
         scrollToBottom();

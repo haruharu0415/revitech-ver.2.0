@@ -37,7 +37,7 @@
     <h1 class="mb-4">グループチャットの新規作成</h1>
 
     <form id="groupCreateForm" th:action="@{/chat-room/group/create}" method="post">
-      <input type="hidden" name="creatorId" id="creatorId" value="1" /> 
+      <input type="hidden" name="creatorId" id="creatorId" th:value="${currentUserId}" /> 
       
       <div class="mb-3">
         <label for="groupName" class="form-label">グループ名</label>
@@ -47,7 +47,7 @@
       <div class="mb-3">
         <label class="form-label">メンバーの招待</label>
         
-        <div id="selectedMembersContainer" class="p-2 border rounded mb-2">
+        <div id="selectedMembersContainer" class="p-2 border rounded mb-2" style="min-height: 40px;">
             </div>
 
         <div class="input-group">
@@ -64,7 +64,7 @@
       </div>
 
       <button type="submit" class="btn btn-primary w-100">グループを作成</button>
-      <a th:href="@{/group}" class="btn btn-outline-secondary w-100 mt-2">キャンセル</a>
+      <a th:href="@{/chat-list}" class="btn btn-outline-secondary w-100 mt-2">キャンセル</a>
     </form>
   </main>
 
@@ -78,27 +78,22 @@
     const memberIdsInput = document.getElementById('memberIds');
     const groupCreateForm = document.getElementById('groupCreateForm');
 
-    // 既に選択されているメンバーIDのSet (重複防止用)
+    // 既に選択されているメンバーIDのSet
     const selectedMemberIds = new Set([creatorId]); 
-    // 選択されたメンバーの表示用Map { id: name }
     const selectedMemberData = new Map(); 
 
-    // 認証ユーザー(creator)を初期メンバーとして追加
-    // 実際にはAPIで自分の名前を取得し、UIに追加しないが、ロジックとしてmemberIdsに追加する
     updateMemberIdsInput();
 
-    /**
-     * 選択されたメンバーをUIに追加する
-     * @param {number} id - ユーザーID
-     * @param {string} name - ユーザー名
-     */
     function addSelectedMemberToUI(id, name) {
-      if (id == creatorId) { // 作成者はUIに表示しない
+      if (!id || id === 'undefined') return;
+
+      // 作成者本人はリストに表示しない
+      if (id == creatorId) { 
           return; 
       }
       
       if (selectedMemberIds.has(String(id))) {
-        return; // 既に選択済み
+        return; 
       }
       
       selectedMemberIds.add(String(id));
@@ -116,17 +111,11 @@
       updateMemberIdsInput();
     }
 
-    /**
-     * 選択されたメンバーIDをHiddenフィールドに設定する
-     */
     function updateMemberIdsInput() {
-      // Setに含まれる全てのID（作成者IDを含む）をカンマ区切りで設定
-      memberIdsInput.value = Array.from(selectedMemberIds).join(','); 
+      const ids = Array.from(selectedMemberIds).filter(id => id && id !== 'undefined');
+      memberIdsInput.value = ids.join(','); 
     }
 
-    /**
-     * ユーザー検索APIの呼び出し
-     */
     async function searchUsers() {
       const query = searchInput.value.trim();
       if (!query) {
@@ -136,9 +125,7 @@
 
       try {
         const response = await fetch(`/api/users/search?query=${encodeURIComponent(query)}`);
-        if (!response.ok) {
-          throw new Error('ユーザー検索APIの呼び出しに失敗しました');
-        }
+        if (!response.ok) throw new Error('ユーザー検索APIの呼び出しに失敗しました');
         const users = await response.json();
         renderSearchResults(users);
       } catch (error) {
@@ -148,10 +135,6 @@
       }
     }
 
-    /**
-     * 検索結果をUIにレンダリングする
-     * @param {Array<Object>} users - 検索結果のユーザーリスト
-     */
     function renderSearchResults(users) {
       searchResultsDiv.innerHTML = '';
       if (users.length === 0) {
@@ -161,22 +144,22 @@
       }
       
       users.forEach(user => {
-        // 自分自身、または既に選択されているユーザーは除外
-        if (String(user.id) === creatorId || selectedMemberIds.has(String(user.id))) {
+        const userId = user.usersId; 
+
+        if (String(userId) === creatorId || selectedMemberIds.has(String(userId))) {
           return;
         }
 
         const item = document.createElement('div');
         item.className = 'list-group-item list-group-item-action';
         item.textContent = `${user.name} (${user.email})`;
-        item.setAttribute('data-id', user.id);
+        item.setAttribute('data-id', userId);
         item.setAttribute('data-name', user.name);
         
-        // クリックでメンバーに追加
         item.addEventListener('click', (e) => {
-          addSelectedMemberToUI(user.id, user.name);
-          searchResultsDiv.style.display = 'none'; // 選択後、検索結果を非表示
-          searchInput.value = ''; // 検索窓をクリア
+          addSelectedMemberToUI(userId, user.name);
+          searchResultsDiv.style.display = 'none'; 
+          searchInput.value = ''; 
         });
 
         searchResultsDiv.appendChild(item);
@@ -185,9 +168,7 @@
       searchResultsDiv.style.display = searchResultsDiv.children.length > 0 ? 'block' : 'none';
     }
 
-    // --- イベントリスナー ---
-
-    // 検索ボタンのクリック/Enterキーで検索を実行
+    // イベントリスナー
     searchButton.addEventListener('click', searchUsers);
     searchInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
@@ -196,17 +177,14 @@
       }
     });
 
-    // メンバー削除ボタンのクリック処理
     selectedMembersContainer.addEventListener('click', (e) => {
       const removeBtn = e.target.closest('.remove-btn');
       if (removeBtn) {
         const idToRemove = removeBtn.getAttribute('data-id');
         
-        // SetからIDを削除
         selectedMemberIds.delete(idToRemove);
-        selectedMemberData.delete(Number(idToRemove)); // Mapからも削除
+        selectedMemberData.delete(Number(idToRemove));
 
-        // UIからタグを削除
         const tagToRemove = removeBtn.closest('.selected-member');
         if (tagToRemove) {
           tagToRemove.remove();
@@ -216,17 +194,13 @@
       }
     });
     
-    // フォーム送信時のチェック（グループ名とメンバー数の確認）
     groupCreateForm.addEventListener('submit', (e) => {
         const memberCount = selectedMemberIds.size;
-        
-        // グループ作成には最低2名 (作成者+1名) が必要
         if (memberCount < 2) {
             e.preventDefault();
             alert('グループには自分自身を含め、最低2名（他に1名以上）のメンバーが必要です。');
         }
     });
-
   </script>
 </body>
 </html>

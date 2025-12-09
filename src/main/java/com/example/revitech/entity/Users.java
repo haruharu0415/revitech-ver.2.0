@@ -10,6 +10,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient; // 追加
 import lombok.Data;
 
 @Entity
@@ -22,14 +23,12 @@ public class Users {
     @Column(name = "users_id")
     private Integer usersId;
 
-    @Column(name = "name", length = 50, nullable = false, unique = true) // ★ unique制約を追加（名前でのログインに備える）
+    @Column(name = "name", length = 50, nullable = false, unique = true)
     private String name;
 
     @Column(name = "email", length = 50, nullable = false, unique = true)
     private String email;
 
-    // ★★★ 最重要修正 ★★★
-    // パスワードの長さを50から255に変更します。
     @Column(name = "password", length = 255, nullable = false)
     private String password;
 
@@ -54,5 +53,14 @@ public class Users {
     @PreUpdate
     protected void onUpdate() {
         updateAt = LocalDateTime.now();
+    }
+    
+    // ★★★ エラー回避用に追加：アイコンURL取得用メソッド ★★★
+    // データベースには保存しない一時的なフィールドとして定義
+    @Transient
+    public String getIconUrl() {
+        // 本来は TeacherProfile や StudentProfile から取得すべきですが、
+        // 今はエラー回避のため null (デフォルト画像を表示させる) を返します。
+        return null;
     }
 }

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>アンケート回答</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style th:replace="~{header :: header-styles}"></style>
+    <style>
+        /* 評価入力フォームの星スタイル */
+        .star-rating-input { display: flex; flex-direction: row-reverse; justify-content: flex-end; }
+        .star-rating-input input { display: none; }
+        .star-rating-input label { font-size: 2rem; color: #ccc; cursor: pointer; transition: color 0.2s; }
+        .star-rating-input input:checked ~ label,
+        .star-rating-input label:hover,
+        .star-rating-input label:hover ~ label { color: #ffc107; }
+        
+        /* 評価結果表示の星スタイル */
+        .star-result { color: #ffc107; font-size: 1.2rem; }
+    </style>
+</head>
+<body class="bg-light">
+    <div th:replace="~{header :: header-fragment}"></div>
+
+    <main class="container p-3">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 col-md-10">
+                
+                <div th:if="${teacher != null}">
+                    <h1 class="mb-4">
+                        <span th:text="${teacher.name}">教員名</span> 先生へのアンケート
+                    </h1>
+                    
+                    <div class="card shadow-sm border-0">
+                        <div class="card-header bg-success text-white py-3">
+                            <h4 class="mb-0"><i class="bi bi-pencil-square me-2"></i>アンケート回答フォーム</h4>
+                        </div>
+                        <div class="card-body p-4">
+                            <p class="mb-4">授業の改善のため、率直なご意見をお聞かせください。回答は匿名で集計されます。</p>
+                            
+                            <form th:action="@{/review/submit}" th:object="${reviewForm}" method="post">
+                                <input type="hidden" th:field="*{teacherId}">
+                                
+                                <div class="mb-5 border-bottom pb-4">
+                                    <label class="form-label fw-bold h5 mb-3">Q. 全体的な満足度を教えてください <span class="badge bg-danger">必須</span></label>
+                                    <div class="d-flex align-items-center">
+                                        <div class="star-rating-input">
+                                            <input type="radio" id="star5" th:field="*{score}" value="5" required><label for="star5" title="非常に良い">★</label>
+                                            <input type="radio" id="star4" th:field="*{score}" value="4"><label for="star4" title="良い">★</label>
+                                            <input type="radio" id="star3" th:field="*{score}" value="3"><label for="star3" title="普通">★</label>
+                                            <input type="radio" id="star2" th:field="*{score}" value="2"><label for="star2" title="悪い">★</label>
+                                            <input type="radio" id="star1" th:field="*{score}" value="1"><label for="star1" title="非常に悪い">★</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-5 border-bottom pb-4" th:if="${!#lists.isEmpty(questions)}">
+                                    <h5 class="fw-bold mb-3">詳細評価</h5>
+                                    
+                                    <div th:each="q, stat : ${questions}" class="mb-4 bg-light p-3 rounded">
+                                        <label class="form-label fw-bold d-block mb-2" 
+                                               th:text="${'Q' + (stat.index + 1) + '. ' + q.questionBody}"></label>
+                                        
+                                        <div class="btn-group w-100" role="group">
+                                            <input type="radio" class="btn-check" th:name="|answers[${q.questionId}]|" th:id="|q${q.questionId}-5|" value="5" autocomplete="off" required>
+                                            <label class="btn btn-outline-success" th:for="|q${q.questionId}-5|">5:とても良い</label>
+
+                                            <input type="radio" class="btn-check" th:name="|answers[${q.questionId}]|" th:id="|q${q.questionId}-4|" value="4" autocomplete="off">
+                                            <label class="btn btn-outline-success" th:for="|q${q.questionId}-4|">4:良い</label>
+
+                                            <input type="radio" class="btn-check" th:name="|answers[${q.questionId}]|" th:id="|q${q.questionId}-3|" value="3" autocomplete="off">
+                                            <label class="btn btn-outline-secondary" th:for="|q${q.questionId}-3|">3:普通</label>
+
+                                            <input type="radio" class="btn-check" th:name="|answers[${q.questionId}]|" th:id="|q${q.questionId}-2|" value="2" autocomplete="off">
+                                            <label class="btn btn-outline-warning" th:for="|q${q.questionId}-2|">2:悪い</label>
+
+                                            <input type="radio" class="btn-check" th:name="|answers[${q.questionId}]|" th:id="|q${q.questionId}-1|" value="1" autocomplete="off">
+                                            <label class="btn btn-outline-danger" th:for="|q${q.questionId}-1|">1:とても悪い</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label for="comment" class="form-label fw-bold h5">自由コメント <span class="badge bg-secondary">任意</span></label>
+                                    <textarea id="comment" th:field="*{comment}" class="form-control" rows="4" placeholder="授業の良い点や要望などがあれば自由にご記入ください。"></textarea>
+                                </div>
+
+                                <div class="d-grid gap-2">
+                                    <button type="submit" class="btn btn-success btn-lg fw-bold py-3">
+                                        <i class="bi bi-paperplane-fill me-2"></i>回答を送信する
+                                    </button>
+                                    <a th:href="@{/review/{id}(id=${teacher.usersId})}" class="btn btn-outline-secondary">キャンセルして戻る</a>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div th:if="${teacher == null}" class="alert alert-danger text-center p-5">
+                    指定された教員が見つかりませんでした。<br>
+                    <a th:href="@{/teacher-list}" class="btn btn-primary mt-3">教員一覧に戻る</a>
+                </div>
+
+            </div>
+        </div>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
