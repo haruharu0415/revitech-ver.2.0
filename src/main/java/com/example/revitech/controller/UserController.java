@@ -27,15 +27,9 @@ public class UserController {
         return "terms";
     }
     
-    @GetMapping("/group")
-    public String group() {
-        return "group";
-    }
+   
 
-    @GetMapping("/group-create")
-    public String groupCreate() {
-        return "group-create";
-    }
+
     
     /**
      * ★★★ ここまでが復活させたメソッドです ★★★

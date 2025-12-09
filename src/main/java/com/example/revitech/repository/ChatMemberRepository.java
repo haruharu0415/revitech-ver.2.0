@@ -11,12 +11,15 @@ import com.example.revitech.entity.ChatMemberId;
 @Repository
 public interface ChatMemberRepository extends JpaRepository<ChatMember, ChatMemberId> {
 
-    // Spring Data JPAが 'id' (複合主キー) の中の 'roomId' を見て自動でクエリを生成してくれる
+    // 指定した部屋のメンバー一覧を取得
     List<ChatMember> findById_RoomId(Integer roomId);
 
-    // 'id' の中の 'userId' を見てクエリを生成
+    // 指定したユーザーが参加している部屋一覧を取得
     List<ChatMember> findById_UserId(Integer userId);
 
-    // 'id' の中の 'userId' と 'roomId' の両方を見てクエリを生成
+    // ユーザーがその部屋に参加しているかチェック
     boolean existsById_UserIdAndId_RoomId(Integer userId, Integer roomId);
+
+    // ★★★ 追加: 指定した部屋のメンバーを全員削除 ★★★
+    void deleteById_RoomId(Integer roomId);
 }

@@ -10,6 +10,9 @@ import com.example.revitech.entity.ChatReadStatus;
 @Repository
 public interface ChatReadStatusRepository extends JpaRepository<ChatReadStatus, Integer> {
 
-    // ★ メソッド名を findByUserIdAndRoomId に修正
+    // ユーザーと部屋IDで既読情報を取得
     Optional<ChatReadStatus> findByUserIdAndRoomId(Integer userId, Integer roomId);
+
+    // ★★★ 追加: 指定した部屋の既読情報を全て削除 ★★★
+    void deleteByRoomId(Integer roomId);
 }

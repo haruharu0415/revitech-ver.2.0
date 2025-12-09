@@ -24,12 +24,14 @@ public class SearchController {
     public String searchUsers(@RequestParam(name = "keyword", required = false) String keyword, Model model) {
         List<Users> searchResults = Collections.emptyList();
 
+        // キーワードがあれば検索実行
         if (keyword != null && !keyword.trim().isEmpty()) {
-            searchResults = usersService.searchUsers(keyword.trim());
+            searchResults = usersService.searchUsers(keyword);
         }
 
         model.addAttribute("keyword", keyword);
         model.addAttribute("searchResults", searchResults);
-        return "user-search";
+        
+        return "user-search"; // templates/user-search.html を表示
     }
 }
