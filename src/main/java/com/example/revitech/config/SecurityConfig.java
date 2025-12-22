@@ -45,14 +45,14 @@ public class SecurityConfig {
             .cors(cors -> {})
             .authorizeHttpRequests(authorize -> authorize
                 // 静的リソースへのアクセスを許可
-                .requestMatchers("/css/**", "/js/**", "/webjars/**", "/images/**").permitAll()
+                // ★★★ "/uploads/**" を追加して、アップロード画像を表示できるようにします ★★★
+                .requestMatchers("/css/**", "/js/**", "/webjars/**", "/images/**", "/uploads/**").permitAll()
                 
-                // ★★★ ここに /role-select と /role-check を追加します ★★★
                 .requestMatchers(
                     "/", "/login", "/terms", "/option",
-                    "/role-select", // 役割選択ページ
-                    "/role-check",  // 役割チェック処理
-                    "/signup"       // 登録ページ
+                    "/role-select", 
+                    "/role-check",
+                    "/signup"
                 ).permitAll()
                 
                 .requestMatchers("/ws/**").permitAll()

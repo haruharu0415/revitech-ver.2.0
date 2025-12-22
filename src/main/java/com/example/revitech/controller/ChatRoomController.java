@@ -28,15 +28,57 @@ public class ChatRoomController {
         this.usersService = usersService;
     }
 
-    /**
-     * ★★★ 新規追加: チャット一覧ページを表示 ★★★
-     */
     @GetMapping("/chat-list")
-    public String showChatList() {
-        return "chat-list"; // templates/chat-list.html を表示
+    public String showChatList(Model model) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Optional<Users> userOpt = usersService.findByEmail(auth.getName());
+
+        boolean canCreateGroup = false;
+        if (userOpt.isPresent()) {
+            Integer role = userOpt.get().getRole();
+            if (role == 2 || role == 3 || role == 9) {
+                canCreateGroup = true;
+            }
+        }
+        
+        model.addAttribute("canCreateGroup", canCreateGroup);
+        return "chat-list"; 
     }
 
-    // --- 既存のメソッド (Integer型に対応済み) ---
+    /**
+     * ★★★ 追加・修正: グループ一覧画面 ★★★
+     * 削除権限フラグ (canManageGroup) を渡します
+     */
+    @GetMapping("/group")
+    public String showGroupList(Model model) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Optional<Users> userOpt = usersService.findByEmail(auth.getName());
+
+        boolean canManageGroup = false;
+        if (userOpt.isPresent()) {
+            Integer role = userOpt.get().getRole();
+            // 先生(2)、管理者(3)、特権(9) は削除可能
+            if (role == 2 || role == 3 || role == 9) {
+                canManageGroup = true;
+            }
+        }
+        
+        model.addAttribute("canManageGroup", canManageGroup);
+        return "group"; 
+    }
+
+    @GetMapping("/group-create")
+    public String showGroupCreateForm(Model model) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Optional<Users> userOpt = usersService.findByEmail(auth.getName());
+        
+        if (userOpt.isPresent()) {
+            model.addAttribute("currentUserId", userOpt.get().getUsersId());
+            return "group-create";
+        } else {
+            return "redirect:/login";
+        }
+    }
 
     @PostMapping("/chat-room/group/create")
     public String createGroup(@RequestParam("name") String name, @RequestParam("memberIds") List<Integer> memberIds) {
@@ -44,6 +86,20 @@ public class ChatRoomController {
         Users creator = usersService.findByEmail(auth.getName()).orElseThrow();
         ChatRoom group = chatRoomService.createGroupRoom(creator.getUsersId(), name, memberIds);
         return "redirect:/chat/room/" + group.getRoomId();
+    }
+
+    @PostMapping("/chat-room/delete/{roomId}")
+    public String deleteGroup(@PathVariable Integer roomId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        Optional<Users> userOpt = usersService.findByEmail(auth.getName());
+
+        if (userOpt.isPresent()) {
+            Integer role = userOpt.get().getRole();
+            if (role == 2 || role == 3 || role == 9) {
+                chatRoomService.deleteGroupRoom(roomId);
+            }
+        }
+        return "redirect:/chat-list";
     }
 
     @GetMapping("/chat/room/{roomId}")

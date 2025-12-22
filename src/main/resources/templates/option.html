@@ -1,70 +1,81 @@
 <!DOCTYPE html>
-<!-- option.html -->
 <html xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>オプション</title>
     <link th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" rel="stylesheet" />
     <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css}">
     <link th:href="@{/css/menu.css}" rel="stylesheet" />
-    <title>オプション</title>
+    
+    <th:block th:insert="~{header :: header-styles}"></th:block>
+    
+    <style>
+        .header { position: sticky; top: 0; z-index: 1020; background-color: #ffffff; width: 100%; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .content-wrapper { padding-top: 1.5rem; padding-bottom: 3rem; }
+    </style>
 </head>
-<body>
-   <div class="d-flex pt-3">
-        <a th:href="@{/}" class="text-primary me-4"> 
-            <i class="bi bi-arrow-left back-arrow"></i>
-        </a>
-        <div class="menu-container text-center">
+<body class="bg-light">
+    <div th:replace="~{header :: header-fragment}"></div>
+
+    <div class="container content-wrapper">
+        <div class="menu-container text-center mx-auto" style="max-width: 600px;">
             
-            <!-- アイコン表示部分の修正: imgタグを使用してユーザーアイコンを表示 -->
-            <!-- 【重要】Controllerから渡されたuserオブジェクトのiconUrlを使用します -->
             <div class="user-icon-container mx-auto mb-3">
-                <img th:if="${user != null}"
-                     th:src="${user.iconUrl != null ? user.iconUrl : '/images/default-icon.png'}" 
-                     alt="ユーザーアイコン"
-                     class="rounded-circle user-icon-img"
-                     style="width: 100px; height: 100px; object-fit: cover;">
-                
-                <!-- userオブジェクトがない、または未ログイン時のフォールバック -->
-                <div th:unless="${user != null and user.iconUrl != null}" class="user-icon rounded-circle d-flex align-items-center justify-content-center mx-auto">
-                    アイコン
+                <img th:if="${user != null}" th:src="${iconUrl != null ? iconUrl : '/images/haru.png'}" 
+                     class="rounded-circle shadow-sm" style="width: 120px; height: 120px; object-fit: cover; border: 3px solid white;">
+                <div th:unless="${user != null}" class="user-icon rounded-circle d-flex align-items-center justify-content-center mx-auto bg-white shadow-sm" style="width: 120px; height: 120px;">
+                    <i class="bi bi-person text-secondary" style="font-size: 3rem;"></i>
                 </div>
             </div>
 
-            <div class="login-info mx-auto mb-4 fw-bold fs-5">
-                <!-- ================================== -->
-                <!-- ★ 未ログイン時の表示ブロック ★ -->
-                <!-- ================================== -->
+            <div class="login-info mx-auto mb-4">
                 <div sec:authorize="isAnonymous()">
-                    <a th:href="@{/login}" class="text-decoration-none text-dark">ログイン</a>
+                    <a th:href="@{/login}" class="btn btn-primary px-4 rounded-pill">ログイン</a>
                 </div>
                 
-                <!-- ================================== -->
-                <!-- ★ ログイン済みの時の表示ブロック ★ -->
-                <!-- ================================== -->
                 <div sec:authorize="isAuthenticated()">
-                    <!-- ユーザー名を表示 -->
-                    <div class="mb-3">
-                        <span th:text="${user != null ? user.username : 'ユーザー名'}"></span>
+                    <div class="mb-2 fs-4 fw-bold text-dark">
+                        <span th:text="${user != null ? user.name : 'ユーザー名'}"></span>
                     </div>
+                    <p class="text-muted small mb-4" th:text="${user != null ? user.email : ''}"></p>
                     
-                    <!-- プロフィール編集ボタンの追加 -->
-                    <a th:href="@{/profile/edit}" class="btn btn-sm btn-outline-primary mb-3">プロフィールを編集</a>
+                    <div class="d-grid gap-2 col-10 mx-auto">
+                        <a th:href="@{/profile/edit}" class="btn btn-outline-primary rounded-pill mb-2">
+                            <i class="bi bi-person-gear me-2"></i>プロフィールを編集
+                        </a>
 
-                    <!-- ログアウトボタン -->
-                    <form th:action="@{/logout}" method="post" class="d-inline">
-                        <button type="submit" class="btn btn-sm btn-outline-danger">ログアウト</button>
-                    </form>
+                        <div th:if="${user != null and (user.role == 2 or user.role == 3)}">
+                             <a th:href="@{/teacher/survey/list}" class="btn btn-warning text-white rounded-pill w-100">
+                                <i class="bi bi-list-check me-2"></i>アンケート管理・削除
+                            </a>
+                        </div>
+                        
+                        <div th:if="${user != null and (user.role == 2 or user.role == 3)}">
+                             <a th:href="@{/disclosure/list}" class="btn btn-danger text-white rounded-pill w-100 mt-2">
+                                <i class="bi bi-shield-exclamation me-2"></i>開示請求を確認
+                            </a>
+                        </div>
+                        
+                        <div th:if="${user != null and user.role == 1}">
+                             <a th:href="@{/student/survey/list}" class="btn btn-success text-white rounded-pill w-100 mt-2">
+                                <i class="bi bi-pencil-square me-2"></i>アンケートに回答
+                            </a>
+                        </div>
+
+                        <form th:action="@{/logout}" method="post">
+                            <button type="submit" class="btn btn-outline-danger rounded-pill w-100 mt-2">
+                                <i class="bi bi-box-arrow-right me-2"></i>ログアウト
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
 
-            <div class="d-flex justify-content-center">
-                <i class="bi bi-brightness-high-fill text-primary fs-2 mt-2 me-3"></i>
-                <div>
-                    <!-- ★★★ ボタンのクラスを変更してサイズを調整 ★★★ -->
-                    <a th:href="@{/terms}" class="btn btn-sm btn-outline-secondary">利用規約</a>
-                </div>
+            <hr class="my-4">
+            <div class="text-center">
+                <a th:href="@{/terms}" class="text-decoration-none text-secondary"><i class="bi bi-file-text me-1"></i>利用規約</a>
             </div>
         </div>
     </div>

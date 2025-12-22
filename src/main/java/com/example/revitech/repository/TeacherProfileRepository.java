@@ -1,9 +1,11 @@
 package com.example.revitech.repository;
 
-import com.example.revitech.entity.TeacherProfile;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import java.util.Optional;
 
-@Repository
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.example.revitech.entity.TeacherProfile;
+
 public interface TeacherProfileRepository extends JpaRepository<TeacherProfile, Integer> {
+    Optional<TeacherProfile> findByTeacherId(Integer teacherId);
 }

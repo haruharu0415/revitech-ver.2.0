@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>アンケート質問作成</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style th:replace="~{header :: header-styles}"></style>
+    <style>
+        .question-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .question-item input {
+            flex-grow: 1;
+            margin-right: 10px;
+        }
+        .remove-btn {
+            cursor: pointer;
+            color: #dc3545;
+        }
+        /* register.htmlから流用したスタイル */
+        .form-check-input {
+            cursor: pointer;
+        }
+        .user-label {
+            cursor: pointer;
+            user-select: none;
+            width: 100%;
+            display: block;
+        }
+        .user-item:has(.form-check-input:checked) {
+            background-color: #e8f0fe;
+            border-radius: 4px;
+        }
+        .question-list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div th:replace="~{header :: header-fragment}"></div>
+
+    <main class="container p-3" style="max-width: 800px;">
+        <h1 class="mb-4 text-primary"><i class="bi bi-patch-question-fill me-2"></i>アンケート質問作成</h1>
+        <p class="text-muted">生徒からのフィードバックを得るための質問項目と、その対象者を作成します。</p>
+        
+        <div th:if="${successMessage}" class="alert alert-success" role="alert" th:text="${successMessage}">
+            新しい質問を登録しました。
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger" role="alert" th:text="${errorMessage}">
+            エラーが発生しました。
+        </div>
+
+        <div class="card shadow-sm mb-5">
+            <div class="card-header bg-white fw-bold">
+                新規質問の入力と対象者の設定
+            </div>
+            <div class="card-body">
+                <form th:action="@{/question/create}" method="post">
+                    
+                    <h5 class="fw-bold border-bottom pb-2 mb-3">1. 質問内容の入力</h5>
+                    <div id="questionList">
+                        <div class="question-item">
+                            <input type="text" name="questionBody" class="form-control" placeholder="例：授業の準備は十分でしたか？" required>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-3 mb-5">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addQuestionField()">
+                            <i class="bi bi-plus-circle"></i> 質問を追加
+                        </button>
+                    </div>
+
+                    <h5 class="fw-bold border-bottom pb-2 mb-3">2. アンケートの対象者</h5>
+                    
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">回答対象者の選択</label>
+                        <div class="alert alert-info py-2 mb-3">
+                            <i class="bi bi-info-circle"></i> <strong>未選択の場合は「全ユーザー」が対象となりません。回答させたい生徒を必ず選択してください。</strong>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="subjectFilter" class="form-label text-muted small">学科で絞り込み</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-white"><i class="bi bi-funnel"></i></span>
+                                <select id="subjectFilter" class="form-select">
+                                    <option value="ALL">すべての学科を表示</option>
+                                    <option th:each="entry : ${subjectUserMap}" 
+                                            th:value="${entry.key}" 
+                                            th:text="${entry.key}">学科名</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="border rounded p-3 bg-light" style="max-height: 400px; overflow-y: auto;">
+                            <div th:each="entry, entryStat : ${subjectUserMap}" class="mb-3 subject-group" th:data-subject="${entry.key}">
+                                
+                                <div class="d-flex align-items-center justify-content-between border-bottom pb-2 mb-2">
+                                    <h6 class="fw-bold text-primary m-0">
+                                        <i class="bi bi-people-fill"></i> <span th:text="${entry.key}">学科名</span>
+                                    </h6>
+                                    <div class="form-check form-switch m-0">
+                                        <input class="form-check-input group-toggle" type="checkbox" role="switch" th:id="${'toggle-' + entryStat.index}">
+                                        <label class="form-check-label small" th:for="${'toggle-' + entryStat.index}">全員選択</label>
+                                    </div>
+                                </div>
+                                
+                                <div class="row g-2 ps-2">
+                                    <div class="col-md-6 user-item" th:each="user : ${entry.value}">
+                                        <div class="form-check py-1">
+                                            <input class="form-check-input user-checkbox" type="checkbox" 
+                                                   th:value="${user.usersId}" 
+                                                   name="targetUserIds" 
+                                                   th:id="${'user-' + user.usersId}">
+                                            <label class="form-check-label user-label" 
+                                                   th:for="${'user-' + user.usersId}"
+                                                   th:text="${user.name + ' (' + user.email + ')'}">
+                                                ユーザー名 (Email)
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div th:if="${subjectUserMap == null || subjectUserMap.isEmpty()}" class="text-muted text-center py-4">
+                                選択可能な生徒ユーザーがいません
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <div class="d-grid mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-save"></i> 質問と対象者を登録
+                        </button>
+                        <a th:href="@{/option}" class="btn btn-outline-secondary mt-2">キャンセル</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <h4 class="mb-3 border-bottom pb-2">既存の評価項目 (<span th:text="${#lists.size(existingQuestions)}">0</span>)</h4>
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <ul class="list-group list-group-flush">
+                    <li th:each="q, stat : ${existingQuestions}" class="list-group-item question-list-item">
+                        
+                        <span class="flex-grow-1 me-3" th:text="${(stat.index + 1) + '. ' + q.questionBody}">質問内容</span>
+                        
+                        <div class="btn-group btn-group-sm" role="group">
+                            <a th:href="@{/question/edit/{id}(id=${q.questionId})}" class="btn btn-outline-primary" title="編集">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            
+                            <form th:action="@{/question/delete/{id}(id=${q.questionId})}" method="post" onsubmit="return confirm('質問「'+ q.questionBody + '」を削除しますか？\n警告: この質問に紐づく全ての生徒の回答も削除されます。');">
+                                <button type="submit" class="btn btn-outline-danger" title="削除">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </li>
+                </ul>
+                <div th:if="${#lists.isEmpty(existingQuestions)}" class="text-muted text-center p-3">
+                    まだ質問は登録されていません。
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // ... (既存のJavaScriptは省略) ...
+        function addQuestionField() {
+            const list = document.getElementById('questionList');
+            const item = document.createElement('div');
+            item.className = 'question-item';
+            
+            item.innerHTML = `
+                <input type="text" name="questionBody" class="form-control" placeholder="新しい質問を入力" required>
+                <button type="button" class="btn btn-sm btn-outline-danger remove-btn" onclick="this.closest('.question-item').remove()">
+                    <i class="bi bi-x-circle"></i>
+                </button>
+            `;
+            list.appendChild(item);
+        }
+        
+        // 学科フィルタリング機能
+        document.getElementById('subjectFilter').addEventListener('change', function() {
+            const selectedSubject = this.value;
+            const groups = document.querySelectorAll('.subject-group');
+
+            groups.forEach(group => {
+                const subjectName = group.getAttribute('data-subject');
+                if (selectedSubject === 'ALL' || subjectName === selectedSubject) {
+                    group.style.display = 'block';
+                } else {
+                    group.style.display = 'none';
+                }
+            });
+        });
+
+        // 一括選択機能
+        document.querySelectorAll('.group-toggle').forEach(toggle => {
+            toggle.addEventListener('change', function() {
+                const group = this.closest('.subject-group');
+                const checkboxes = group.querySelectorAll('.user-checkbox');
+                checkboxes.forEach(cb => {
+                    cb.checked = this.checked;
+                });
+            });
+        });
+        
+        // 個別のチェックボックス連携
+        document.querySelectorAll('.user-checkbox').forEach(cb => {
+            cb.addEventListener('change', function() {
+                const group = this.closest('.subject-group');
+                const toggle = group.querySelector('.group-toggle');
+                
+                if (!this.checked) {
+                    toggle.checked = false;
+                } else {
+                    const allInGroup = group.querySelectorAll('.user-checkbox');
+                    const allChecked = Array.from(allInGroup).every(c => c.checked);
+                    if (allChecked) {
+                        toggle.checked = true;
+                    }
+                }
+            });
+        });
+        
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

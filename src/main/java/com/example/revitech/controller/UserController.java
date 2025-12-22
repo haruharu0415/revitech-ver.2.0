@@ -12,7 +12,6 @@ import com.example.revitech.service.UsersService;
 @Controller
 public class UserController {
 
-    // サービスを正しく利用するためにインジェクションします
     private final UsersService usersService;
 
     public UserController(UsersService usersService) {
@@ -20,35 +19,12 @@ public class UserController {
     }
 
     /**
-     * ★★★ 以下、削除してしまっていたメソッドをすべて復活させます ★★★
-     */
-    @GetMapping("/terms")
-    public String terms() {
-        return "terms";
-    }
-    
-    @GetMapping("/group")
-    public String group() {
-        return "group";
-    }
-
-    @GetMapping("/group-create")
-    public String groupCreate() {
-        return "group-create";
-    }
-    
-    /**
-     * ★★★ ここまでが復活させたメソッドです ★★★
-     */
-
-    /**
-     * 教員一覧ページを表示します。
-     * (このメソッドは前回から変更ありません)
+     * 教員一覧表示
      */
     @GetMapping("/teacher-list")
     public String showTeacherList(Model model) {
-        List<TeacherListDto> teacherList = usersService.getTeacherListDetails();
-        model.addAttribute("teacherList", teacherList);
+        List<TeacherListDto> teachers = usersService.getTeacherListDetails();
+        model.addAttribute("teachers", teachers);
         return "teacher-list";
     }
 }

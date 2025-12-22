@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>開示請求管理</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <th:block th:insert="~{header :: header-styles}"></th:block>
+</head>
+<body class="bg-light">
+    <div th:replace="~{header :: header-fragment}"></div>
+
+    <main class="container p-4" style="max-width: 900px;">
+        <h2 class="mb-4 text-primary fw-bold" th:text="${pageTitle}">開示一覧</h2>
+        
+        <div class="card shadow-sm">
+            <div class="card-body p-0">
+                
+                <div th:if="${#lists.isEmpty(disclosureList)}" class="text-center py-5 text-muted">
+                    <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                    <p>該当する項目はありません。</p>
+                </div>
+
+                <div th:unless="${#lists.isEmpty(disclosureList)}" class="list-group list-group-flush">
+                    <div th:each="item : ${disclosureList}" class="list-group-item p-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="mb-1">
+                                    <span th:if="${item.disclosureStatus == 1}" class="badge bg-warning text-dark me-2">請求中</span>
+                                    <span th:if="${item.disclosureStatus == 2}" class="badge bg-success me-2">開示済み</span>
+                                    
+                                    <small class="text-muted">コメントID: <span th:text="${item.reviewId}"></span></small>
+                                </div>
+                                <p class="mb-1 fw-bold" th:text="${#strings.abbreviate(item.comment, 50)}">コメント内容...</p>
+                                <small class="text-muted">
+                                    <i class="bi bi-clock"></i> <span th:text="${#temporals.format(item.createdAt, 'yyyy/MM/dd HH:mm')}"></span>
+                                </small>
+                            </div>
+                            
+                            <div>
+                                <a th:if="${user.role == 3}" 
+                                   th:href="@{/review/{id}(id=${item.teacherId})}" 
+                                   class="btn btn-outline-primary btn-sm">
+                                    <i class="bi bi-box-arrow-up-right me-1"></i>確認・対応
+                                </a>
+
+                                <a th:if="${user.role == 2}" 
+                                   th:href="@{/review/disclosure-info/{id}(id=${item.reviewId})}" 
+                                   class="btn btn-danger btn-sm text-white">
+                                    <i class="bi bi-eye-fill me-1"></i>詳細を見る
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="mt-4 text-center">
+            <a th:href="@{/option}" class="btn btn-link text-secondary">オプションに戻る</a>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

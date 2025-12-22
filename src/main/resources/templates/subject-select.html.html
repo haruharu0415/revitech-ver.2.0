@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>学科選択</title>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <style>
+        .container {
+            max-width: 400px;
+            margin-top: 50px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 class="text-center">学科選択</h2>
+        
+        <div th:if="${error}" class="alert alert-danger" role="alert">
+            <p th:text="${error}"></p>
+        </div>
+
+        <form th:action="@{/subject-select}" method="post">
+            <input type="hidden" name="userId" th:value="${userId}">
+            
+            <div class="mb-3">
+                <label for="subjectId" class="form-label">所属学科を選んでください:</label>
+                <select id="subjectId" name="subjectId" class="form-select" required>
+                    <option value="">-- 選択してください --</option>
+                    <option th:each="subject : ${subjects}" 
+                            th:value="${subject.subjectId}" 
+                            th:text="${subject.subjectName}">情報処理科</option>
+                </select>
+            </div>
+            
+            <button type="submit" class="btn btn-primary w-100">登録してログインへ</button>
+        </form>
+    </div>
+</body>
+</html>

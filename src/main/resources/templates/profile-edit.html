@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!-- edit_profile.html -->
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
@@ -10,47 +9,53 @@
     <title>プロフィール編集</title>
     <style>
         .preview-icon-img {
-            border: 3px solid #0d6efd; /* Primary color border */
+            border: 3px solid #0d6efd;
+            object-fit: cover;
         }
     </style>
 </head>
 <body>
     <div class="d-flex pt-3">
-        <!-- オプション画面に戻るリンク -->
         <a th:href="@{/option}" class="text-primary me-4"> 
             <i class="bi bi-arrow-left back-arrow"></i>
         </a>
         <div class="menu-container mx-auto">
             <h2 class="text-center mb-5">プロフィール編集</h2>
 
-            <!-- フォーム: アイコン画像の更新とユーザー名の更新を想定 -->
-            <!-- ファイルアップロードには enctype="multipart/form-data" が必須です -->
-            <form th:action="@{/profile/edit}" method="post" enctype="multipart/form-data" class="p-4 border rounded shadow-sm">
+            <form th:action="@{/profile/edit}" method="post" enctype="multipart/form-data" 
+                  th:object="${profileEditForm}" class="p-4 border rounded shadow-sm">
+                
+                <div th:if="${error}" class="alert alert-danger" role="alert">
+                    <p th:text="${error}" class="mb-0"></p>
+                </div>
                 
                 <h4 class="mb-3">アイコン画像</h4>
 
-                <!-- 現在のアイコン画像のプレビュー (ID: currentIconでJSからアクセス) -->
                 <div class="text-center mb-4">
                     <img id="currentIcon"
-                         th:src="${user.iconUrl != null ? user.iconUrl : '/images/default-icon.png'}" 
+                         th:src="${currentIcon != null ? currentIcon : '/images/icons/haru.png'}" 
                          alt="現在のアイコン"
                          class="rounded-circle preview-icon-img mb-3"
-                         style="width: 120px; height: 120px; object-fit: cover;">
+                         style="width: 120px; height: 120px;">
                     <p class="text-muted">現在のアイコン</p>
                 </div>
 
-                <!-- アイコン画像アップロードフィールド (name: iconFileでControllerが受け取る) -->
                 <div class="mb-4">
                     <label for="iconFile" class="form-label fw-bold">新しいアイコン画像を選択</label>
                     <input class="form-control" type="file" id="iconFile" name="iconFile" accept="image/*" onchange="previewImage(event)">
                     <div class="form-text">PNG, JPG, JPEG形式に対応しています。</div>
                 </div>
 
-                <!-- ユーザー名の編集 (例として) -->
                 <div class="mb-4">
-                    <label for="username" class="form-label fw-bold">ユーザー名</label>
-                    <input type="text" class="form-control" id="username" name="username" 
-                           th:value="${user.username}" required>
+                    <label for="name" class="form-label fw-bold">ユーザー名</label>
+                    <input type="text" class="form-control" id="name" th:field="*{name}" 
+                           th:errorclass="is-invalid" required>
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                </div>
+
+                <div class="mb-4" th:if="${isTeacher}">
+                    <label for="introduction" class="form-label fw-bold">自己紹介</label>
+                    <textarea class="form-control" id="introduction" th:field="*{introduction}" rows="5" placeholder="生徒へのメッセージなどを入力してください"></textarea>
                 </div>
 
                 <div class="text-center mt-4">
@@ -61,18 +66,15 @@
     </div>
     
     <script>
-        // ファイル選択時に画像をプレビュー表示する関数
         function previewImage(event) {
             const input = event.target;
             const preview = document.getElementById('currentIcon');
             
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
-                
                 reader.onload = function(e) {
                     preview.src = e.target.result;
                 }
-                
                 reader.readAsDataURL(input.files[0]);
             }
         }

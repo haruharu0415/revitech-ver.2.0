@@ -1,18 +1,28 @@
 package com.example.revitech.service;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.example.revitech.dto.TeacherListDto;
+import com.example.revitech.entity.StudentProfile;
+import com.example.revitech.entity.TeacherProfile;
 import com.example.revitech.entity.Users;
+import com.example.revitech.repository.StudentProfileRepository;
+import com.example.revitech.repository.TeacherProfileRepository;
 import com.example.revitech.repository.TeacherReviewRepository;
 import com.example.revitech.repository.UsersRepository;
 
@@ -23,19 +33,130 @@ public class UsersService {
     private final UsersRepository usersRepository;
     private final PasswordEncoder passwordEncoder;
     private final TeacherReviewRepository teacherReviewRepository;
+    private final StudentProfileRepository studentProfileRepository;
+    private final TeacherProfileRepository teacherProfileRepository;
 
-    public UsersService(UsersRepository usersRepository, PasswordEncoder passwordEncoder, TeacherReviewRepository teacherReviewRepository) {
+    private static final String DEFAULT_ICON_PATH = "/images/haru.png";
+
+    public UsersService(UsersRepository usersRepository, 
+                        PasswordEncoder passwordEncoder, 
+                        TeacherReviewRepository teacherReviewRepository,
+                        StudentProfileRepository studentProfileRepository,
+                        TeacherProfileRepository teacherProfileRepository) {
         this.usersRepository = usersRepository;
         this.passwordEncoder = passwordEncoder;
         this.teacherReviewRepository = teacherReviewRepository;
+        this.studentProfileRepository = studentProfileRepository;
+        this.teacherProfileRepository = teacherProfileRepository;
     }
 
-    // 教員一覧取得用（変更なし）
-    public List<TeacherListDto> getTeacherListDetails() {
-        List<Users> teachers = findByRole(2); // Role 2 = 教員
+    /**
+     * プロフィール更新処理
+     * ★修正: 自己紹介(introduction)を追加引数として受け取る
+     */
+    @Transactional
+    public void updateProfile(Integer userId, String newName, String introduction, MultipartFile iconFile) throws IOException {
+        
+        // 1. 名前更新
+        Users user = usersRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        user.setName(newName);
+        usersRepository.save(user);
 
+        Integer role = user.getRole();
+        if (role == null) return;
+
+        // 2. 先生・管理者の更新処理 (DB保存)
+        if (role == 2 || role == 3) {
+            TeacherProfile profile = teacherProfileRepository.findByTeacherId(userId)
+                .orElse(new TeacherProfile());
+            
+            if (profile.getTeacherId() == null) {
+                profile.setTeacherId(userId);
+            }
+
+            // 自己紹介の更新
+            if (introduction != null) {
+                profile.setIntroduction(introduction);
+            }
+
+            // アイコン画像の更新 (DBへバイナリ保存)
+            if (iconFile != null && !iconFile.isEmpty()) {
+                profile.setIconData(iconFile.getBytes());
+            }
+            
+            teacherProfileRepository.save(profile);
+        }
+        // 3. 生徒の更新処理 (ファイル保存)
+        else if (role == 1) {
+            // アイコンファイルがある場合のみ処理
+            if (iconFile != null && !iconFile.isEmpty()) {
+                String originalFilename = iconFile.getOriginalFilename();
+                String ext = "";
+                if (originalFilename != null && originalFilename.contains(".")) {
+                    ext = originalFilename.substring(originalFilename.lastIndexOf("."));
+                }
+                String fileName = UUID.randomUUID().toString() + ext;
+                
+                String homeDir = System.getProperty("user.home");
+                Path uploadDir = Paths.get(homeDir, "revitech_uploads", "images", "icons");
+                
+                if (!Files.exists(uploadDir)) {
+                    Files.createDirectories(uploadDir);
+                }
+
+                Path filePath = uploadDir.resolve(fileName);
+                Files.copy(iconFile.getInputStream(), filePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                String iconPath = "/images/icons/" + fileName; 
+
+                StudentProfile profile = studentProfileRepository.findById(userId)
+                    .orElse(new StudentProfile());
+                profile.setUsersId(userId);
+                profile.setIconPicture(iconPath);
+                studentProfileRepository.save(profile);
+            }
+            // 生徒には自己紹介欄がないため何もしない (必要ならStudentProfileに追加)
+        }
+    }
+    
+    /**
+     * アイコンパス取得
+     */
+    public String getUserIconPath(Integer userId) {
+        Users user = usersRepository.findById(userId).orElse(null);
+        if (user == null) return DEFAULT_ICON_PATH;
+
+        String iconPath = null;
+        Integer role = user.getRole();
+
+        if (role != null) {
+            if (role == 1) {
+                // 生徒: ファイルパスを返す
+                iconPath = studentProfileRepository.findById(userId)
+                       .map(StudentProfile::getIconPicture).orElse(null);
+            } else if (role == 2 || role == 3) {
+                // ★修正: 先生: Base64データを返す
+                iconPath = teacherProfileRepository.findByTeacherId(userId)
+                       .map(TeacherProfile::getIconBase64).orElse(null);
+            }
+        }
+        
+        return (iconPath != null) ? iconPath : DEFAULT_ICON_PATH;
+    }
+    
+    // ★追加: 先生の自己紹介文を取得するメソッド
+    public String getTeacherIntroduction(Integer userId) {
+        return teacherProfileRepository.findByTeacherId(userId)
+                .map(TeacherProfile::getIntroduction)
+                .orElse("");
+    }
+
+    // --- 以下、既存メソッド ---
+
+    public List<TeacherListDto> getTeacherListDetails() {
+        List<Users> teachers = findByRole(2); 
         return teachers.stream().map(teacher -> {
             List<String> subjects;
+            // 科目ロジックは省略（既存のまま）
             switch (teacher.getName()) {
                 case "福井先生": subjects = List.of("ハードウェア", "卒業制作"); break;
                 case "佐藤先生": subjects = List.of("Java"); break;
@@ -44,69 +165,50 @@ public class UsersService {
                 case "小宮山先生": subjects = List.of("ソフトウェア"); break;
                 default: subjects = List.of("担当科目"); break;
             }
-            Double avgScore = 0.0;
+            Double avgScore = 0.0; 
+            
+            // ★Base64アイコン取得
+            String iconBase64 = teacherProfileRepository.findByTeacherId(teacher.getUsersId())
+                    .map(TeacherProfile::getIconBase64)
+                    .orElse(null);
+
             return new TeacherListDto(
                 teacher.getUsersId(),
                 teacher.getName(),
                 teacher.getEmail(),
                 subjects,
-                avgScore
+                avgScore,
+                iconBase64 // ★Base64を渡す
             );
         }).collect(Collectors.toList());
     }
     
-    // 【★★ 新規追加メソッド: 生徒を学科別にグループ化 ★★】
+    // (findAllStudentsGroupedBySubject, findAll, findByEmail等は変更なし)
     @Transactional(readOnly = true)
     public Map<String, List<Users>> findAllStudentsGroupedBySubject() {
-        
-        // Role 1 = 生徒 を取得
         List<Users> students = findByRole(1);
-        
-        // 学科名でグループ化するためのマップ (ソート順を保持するためLinkedHashMapを使用)
         Map<String, List<Users>> groupedMap = new LinkedHashMap<>(); 
-        
-        // データがない場合のカテゴリを用意（空でも表示順序を確保したい場合など）
         groupedMap.put("情報処理科", new ArrayList<>());
         groupedMap.put("高度情報処理科", new ArrayList<>());
-        
         for (Users student : students) {
-            // ★ここに「生徒がどの学科に属するか」を判定するロジックが入ります。
-            // 現状はDBに関連付けがないため、仮にIDが偶数の人を「情報処理科」、奇数を「高度情報処理科」としています。
-            // 実際には enrollments テーブルなどを結合して判定してください。
-            String subjectName;
-            if (student.getUsersId() % 2 == 0) {
-                subjectName = "情報処理科";
-            } else {
-                subjectName = "高度情報処理科";
-            }
-            
-            // マップに追加
+            String subjectName = (student.getUsersId() % 2 == 0) ? "情報処理科" : "高度情報処理科";
             groupedMap.computeIfAbsent(subjectName, k -> new ArrayList<>()).add(student);
         }
-        
-        // 生徒がいない空のリストを除去したり、キーでソートしたりして返す
         return groupedMap;
     }
-
-    // --- 既存メソッド ---
     public List<Users> findAll() { return usersRepository.findAll(); }
     public Optional<Users> findByEmail(String email) { return usersRepository.findByEmail(email); }
     public Optional<Users> findByName(String name) { return usersRepository.findByName(name); }
     public Optional<Users> findById(Integer id) { return usersRepository.findById(id); }
     public List<Users> findByRole(Integer role) { return usersRepository.findByRole(role); }
     public boolean isEmailTaken(String email) { return usersRepository.findByEmail(email).isPresent(); }
-
     public Users save(Users user) {
         if (user.getPassword() != null && !user.getPassword().startsWith("$2a$")) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
         return usersRepository.save(user);
     }
-    
-    public Users saveRawUser(Users user) {
-        return usersRepository.save(user);
-    }
-    
+    public Users saveRawUser(Users user) { return usersRepository.save(user); }
     public List<Users> searchUsers(String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) { return List.of(); }
         return usersRepository.findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(keyword, keyword);
