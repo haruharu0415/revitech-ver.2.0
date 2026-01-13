@@ -3,19 +3,21 @@ package com.example.revitech.repository;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.example.revitech.entity.ReviewAnswer;
 
 @Repository
 public interface ReviewAnswerRepository extends JpaRepository<ReviewAnswer, Integer> {
-    
-    // 特定の質問IDに対する回答のリストを取得（平均計算用）
-    List<ReviewAnswer> findByQuestionId(Integer questionId);
 
-    // ★★★ 追加: 質問IDで回答を一括削除するメソッド ★★★
-    // (JPAのderived delete query。トランザクション管理が必要です)
-    @Transactional
-    void deleteByQuestionId(Integer questionId);
+    /**
+     * ★ここが修正ポイント★
+     * ReviewAnswer(点数)テーブルには teacherId がないので、
+     * TeacherReview(親)テーブルと reviewId でくっつけて、そこから teacherId を探します。
+     * * 古い書き方: findByTeacherId(Integer teacherId); <- これだと動かないことがあります
+     */
+    @Query("SELECT ra FROM ReviewAnswer ra, TeacherReview tr WHERE ra.reviewId = tr.reviewId AND tr.teacherId = :teacherId")
+    List<ReviewAnswer> findByTeacherId(@Param("teacherId") Integer teacherId);
 }

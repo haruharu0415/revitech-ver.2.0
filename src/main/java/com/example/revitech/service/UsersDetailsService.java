@@ -1,8 +1,10 @@
 package com.example.revitech.service;
 
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.Collection;
 
-import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -21,41 +23,26 @@ public class UsersDetailsService implements UserDetailsService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        // ★★★ ロジックを全面的に修正 ★★★
-        
-        Optional<Users> userOptional;
-        
-        // 入力された'username'に'@'が含まれているかで、メールアドレスか名前かを判断
-        if (username.contains("@")) {
-            // メールアドレスとして検索
-            userOptional = usersRepository.findByEmail(username);
-        } else {
-            // 名前として検索
-            userOptional = usersRepository.findByName(username);
+    public UserDetails loadUserByUsername(String input) throws UsernameNotFoundException {
+        // ★★★ 修正: メールアドレス または 名前(ユーザー名) で検索 ★★★
+        // 入力された値(input)を、emailとnameの両方の条件で探します
+        Users user = usersRepository.findByEmailOrName(input, input)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email or name: " + input));
+
+        // 退会済みチェック
+        if ("deleted".equals(user.getStatus())) {
+            throw new UsernameNotFoundException("This account has been deleted.");
         }
 
-        // ユーザーが見つからなかった場合、例外をスロー
-        Users user = userOptional.orElseThrow(() -> 
-            new UsernameNotFoundException("ユーザーが見つかりません: " + username)
+        // 権限リストの作成
+        Collection<GrantedAuthority> authorities = new ArrayList<>();
+        authorities.add(new SimpleGrantedAuthority("ROLE_" + user.getRole()));
+
+        // UserDetailsを返す
+        return new org.springframework.security.core.userdetails.User(
+                user.getEmail(), // 認証後の識別子にはユニークなEmailを使用するのが安全
+                user.getPassword(),
+                authorities
         );
-
-        String roleStr = convertRoleToString(user.getRole());
-
-        return User.builder()
-                .username(user.getEmail()) // Spring Security内部では引き続きemailを 'username' として扱う
-                .password(user.getPassword())
-                .roles(roleStr)
-                .build();
-    }
-
-    private String convertRoleToString(Integer role) {
-        if (role == null) return "USER";
-        return switch (role) {
-            case 1 -> "STUDENT";
-            case 2 -> "TEACHER";
-            case 3 -> "ADMIN";
-            default -> "USER";
-        };
     }
 }

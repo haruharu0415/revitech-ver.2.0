@@ -64,6 +64,12 @@
                             </a>
                         </div>
 
+                        <div class="mt-2">
+                            <a th:href="@{/account/delete}" class="btn btn-outline-secondary rounded-pill w-100">
+                                <i class="bi bi-person-x me-2"></i>アカウント削除
+                            </a>
+                        </div>
+
                         <form th:action="@{/logout}" method="post">
                             <button type="submit" class="btn btn-outline-danger rounded-pill w-100 mt-2">
                                 <i class="bi bi-box-arrow-right me-2"></i>ログアウト

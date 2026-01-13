@@ -3,12 +3,12 @@ package com.example.revitech.dto;
 import lombok.Data;
 
 @Data
-public class QuestionAverageDto {
+public class TeacherScoreDto {
     private Integer questionId;
-    private String questionText;
-    private Double averageScore;
+    private String questionText; // 項目名
+    private Double averageScore; // 平均点
 
-    public QuestionAverageDto(Integer questionId, String questionText, Double averageScore) {
+    public TeacherScoreDto(Integer questionId, String questionText, Double averageScore) {
         this.questionId = questionId;
         this.questionText = questionText;
         this.averageScore = averageScore;

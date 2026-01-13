@@ -9,13 +9,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "chat_messages")
-@Data
-@NoArgsConstructor
+@Table(name = "chat_message")
 public class ChatMessage {
 
     @Id
@@ -26,25 +22,59 @@ public class ChatMessage {
     @Column(name = "room_id", nullable = false)
     private Integer roomId;
 
-    // ★ フィールド名を userId に修正
-    @Column(name = "users_id", nullable = false)
-    private Integer userId;
+    @Column(name = "sender_id", nullable = false)
+    private Integer userId; // Java側では userId と呼びます
 
-    @Column(name = "body", columnDefinition = "TEXT", nullable = false)
-    private String body;
+    @Column(name = "content", nullable = false, columnDefinition = "NVARCHAR(MAX)")
+    private String content;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     @PrePersist
-    protected void onCreate() {
-        createdAt = LocalDateTime.now();
+    public void onPrePersist() {
+        this.createdAt = LocalDateTime.now();
     }
 
-    // ★ コンストラクタの引数名も修正
-    public ChatMessage(Integer roomId, Integer userId, String body) {
+    // --- 以下、明示的なゲッター・セッター ---
+
+    public Integer getMessageId() {
+        return messageId;
+    }
+
+    public void setMessageId(Integer messageId) {
+        this.messageId = messageId;
+    }
+
+    public Integer getRoomId() {
+        return roomId;
+    }
+
+    public void setRoomId(Integer roomId) {
         this.roomId = roomId;
+    }
+
+    public Integer getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Integer userId) {
         this.userId = userId;
-        this.body = body;
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 }

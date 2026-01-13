@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>グループメンバー管理</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <th:block th:insert="~{header :: header-styles}"></th:block>
+    <style>
+        .search-results {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-top: none;
+            background: white;
+            position: absolute;
+            width: 100%;
+            z-index: 1000;
+        }
+        .search-result-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .search-result-item:hover {
+            background-color: #f8f9fa;
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div th:replace="~{header :: header-fragment}"></div>
+
+    <main class="container p-4">
+        
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show">
+            <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="text-primary fw-bold"><i class="bi bi-people-fill me-2"></i>グループメンバー管理</h2>
+            
+            <a th:href="@{/group/list}" class="btn btn-outline-secondary">グループ一覧に戻る</a>
+        </div>
+
+        <div class="row">
+            <div class="col-md-5 mb-4">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white fw-bold text-success">
+                        <i class="bi bi-person-plus-fill me-2"></i>メンバーを追加
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3 position-relative">
+                            <label for="userSearch" class="form-label">ユーザー検索</label>
+                            <div class="input-group">
+                                <input type="text" id="userSearch" class="form-control" placeholder="名前やメールで検索..." autocomplete="off">
+                                <button class="btn btn-outline-secondary" type="button" onclick="searchUsers()">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </div>
+                            <div id="searchResults" class="search-results shadow-sm" style="display: none;"></div>
+                        </div>
+
+                        <div id="selectedUserArea" class="alert alert-info d-flex align-items-center mb-3" style="display: none;">
+                            <i class="bi bi-person-check-fill fs-4 me-2"></i>
+                            <div class="flex-grow-1">
+                                <div class="fw-bold" id="selectedUserName">ユーザー名</div>
+                                <div class="small text-muted" id="selectedUserEmail">email</div>
+                            </div>
+                            <button type="button" class="btn-close" onclick="clearSelection()"></button>
+                        </div>
+
+                        <form th:action="@{/group/{gid}/add-member(gid=${groupId})}" method="post">
+                            <input type="hidden" name="userId" id="targetUserId">
+                            <button type="submit" id="addBtn" class="btn btn-success w-100" disabled>
+                                このユーザーを追加する
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-7">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white fw-bold text-primary">
+                        <i class="bi bi-person-check-fill me-2"></i>現在のメンバー
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item d-flex justify-content-between align-items-center" th:each="member : ${currentMembers}">
+                                <div>
+                                    <span class="fw-bold" th:text="${member.name}">ユーザー名</span>
+                                    <span class="text-muted small ms-2" th:text="${member.email}">email</span>
+                                    <span class="badge bg-secondary ms-1" th:if="${member.role == 2}">教員</span>
+                                    <span class="badge bg-info ms-1" th:if="${member.role == 3}">管理者</span>
+                                </div>
+                                
+                                <form th:action="@{/group/{gid}/remove-member(gid=${groupId})}" method="post" 
+                                      onsubmit="return confirm('このメンバーをグループから削除しますか？');">
+                                    <input type="hidden" name="userId" th:value="${member.usersId}">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                                        <i class="bi bi-person-dash"></i> 削除
+                                    </button>
+                                </form>
+                            </li>
+                            <li class="list-group-item text-center text-muted py-3" th:if="${#lists.isEmpty(currentMembers)}">
+                                メンバーはいません。
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // ユーザー検索処理
+        async function searchUsers() {
+            const query = document.getElementById('userSearch').value;
+            if (!query.trim()) return;
+
+            const resultArea = document.getElementById('searchResults');
+            resultArea.innerHTML = '<div class="p-2 text-muted text-center">検索中...</div>';
+            resultArea.style.display = 'block';
+
+            try {
+                // UsersApiControllerの検索APIを呼び出し
+                const res = await fetch(`/api/users/search?query=${encodeURIComponent(query)}`);
+                if (!res.ok) throw new Error("Search failed");
+                const users = await res.json();
+                
+                resultArea.innerHTML = '';
+                if (users.length === 0) {
+                    resultArea.innerHTML = '<div class="p-2 text-muted text-center">該当なし</div>';
+                    return;
+                }
+
+                users.forEach(user => {
+                    const div = document.createElement('div');
+                    div.className = 'search-result-item';
+                    div.innerHTML = `<strong>${escapeHtml(user.name)}</strong> <small class="text-muted">(${escapeHtml(user.email)})</small>`;
+                    div.onclick = () => selectUser(user);
+                    resultArea.appendChild(div);
+                });
+
+            } catch (e) {
+                console.error(e);
+                resultArea.innerHTML = '<div class="p-2 text-danger text-center">エラーが発生しました</div>';
+            }
+        }
+
+        // ユーザー選択処理
+        function selectUser(user) {
+            document.getElementById('targetUserId').value = user.usersId;
+            document.getElementById('selectedUserName').textContent = user.name;
+            document.getElementById('selectedUserEmail').textContent = user.email;
+            
+            document.getElementById('selectedUserArea').style.display = 'flex';
+            document.getElementById('searchResults').style.display = 'none';
+            document.getElementById('userSearch').value = '';
+            document.getElementById('addBtn').disabled = false;
+        }
+
+        // 選択クリア
+        function clearSelection() {
+            document.getElementById('targetUserId').value = '';
+            document.getElementById('selectedUserArea').style.display = 'none';
+            document.getElementById('addBtn').disabled = true;
+        }
+
+        // Enterキーで検索
+        document.getElementById('userSearch').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // フォーム送信防止
+                searchUsers();
+            }
+        });
+
+        // HTMLエスケープ
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>"']/g, function(m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+            });
+        }
+    </script>
+</body>
+</html>

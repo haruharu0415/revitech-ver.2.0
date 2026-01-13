@@ -24,23 +24,29 @@ public class ChatMessageService {
         this.usersRepository = usersRepository;
     }
 
-    // ★ 修正: 引数名を userId に変更
-    public ChatMessage sendMessage(Integer roomId, Integer userId, String content) {
-        // ★ 修正: ChatMessage のコンストラクタ引数を修正
-        ChatMessage message = new ChatMessage(roomId, userId, content);
-        return chatMessageRepository.save(message);
-    }
-
+    // メッセージ一覧取得
     public List<ChatMessageDto> getMessagesByRoomId(Integer roomId) {
         List<ChatMessage> messages = chatMessageRepository.findByRoomIdOrderByCreatedAtAsc(roomId);
-        return messages.stream()
-            .map(message -> {
-                // ★ 修正: message.getUserId() を使用
-                String senderName = usersRepository.findById(message.getUserId())
-                                                 .map(Users::getName)
-                                                 .orElse("不明なユーザー");
-                return new ChatMessageDto(message, senderName);
-            })
-            .collect(Collectors.toList());
+        
+        return messages.stream().map(msg -> {
+            // 送信者の名前を取得
+            String senderName = usersRepository.findById(msg.getUserId())
+                    .map(Users::getName)
+                    .orElse("不明なユーザー");
+            
+            // DTOに変換（ここで content がコピーされます）
+            return new ChatMessageDto(msg, senderName);
+        }).collect(Collectors.toList());
+    }
+
+    // メッセージ送信（保存）
+    public ChatMessage sendMessage(Integer roomId, Integer userId, String content) {
+        ChatMessage message = new ChatMessage();
+        message.setRoomId(roomId);
+        message.setUserId(userId);
+        message.setContent(content); // ★ここでDB保存用の箱に入れます
+        // createdAtなどはEntityの@PrePersistやDBのデフォルト値で入る想定
+        
+        return chatMessageRepository.save(message);
     }
 }
