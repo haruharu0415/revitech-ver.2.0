@@ -32,38 +32,11 @@ public class ChatController {
     }
 
     /**
-     * グループチャット画面を表示
-     * URL: /group/chat/{groupId}
-     * 対応ファイル: templates/group-chat.html
-     */
-    @GetMapping("/group/chat/{groupId}")
-    public String showGroupChat(@PathVariable("groupId") Integer groupId, Model model) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
-            return "redirect:/login";
-        }
-        Users user = usersService.findByEmail(auth.getName()).orElseThrow();
-        model.addAttribute("user", user);
-
-        // グループ情報を取得
-        Optional<ChatGroup> groupOpt = chatGroupRepository.findById(groupId);
-        if (groupOpt.isEmpty()) {
-            return "redirect:/group/list";
-        }
-        
-        // 画面に "group" として渡す
-        model.addAttribute("group", groupOpt.get());
-
-        return "group-chat";
-    }
-
-    /**
-     * 個人チャット(DM)画面を表示
+     * チャットルームへの入り口 (DM/グループ共通)
      * URL: /chat/room/{roomId}
-     * 対応ファイル: templates/chat-room.html
      */
     @GetMapping("/chat/room/{roomId}")
-    public String showDmChat(@PathVariable("roomId") Integer roomId, Model model) {
+    public String showChatRoom(@PathVariable("roomId") Integer roomId, Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getName())) {
             return "redirect:/login";
@@ -71,14 +44,35 @@ public class ChatController {
         Users user = usersService.findByEmail(auth.getName()).orElseThrow();
         model.addAttribute("user", user);
 
-        // DM情報を取得
+        // ルーム情報を取得
         Optional<ChatRoom> roomOpt = chatRoomRepository.findById(roomId);
         if (roomOpt.isEmpty()) {
             return "redirect:/home";
         }
-        
-        model.addAttribute("chatRoom", roomOpt.get());
+        ChatRoom room = roomOpt.get();
 
-        return "chat-room";
+        // ★分岐処理: グループ(type=2)か、DM(それ以外)か
+        if (room.getType() != null && room.getType() == 2) { 
+            // グループチャットへ
+            Optional<ChatGroup> groupOpt = chatGroupRepository.findById(roomId);
+            if (groupOpt.isPresent()) {
+                model.addAttribute("group", groupOpt.get()); // group-chat.html用
+                return "group-chat";
+            }
+        }
+
+        // DMチャットへ
+        model.addAttribute("roomId", room.getRoomId()); // dm.html用
+        model.addAttribute("chatName", room.getName()); // dm.html用
+        return "dm";
+    }
+
+    /**
+     * グループチャット専用URL (group-list.htmlなどで明示的に指定されている場合用)
+     * URL: /group/chat/{groupId}
+     */
+    @GetMapping("/group/chat/{groupId}")
+    public String showGroupChat(@PathVariable("groupId") Integer groupId, Model model) {
+        return showChatRoom(groupId, model); // 上記の共通メソッドに処理を委譲
     }
 }

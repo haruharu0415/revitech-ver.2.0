@@ -37,7 +37,7 @@ public class UsersService {
     private final TeacherReviewRepository teacherReviewRepository;
     private final StudentProfileRepository studentProfileRepository;
     private final TeacherProfileRepository teacherProfileRepository;
-    private final TeacherHashtagRepository teacherHashtagRepository; // 追加
+    private final TeacherHashtagRepository teacherHashtagRepository;
 
     private static final String DEFAULT_ICON_PATH = "/images/haru.png";
 
@@ -55,59 +55,45 @@ public class UsersService {
         this.teacherHashtagRepository = teacherHashtagRepository;
     }
 
-    /**
-     * ★ 修正: 教員一覧情報の取得 (検索キーワード対応)
-     */
+    // --- ★ 管理画面検索用に追加 ★ ---
+    public List<Users> searchUsers(String keyword) {
+        if (keyword == null || keyword.trim().isEmpty()) { 
+            return List.of(); 
+        }
+        // 名前またはメールにキーワードが含まれるユーザーを検索
+        return usersRepository.findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(keyword, keyword);
+    }
+
+    // --- 以下、既存のメソッド群 (変更なし) ---
     public List<TeacherListDto> getTeacherListDetails(String keyword) {
         List<Users> teachers;
-
-        // 検索キーワードがある場合
         if (keyword != null && !keyword.trim().isEmpty()) {
             String kw = keyword.trim();
-            
-            // "#" で始まる場合はハッシュタグ検索
             if (kw.startsWith("#")) {
                 List<TeacherHashtag> tags = teacherHashtagRepository.findByHashtagContaining(kw);
                 List<Integer> teacherIds = tags.stream().map(TeacherHashtag::getTeacherId).distinct().collect(Collectors.toList());
                 teachers = usersRepository.findAllById(teacherIds);
-                // Role=2 (先生) のみに絞り込み
                 teachers = teachers.stream().filter(u -> u.getRole() == 2).collect(Collectors.toList());
-            } 
-            // 通常のキーワード検索 (名前など)
-            else {
+            } else {
                 teachers = usersRepository.findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(kw, kw);
                 teachers = teachers.stream().filter(u -> u.getRole() == 2).collect(Collectors.toList());
             }
         } else {
-            // キーワードなし: 全教員取得
             teachers = findByRole(2);
         }
-
         return teachers.stream().map(teacher -> {
-            List<String> subjects = List.of("担当科目"); // 簡略化
+            List<String> subjects = List.of("担当科目");
             Double avgScore = 0.0;
-            
             String iconBase64 = teacherProfileRepository.findByTeacherId(teacher.getUsersId())
-                    .map(TeacherProfile::getIconBase64)
-                    .orElse(null);
-            
-            // ★ ハッシュタグリストを取得
+                    .map(TeacherProfile::getIconBase64).orElse(null);
             List<String> hashtags = teacherHashtagRepository.findByTeacherId(teacher.getUsersId())
                     .stream().map(TeacherHashtag::getHashtag).collect(Collectors.toList());
-
             return new TeacherListDto(
-                teacher.getUsersId(),
-                teacher.getName(),
-                teacher.getEmail(),
-                subjects,
-                avgScore,
-                iconBase64,
-                hashtags // DTOにセット
+                teacher.getUsersId(), teacher.getName(), teacher.getEmail(), subjects, avgScore, iconBase64, hashtags
             );
         }).collect(Collectors.toList());
     }
 
-    // --- 以下、既存メソッド ---
     public void softDeleteUser(Integer userId) {
         Users user = usersRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
         user.setStatus("deleted");
@@ -184,8 +170,4 @@ public class UsersService {
         return usersRepository.save(user);
     }
     public Users saveRawUser(Users user) { return usersRepository.save(user); }
-    public List<Users> searchUsers(String keyword) {
-        if (keyword == null || keyword.trim().isEmpty()) { return List.of(); }
-        return usersRepository.findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(keyword, keyword);
-    }
 }
