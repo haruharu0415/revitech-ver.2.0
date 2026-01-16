@@ -1,22 +1,52 @@
 package com.example.revitech.entity;
 
 import java.io.Serializable;
+import java.util.Objects;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
 @Embeddable
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class ChatMemberId implements Serializable {
 
-    @Column(name = "room_id")
     private Integer roomId;
-
-    @Column(name = "users_id")
     private Integer userId;
+
+    public ChatMemberId() {}
+
+    public ChatMemberId(Integer roomId, Integer userId) {
+        this.roomId = roomId;
+        this.userId = userId;
+    }
+
+    // ゲッター・セッター
+    public Integer getRoomId() {
+        return roomId;
+    }
+
+    public void setRoomId(Integer roomId) {
+        this.roomId = roomId;
+    }
+
+    public Integer getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Integer userId) {
+        this.userId = userId;
+    }
+
+    // hashCode と equals は複合キーに必須です
+    @Override
+    public int hashCode() {
+        return Objects.hash(roomId, userId);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        ChatMemberId other = (ChatMemberId) obj;
+        return Objects.equals(roomId, other.roomId) && 
+               Objects.equals(userId, other.userId);
+    }
 }

@@ -49,7 +49,7 @@ public class GroupController {
         this.groupService = groupService;
     }
 
-    // --- グループ一覧表示 (既存のまま維持) ---
+    // --- グループ一覧表示 ---
     @GetMapping("/group/list")
     public String listGroups(@RequestParam(name = "keyword", required = false) String keyword, Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -113,7 +113,71 @@ public class GroupController {
         return "redirect:/group/list";
     }
 
-    // --- ★★★ 管理画面用 (ここを修正) ★★★ ---
+    // --- ★★★ グループ作成機能 ★★★ ---
+
+    @GetMapping("/group/create")
+    public String showCreateGroupForm(Model model) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            return "redirect:/login";
+        }
+        Users user = usersService.findByEmail(auth.getName()).orElseThrow();
+        model.addAttribute("user", user);
+        
+        return "group-create";
+    }
+
+    @PostMapping("/group/create")
+    public String createGroup(@RequestParam("name") String groupName,
+                              @RequestParam(name = "memberIds", required = false) String memberIdsStr,
+                              RedirectAttributes redirectAttributes) {
+        
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            return "redirect:/login";
+        }
+        Users creator = usersService.findByEmail(auth.getName()).orElseThrow();
+
+        // 1. ChatRoom作成
+        ChatRoom room = new ChatRoom();
+        room.setName(groupName);
+        room.setType(2); // 2 = GROUP
+        
+        // ★★★ ここを追加: DBエラー回避のため、作成者のIDをセット ★★★
+        room.setUsersId(creator.getUsersId()); 
+        
+        chatRoomRepository.save(room);
+
+        // 2. ChatGroup作成
+        ChatGroup group = new ChatGroup();
+        group.setGroupId(room.getRoomId()); 
+        group.setGroupName(groupName);
+        group.setDescription(""); 
+        chatGroupRepository.save(group);
+
+        // 3. 作成者をメンバーに追加
+        groupService.addMember(room.getRoomId(), creator.getUsersId());
+
+        // 4. 招待メンバー追加
+        if (memberIdsStr != null && !memberIdsStr.trim().isEmpty()) {
+            String[] ids = memberIdsStr.split(",");
+            for (String idStr : ids) {
+                try {
+                    Integer userId = Integer.parseInt(idStr.trim());
+                    if (!userId.equals(creator.getUsersId())) {
+                        groupService.addMember(room.getRoomId(), userId);
+                    }
+                } catch (NumberFormatException e) {
+                    // 無効なIDは無視
+                }
+            }
+        }
+
+        redirectAttributes.addFlashAttribute("successMessage", "グループを作成しました。");
+        return "redirect:/group/list";
+    }
+
+    // --- ★★★ 管理画面用 ★★★ ---
 
     @GetMapping("/group/manage/{groupId}")
     public String manageGroup(@PathVariable("groupId") Integer groupId, Model model) {
@@ -121,9 +185,9 @@ public class GroupController {
         if (groupOpt.isEmpty()) {
             return "redirect:/group/list";
         }
-        // HTML側で ${groupId}, ${currentMembers} を使用しているためセット
         model.addAttribute("groupId", groupId);
         model.addAttribute("currentMembers", groupService.getGroupMembers(groupId));
+        model.addAttribute("group", groupOpt.get());
         return "group-manage";
     }
 

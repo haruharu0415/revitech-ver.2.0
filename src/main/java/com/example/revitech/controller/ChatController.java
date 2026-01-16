@@ -14,6 +14,7 @@ import com.example.revitech.entity.ChatRoom;
 import com.example.revitech.entity.Users;
 import com.example.revitech.repository.ChatGroupRepository;
 import com.example.revitech.repository.ChatRoomRepository;
+import com.example.revitech.service.ChatRoomService; // ★追加
 import com.example.revitech.service.UsersService;
 
 @Controller
@@ -22,19 +23,19 @@ public class ChatController {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatGroupRepository chatGroupRepository;
     private final UsersService usersService;
+    private final ChatRoomService chatRoomService; // ★追加
 
     public ChatController(ChatRoomRepository chatRoomRepository, 
                           ChatGroupRepository chatGroupRepository,
-                          UsersService usersService) {
+                          UsersService usersService,
+                          ChatRoomService chatRoomService) { // ★コンストラクタに追加
         this.chatRoomRepository = chatRoomRepository;
         this.chatGroupRepository = chatGroupRepository;
         this.usersService = usersService;
+        this.chatRoomService = chatRoomService; // ★追加
     }
 
-    /**
-     * チャットルームへの入り口 (DM/グループ共通)
-     * URL: /chat/room/{roomId}
-     */
+    // チャット画面への入り口 (DM・グループ共通)
     @GetMapping("/chat/room/{roomId}")
     public String showChatRoom(@PathVariable("roomId") Integer roomId, Model model) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -44,35 +45,35 @@ public class ChatController {
         Users user = usersService.findByEmail(auth.getName()).orElseThrow();
         model.addAttribute("user", user);
 
-        // ルーム情報を取得
         Optional<ChatRoom> roomOpt = chatRoomRepository.findById(roomId);
         if (roomOpt.isEmpty()) {
             return "redirect:/home";
         }
         ChatRoom room = roomOpt.get();
 
-        // ★分岐処理: グループ(type=2)か、DM(それ以外)か
+        // ★★★ ここが重要！チャットを開いた時点で「既読」にする ★★★
+        // これにより、通知欄からでも一覧からでも、開けば通知が消えます
+        chatRoomService.markRoomAsRead(user.getUsersId(), roomId);
+
+        // ★分岐: グループ(type=2)なら group-chat.html、それ以外は dm.html
         if (room.getType() != null && room.getType() == 2) { 
-            // グループチャットへ
             Optional<ChatGroup> groupOpt = chatGroupRepository.findById(roomId);
             if (groupOpt.isPresent()) {
-                model.addAttribute("group", groupOpt.get()); // group-chat.html用
+                model.addAttribute("group", groupOpt.get());
                 return "group-chat";
             }
         }
 
-        // DMチャットへ
-        model.addAttribute("roomId", room.getRoomId()); // dm.html用
-        model.addAttribute("chatName", room.getName()); // dm.html用
+        // DMの場合
+        model.addAttribute("roomId", room.getRoomId());
+        model.addAttribute("chatName", room.getName());
         return "dm";
     }
 
-    /**
-     * グループチャット専用URL (group-list.htmlなどで明示的に指定されている場合用)
-     * URL: /group/chat/{groupId}
-     */
+    // グループチャット専用URL (一覧画面などで使用)
     @GetMapping("/group/chat/{groupId}")
     public String showGroupChat(@PathVariable("groupId") Integer groupId, Model model) {
-        return showChatRoom(groupId, model); // 上記の共通メソッドに処理を委譲
+        // 上の共通メソッドを呼び出すので、ここから入っても既読になります
+        return showChatRoom(groupId, model);
     }
 }

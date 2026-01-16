@@ -1,21 +1,17 @@
 package com.example.revitech.repository;
 
-import java.util.List;
-import java.util.Optional;
-
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.stereotype.Repository;
 
 import com.example.revitech.entity.GroupMember;
 
+@Repository
 public interface GroupMemberRepository extends JpaRepository<GroupMember, Integer> {
-    // グループ内のメンバー全取得
-    List<GroupMember> findByGroupId(Integer groupId);
     
-    // 特定のユーザーがグループにいるか確認
-    Optional<GroupMember> findByGroupIdAndUserId(Integer groupId, Integer userId);
-    
-    // メンバー削除
-    @Transactional
+    // ★この1行を追加してください！
+    // "GroupId" と "UserId" の組み合わせが存在するかチェックする魔法のメソッド
+    boolean existsByGroupIdAndUserId(Integer groupId, Integer userId);
+
+    // ついでに削除用のメソッドも定義しておくと便利です
     void deleteByGroupIdAndUserId(Integer groupId, Integer userId);
 }

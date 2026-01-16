@@ -149,7 +149,10 @@ public class ChatRoomService {
         Users user2 = usersService.findById(userId2).orElseThrow();
         ChatRoom newDmRoom = new ChatRoom();
         newDmRoom.setType(1);
-        newDmRoom.setCreatorId(userId1);
+        
+        // ★★★ 修正: setCreatorId -> setUsersId ★★★
+        newDmRoom.setUsersId(userId1);
+        
         newDmRoom.setName(user2.getName());
         ChatRoom savedRoom = chatRoomRepository.save(newDmRoom);
 
@@ -190,7 +193,10 @@ public class ChatRoomService {
         ChatRoom group = new ChatRoom();
         group.setName(name);
         group.setType(2);
-        group.setCreatorId(creatorId);
+        
+        // ★★★ 修正: setCreatorId -> setUsersId ★★★
+        group.setUsersId(creatorId);
+        
         ChatRoom savedGroup = chatRoomRepository.save(group);
         
         chatMemberRepository.save(new ChatMember(new ChatMemberId(savedGroup.getRoomId(), creatorId)));

@@ -52,6 +52,8 @@ public class TeacherProfileController {
         return "teacher-profile-edit";
     }
 
+    
+    
     // プロフィール更新
     @PostMapping("/update")
     public String updateProfile(@RequestParam("introduction") String introduction,

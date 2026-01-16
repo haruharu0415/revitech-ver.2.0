@@ -45,7 +45,7 @@ public class RevitechApplication {
                 usersService.saveRawUser(sato);
             }
             // --- 柴田先生 ---
-            if (usersService.findByName("柴田先生").isEmpty()) {
+                if (usersService.findByName("柴田先生").isEmpty()) {
                 Users shibata = new Users();
                 shibata.setName("柴田先生");
                 shibata.setEmail("shibata@example.com");

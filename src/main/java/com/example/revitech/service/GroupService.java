@@ -6,10 +6,11 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.example.revitech.entity.ChatGroup;
+import com.example.revitech.entity.ChatMember;
+import com.example.revitech.entity.ChatMemberId;
 import com.example.revitech.entity.GroupMember;
 import com.example.revitech.entity.Users;
-import com.example.revitech.repository.ChatGroupRepository;
+import com.example.revitech.repository.ChatMemberRepository;
 import com.example.revitech.repository.GroupMemberRepository;
 import com.example.revitech.repository.UsersRepository;
 
@@ -18,75 +19,62 @@ import com.example.revitech.repository.UsersRepository;
 public class GroupService {
 
     private final GroupMemberRepository groupMemberRepository;
+    private final ChatMemberRepository chatMemberRepository; // ★ここが重要
     private final UsersRepository usersRepository;
-    private final ChatGroupRepository chatGroupRepository;
 
-    public GroupService(GroupMemberRepository groupMemberRepository, 
-                        UsersRepository usersRepository,
-                        ChatGroupRepository chatGroupRepository) {
+    public GroupService(GroupMemberRepository groupMemberRepository,
+                        ChatMemberRepository chatMemberRepository, // ★コンストラクタに追加
+                        UsersRepository usersRepository) {
         this.groupMemberRepository = groupMemberRepository;
+        this.chatMemberRepository = chatMemberRepository;
         this.usersRepository = usersRepository;
-        this.chatGroupRepository = chatGroupRepository;
     }
 
-    public List<ChatGroup> getAllGroups() {
-        return chatGroupRepository.findAll();
-    }
-    
-    // ★ 修正: メンバーリストを受け取ってグループ作成
-    public void createGroupWithMembers(String name, String description, List<Integer> memberIds) {
-        ChatGroup group = new ChatGroup();
-        group.setGroupName(name);
-        group.setDescription(description);
-        ChatGroup savedGroup = chatGroupRepository.save(group);
-        
-        // メンバー登録
-        if (memberIds != null) {
-            for (Integer userId : memberIds) {
-                addMember(savedGroup.getGroupId(), userId);
-            }
-        }
-    }
-    
-    // グループ削除
-    public void deleteGroup(Integer groupId) {
-        chatGroupRepository.deleteById(groupId);
-    }
-
-    // 既存メソッド
+    /**
+     * グループのメンバー一覧を取得
+     */
     public List<Users> getGroupMembers(Integer groupId) {
-        List<Integer> memberIds = groupMemberRepository.findByGroupId(groupId).stream()
-                .map(GroupMember::getUserId)
-                .collect(Collectors.toList());
-        if (memberIds.isEmpty()) return List.of();
-        return usersRepository.findAllById(memberIds);
+        // chat_members から取得するのが確実
+        List<ChatMember> chatMembers = chatMemberRepository.findById_RoomId(groupId);
+        return chatMembers.stream()
+            .map(cm -> usersRepository.findById(cm.getId().getUserId()).orElse(null))
+            .filter(u -> u != null)
+            .collect(Collectors.toList());
     }
 
-    public List<Users> getCandidateUsers(Integer groupId) {
-        List<Users> allUsers = usersRepository.findAll().stream()
-                .filter(u -> !"deleted".equals(u.getStatus()))
-                .collect(Collectors.toList());
-
-        List<Integer> memberIds = groupMemberRepository.findByGroupId(groupId).stream()
-                .map(GroupMember::getUserId)
-                .collect(Collectors.toList());
-
-        return allUsers.stream()
-                .filter(u -> !memberIds.contains(u.getUsersId()))
-                .collect(Collectors.toList());
-    }
-
+    /**
+     * メンバーを追加する
+     */
     public void addMember(Integer groupId, Integer userId) {
-        if (groupMemberRepository.findByGroupIdAndUserId(groupId, userId).isPresent()) {
-            return;
+        // 1. グループ管理用のテーブルに追加
+        if (!groupMemberRepository.existsByGroupIdAndUserId(groupId, userId)) {
+            GroupMember gm = new GroupMember();
+            gm.setGroupId(groupId);
+            gm.setUserId(userId);
+            groupMemberRepository.save(gm);
         }
-        GroupMember member = new GroupMember();
-        member.setGroupId(groupId);
-        member.setUserId(userId);
-        groupMemberRepository.save(member);
+
+        // 2. ★★★ チャット機能用のテーブル(chat_members)にも追加！ ★★★
+        // これがないとチャットが見れません
+        if (!chatMemberRepository.existsById_UserIdAndId_RoomId(userId, groupId)) {
+            ChatMember cm = new ChatMember();
+            ChatMemberId cmId = new ChatMemberId(groupId, userId); // 引数の順番に注意(roomId, userId)
+            cm.setId(cmId);
+            chatMemberRepository.save(cm);
+        }
     }
 
+    /**
+     * メンバーを削除する
+     */
     public void removeMember(Integer groupId, Integer userId) {
-        groupMemberRepository.deleteByGroupIdAndUserId(groupId, userId);
+        if (groupMemberRepository.existsByGroupIdAndUserId(groupId, userId)) {
+            groupMemberRepository.deleteByGroupIdAndUserId(groupId, userId);
+        }
+        
+        if (chatMemberRepository.existsById_UserIdAndId_RoomId(userId, groupId)) {
+            ChatMemberId cmId = new ChatMemberId(groupId, userId);
+            chatMemberRepository.deleteById(cmId);
+        }
     }
 }

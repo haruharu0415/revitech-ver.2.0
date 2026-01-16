@@ -15,7 +15,7 @@ import com.example.revitech.entity.TeacherReview;
 import com.example.revitech.repository.QuestionRepository;
 import com.example.revitech.repository.ReviewAnswerRepository;
 import com.example.revitech.repository.TeacherReviewRepository;
-       
+
 @Service
 @Transactional
 public class ReviewService {
@@ -128,5 +128,24 @@ public class ReviewService {
 
     public List<TeacherReview> findUncheckedGrantedDisclosures(Integer teacherId) {
         return teacherReviewRepository.findByTeacherIdAndIsDisclosureGrantedTrue(teacherId);
+    }
+
+    // ★★★ 追加メソッド: 総合平均点の算出 ★★★
+    public Double getTeacherOverallAverage(Integer teacherId) {
+        List<QuestionAverageDto> averages = getTeacherQuestionAverages(teacherId);
+
+        if (averages.isEmpty()) {
+            return 0.0;
+        }
+
+        // 各項目の平均点を合計して、項目数で割る
+        double total = averages.stream()
+                               .mapToDouble(QuestionAverageDto::getAverageScore)
+                               .sum();
+        
+        double overall = total / averages.size();
+
+        // 小数点第2位を四捨五入して、第1位までにする（例: 4.5）
+        return Math.round(overall * 10.0) / 10.0;
     }
 }

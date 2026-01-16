@@ -66,7 +66,7 @@ public class CommentController {
                 }
             }
             
-            // ★★★ 重要: プロフィール情報を取得して画面に渡す ★★★
+            // プロフィール情報を取得して画面に渡す
             TeacherProfile profile = teacherProfileService.getProfile(teacherId);
             List<TeacherImage> profileImages = teacherProfileService.getImages(teacherId);
             
@@ -75,6 +75,11 @@ public class CommentController {
             
             List<QuestionAverageDto> averages = reviewService.getTeacherQuestionAverages(teacherId);
             model.addAttribute("averages", averages);
+            
+            // ★★★ ここに追加！ 総合評価を計算して画面に渡す ★★★
+            Double overallScore = reviewService.getTeacherOverallAverage(teacherId);
+            model.addAttribute("overallScore", overallScore);
+            // ★★★ 追加終わり ★★★
             
             List<TeacherReview> allReviews = reviewService.getTeacherReviews(teacherId);
             
