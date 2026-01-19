@@ -11,10 +11,12 @@ import com.example.revitech.entity.Survey;
 
 @Repository
 public interface SurveyRepository extends JpaRepository<Survey, Integer> {
-    // 先生が作成したアンケート一覧
+
+    // 先生が作成したアンケートを新しい順に取得
     List<Survey> findByTeacherIdOrderByCreatedAtDesc(Integer teacherId);
 
-    // 生徒が対象になっているアンケート一覧を取得するカスタムクエリ
-    @Query("SELECT s FROM Survey s JOIN SurveyTarget t ON s.surveyId = t.surveyId WHERE t.studentId = :studentId ORDER BY s.createdAt DESC")
+    // ★重要: 生徒IDを指定して、その生徒が対象になっているアンケートを取得
+    // Survey テーブルと SurveyTarget テーブルを結合して検索します
+    @Query("SELECT s FROM Survey s JOIN SurveyTarget st ON s.surveyId = st.surveyId WHERE st.studentId = :studentId ORDER BY s.createdAt DESC")
     List<Survey> findByTargetStudentId(@Param("studentId") Integer studentId);
 }

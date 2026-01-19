@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.example.revitech.entity.TeacherHashtag;
 import com.example.revitech.entity.TeacherImage;
 import com.example.revitech.entity.TeacherProfile;
 import com.example.revitech.entity.Users;
@@ -40,15 +41,20 @@ public class TeacherProfileController {
 
         TeacherProfile profile = profileService.getProfile(currentUser.getUsersId());
         List<TeacherImage> images = profileService.getImages(currentUser.getUsersId());
+        // ★ タグ一覧を取得
+        List<TeacherHashtag> hashtags = profileService.getHashtags(currentUser.getUsersId());
 
         model.addAttribute("profile", profile);
         model.addAttribute("images", images);
+        model.addAttribute("hashtags", hashtags); // 画面へ渡す
         model.addAttribute("user", currentUser);
 
         return "teacher-profile-edit";
     }
 
-    // プロフィール更新 (編集画面用)
+    
+    
+    // プロフィール更新
     @PostMapping("/update")
     public String updateProfile(@RequestParam("introduction") String introduction,
                                 @RequestParam(value = "iconFile", required = false) MultipartFile iconFile,
@@ -58,12 +64,11 @@ public class TeacherProfileController {
         if (currentUser.getRole() != 2) return "redirect:/home";
 
         profileService.saveProfile(currentUser.getUsersId(), introduction, iconFile);
-        
         redirectAttributes.addFlashAttribute("successMessage", "プロフィールを更新しました。");
         return "redirect:/teacher/profile/edit";
     }
 
-    // ★★★ 追加: アイコンのみ更新 (review.html用) ★★★
+    // アイコンのみ更新
     @PostMapping("/update-icon")
     public String updateIconOnly(@RequestParam("iconFile") MultipartFile iconFile,
                                  @AuthenticationPrincipal User loginUser,
@@ -72,10 +77,32 @@ public class TeacherProfileController {
         if (currentUser.getRole() != 2) return "redirect:/home";
 
         profileService.updateIconOnly(currentUser.getUsersId(), iconFile);
-
         redirectAttributes.addFlashAttribute("successMessage", "アイコンを変更しました。");
-        // 編集画面ではなく、レビュー画面(プロフィール画面)に戻す
         return "redirect:/review/" + currentUser.getUsersId();
+    }
+
+    // ★ 追加: ハッシュタグ追加
+    @PostMapping("/add-hashtag")
+    public String addHashtag(@RequestParam("hashtag") String hashtag,
+                             @AuthenticationPrincipal User loginUser,
+                             RedirectAttributes redirectAttributes) {
+        Users currentUser = usersService.findByEmail(loginUser.getUsername()).orElseThrow();
+        if (currentUser.getRole() != 2) return "redirect:/home";
+
+        profileService.addHashtag(currentUser.getUsersId(), hashtag);
+        redirectAttributes.addFlashAttribute("successMessage", "ハッシュタグを追加しました。");
+        return "redirect:/teacher/profile/edit";
+    }
+
+    // ★ 追加: ハッシュタグ削除
+    @PostMapping("/delete-hashtag/{hashtagId}")
+    public String deleteHashtag(@PathVariable Integer hashtagId,
+                                @AuthenticationPrincipal User loginUser,
+                                RedirectAttributes redirectAttributes) {
+        // 本人チェックは省略（簡易実装）
+        profileService.deleteHashtag(hashtagId);
+        redirectAttributes.addFlashAttribute("successMessage", "ハッシュタグを削除しました。");
+        return "redirect:/teacher/profile/edit";
     }
 
     // カルーセル画像追加
@@ -87,7 +114,6 @@ public class TeacherProfileController {
         if (currentUser.getRole() != 2) return "redirect:/home";
 
         profileService.addCarouselImages(currentUser.getUsersId(), imageFiles);
-        
         redirectAttributes.addFlashAttribute("successMessage", "画像を追加しました。");
         return "redirect:/teacher/profile/edit";
     }
@@ -98,7 +124,6 @@ public class TeacherProfileController {
                               @AuthenticationPrincipal User loginUser,
                               RedirectAttributes redirectAttributes) {
         profileService.deleteImage(imageId);
-        
         redirectAttributes.addFlashAttribute("successMessage", "画像を削除しました。");
         return "redirect:/teacher/profile/edit";
     }

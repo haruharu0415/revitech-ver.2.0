@@ -32,7 +32,8 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         CorsConfiguration config = new CorsConfiguration();
         config.setAllowCredentials(true);
-        config.addAllowedOrigin("http://localhost:8080");
+        // 開発環境に合わせて調整してください
+        config.addAllowedOrigin("http://localhost:8080"); 
         config.addAllowedHeader("*");
         config.addAllowedMethod("*");
         source.registerCorsConfiguration("/**", config);
@@ -45,9 +46,9 @@ public class SecurityConfig {
             .cors(cors -> {})
             .authorizeHttpRequests(authorize -> authorize
                 // 静的リソースへのアクセスを許可
-                // ★★★ "/uploads/**" を追加して、アップロード画像を表示できるようにします ★★★
                 .requestMatchers("/css/**", "/js/**", "/webjars/**", "/images/**", "/uploads/**").permitAll()
                 
+                // ログイン・登録関連は誰でもアクセス可能
                 .requestMatchers(
                     "/", "/login", "/terms", "/option",
                     "/role-select", 
@@ -55,7 +56,13 @@ public class SecurityConfig {
                     "/signup"
                 ).permitAll()
                 
+                // WebSocket接続
                 .requestMatchers("/ws/**").permitAll()
+
+                // ★★★ ここに追加: チャット・グループ関連のアクセスを「ログイン済みなら許可」と明示 ★★★
+                .requestMatchers("/group/**", "/chat/**", "/api/**").authenticated()
+                
+                // それ以外はすべて認証が必要
                 .anyRequest().authenticated()
             )
             .formLogin(login -> login

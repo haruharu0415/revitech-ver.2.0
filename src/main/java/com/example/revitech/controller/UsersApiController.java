@@ -26,7 +26,6 @@ public class UsersApiController {
     public List<UserSearchDto> searchUsers(@RequestParam String query) {
         List<Users> searchResults = usersService.searchUsers(query);
         return searchResults.stream()
-                // ★ 修正: user.getId() -> user.getUsersId()
                 .map(user -> new UserSearchDto(user.getUsersId(), user.getName(), user.getEmail()))
                 .collect(Collectors.toList());
     }

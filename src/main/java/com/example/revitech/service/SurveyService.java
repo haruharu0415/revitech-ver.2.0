@@ -37,16 +37,16 @@ public class SurveyService {
         this.reviewAnswerRepository = reviewAnswerRepository;
     }
 
-    // ★★★ 修正: targetTeacherId を受け取る ★★★
+    // アンケート作成
     public void createSurvey(String title, Integer creatorTeacherId, Integer targetTeacherId, List<String> questionBodies, List<Integer> targetUserIds) {
         // 1. Survey本体の保存
         Survey survey = new Survey();
         survey.setTitle(title);
         survey.setTeacherId(creatorTeacherId); // 作成者
-        survey.setTargetTeacherId(targetTeacherId); // ★ 紐付け先
+        survey.setTargetTeacherId(targetTeacherId); // 紐付け先
         Survey savedSurvey = surveyRepository.save(survey);
 
-        // 2. 質問の保存 (変更なし)
+        // 2. 質問の保存
         if (questionBodies != null) {
             for (String body : questionBodies) {
                 if (body != null && !body.trim().isEmpty()) {
@@ -58,7 +58,7 @@ public class SurveyService {
             }
         }
 
-        // 3. 対象者の保存 (変更なし)
+        // 3. 対象者の保存
         if (targetUserIds != null) {
             for (Integer studentId : targetUserIds) {
                 SurveyTarget target = new SurveyTarget();
@@ -69,21 +69,24 @@ public class SurveyService {
         }
     }
     
-    // ... (その他のメソッドは省略) ...
-    // アンケート削除 (既存)
+    // アンケート削除
     public void deleteSurvey(Integer surveyId) {
         surveyTargetRepository.deleteBySurveyId(surveyId);
+        
+        // 関連する回答も削除する必要がある場合はここに追加
+        // reviewAnswerRepository.deleteBySurveyId(surveyId); 
+        
         teacherReviewRepository.deleteBySurveyId(surveyId);
         questionRepository.deleteBySurveyId(surveyId);
         surveyRepository.deleteById(surveyId);
     }
 
-    // 先生用一覧 (既存)
+    // 先生用一覧
     public List<Survey> getSurveysByTeacher(Integer teacherId) {
         return surveyRepository.findByTeacherIdOrderByCreatedAtDesc(teacherId);
     }
 
-    // 生徒用一覧 (既存)
+    // 生徒用一覧
     public List<Survey> getSurveysForStudent(Integer studentId) {
         return surveyRepository.findByTargetStudentId(studentId);
     }
@@ -100,20 +103,23 @@ public class SurveyService {
         return teacherReviewRepository.existsBySurveyIdAndStudentId(surveyId, studentId);
     }
 
+    // ★★★ 修正箇所: ここで ReviewAnswer に新しい3項目をセットします ★★★
     public void saveSurveyResponse(Integer studentId, ReviewForm form) {
         if (hasStudentAnswered(form.getSurveyId(), studentId)) {
             throw new IllegalStateException("ALREADY_ANSWERED");
         }
 
+        // 1. 大元の回答(TeacherReview)を保存
         TeacherReview review = new TeacherReview();
         review.setSurveyId(form.getSurveyId());
-        review.setTeacherId(form.getTeacherId()); // ★ TeacherReviewのteacherIdは、targetTeacherIdが入る
+        review.setTeacherId(form.getTeacherId());
         review.setStudentId(studentId);
         review.setScore(form.getScore());
         review.setComment(form.getComment());
         
         TeacherReview savedReview = teacherReviewRepository.save(review);
         
+        // 2. 詳細な質問への回答(ReviewAnswer)を保存
         if (form.getAnswers() != null) {
             for (Map.Entry<Integer, Integer> entry : form.getAnswers().entrySet()) {
                 Integer questionId = entry.getKey();
@@ -124,6 +130,13 @@ public class SurveyService {
                     answer.setReviewId(savedReview.getReviewId());
                     answer.setQuestionId(questionId);
                     answer.setScore(score);
+                    
+                    // ★★★ 追加: ここが抜けていました！ ★★★
+                    // これらをセットしないと、詳細画面の検索(findBySurveyIdAndStudentId)に引っかかりません
+                    answer.setSurveyId(form.getSurveyId());
+                    answer.setStudentId(studentId);
+                    answer.setTeacherId(form.getTeacherId());
+                    
                     reviewAnswerRepository.save(answer);
                 }
             }

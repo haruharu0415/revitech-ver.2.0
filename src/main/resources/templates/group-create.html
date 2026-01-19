@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>グループ作成・メンバー招待</title>
   <link th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
   <style>
     .selected-member {
       display: inline-block;
@@ -33,44 +33,48 @@
   </style>
 </head>
 <body>
+  <div th:replace="~{header :: header-fragment}"></div>
+  
   <main class="container p-3">
     <h1 class="mb-4">グループチャットの新規作成</h1>
 
-    <form id="groupCreateForm" th:action="@{/chat-room/group/create}" method="post">
-      <input type="hidden" name="creatorId" id="creatorId" th:value="${currentUserId}" /> 
+    <form id="groupCreateForm" th:action="@{/group/create}" method="post">
+      <input type="hidden" name="creatorId" id="creatorId" th:value="${user.usersId}" /> 
       
       <div class="mb-3">
         <label for="groupName" class="form-label">グループ名</label>
-        <input type="text" class="form-control" id="groupName" name="name" required placeholder="グループ名を入力" maxlength="50">
+        <input type="text" class="form-control" id="groupName" name="name" required="required" placeholder="グループ名を入力" maxlength="50" />
       </div>
 
       <div class="mb-3">
         <label class="form-label">メンバーの招待</label>
         
         <div id="selectedMembersContainer" class="p-2 border rounded mb-2" style="min-height: 40px;">
-            </div>
+        </div>
 
         <div class="input-group">
-          <input type="text" class="form-control" id="memberSearchInput" placeholder="名前またはメールアドレスでユーザーを検索">
+          <input type="text" class="form-control" id="memberSearchInput" placeholder="名前またはメールアドレスでユーザーを検索" />
           <button class="btn btn-secondary" type="button" id="searchButton">
             <i class="bi bi-search"></i> 検索
           </button>
         </div>
         
         <div id="searchResults" class="list-group search-results" style="display:none;">
-          </div>
+        </div>
 
-        <input type="hidden" name="memberIds" id="memberIds" required>
+        <input type="hidden" name="memberIds" id="memberIds" required="required" />
       </div>
 
       <button type="submit" class="btn btn-primary w-100">グループを作成</button>
-      <a th:href="@{/chat-list}" class="btn btn-outline-secondary w-100 mt-2">キャンセル</a>
+      <a th:href="@{/group/list}" class="btn btn-outline-secondary w-100 mt-2">キャンセル</a>
     </form>
   </main>
 
-  <script th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"></script>
-  <script>
-    const creatorId = document.getElementById('creatorId').value;
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script th:inline="none">
+    const creatorIdField = document.getElementById('creatorId');
+    const creatorId = creatorIdField ? creatorIdField.value : '';
+
     const searchInput = document.getElementById('memberSearchInput');
     const searchButton = document.getElementById('searchButton');
     const searchResultsDiv = document.getElementById('searchResults');
@@ -78,26 +82,17 @@
     const memberIdsInput = document.getElementById('memberIds');
     const groupCreateForm = document.getElementById('groupCreateForm');
 
-    // 既に選択されているメンバーIDのSet
-    const selectedMemberIds = new Set([creatorId]); 
-    const selectedMemberData = new Map(); 
-
+    const selectedMemberIds = new Set();
+    if(creatorId) selectedMemberIds.add(creatorId);
+    
     updateMemberIdsInput();
 
     function addSelectedMemberToUI(id, name) {
       if (!id || id === 'undefined') return;
-
-      // 作成者本人はリストに表示しない
-      if (id == creatorId) { 
-          return; 
-      }
-      
-      if (selectedMemberIds.has(String(id))) {
-        return; 
-      }
+      if (id == creatorId) return; 
+      if (selectedMemberIds.has(String(id))) return; 
       
       selectedMemberIds.add(String(id));
-      selectedMemberData.set(id, name);
       
       const tag = document.createElement('span');
       tag.className = 'selected-member';
@@ -112,7 +107,8 @@
     }
 
     function updateMemberIdsInput() {
-      const ids = Array.from(selectedMemberIds).filter(id => id && id !== 'undefined');
+      const ids = Array.from(selectedMemberIds)
+                       .filter(id => id && id !== 'undefined' && id !== creatorId);
       memberIdsInput.value = ids.join(','); 
     }
 
@@ -153,8 +149,6 @@
         const item = document.createElement('div');
         item.className = 'list-group-item list-group-item-action';
         item.textContent = `${user.name} (${user.email})`;
-        item.setAttribute('data-id', userId);
-        item.setAttribute('data-name', user.name);
         
         item.addEventListener('click', (e) => {
           addSelectedMemberToUI(userId, user.name);
@@ -168,7 +162,6 @@
       searchResultsDiv.style.display = searchResultsDiv.children.length > 0 ? 'block' : 'none';
     }
 
-    // イベントリスナー
     searchButton.addEventListener('click', searchUsers);
     searchInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
@@ -181,24 +174,16 @@
       const removeBtn = e.target.closest('.remove-btn');
       if (removeBtn) {
         const idToRemove = removeBtn.getAttribute('data-id');
-        
         selectedMemberIds.delete(idToRemove);
-        selectedMemberData.delete(Number(idToRemove));
-
-        const tagToRemove = removeBtn.closest('.selected-member');
-        if (tagToRemove) {
-          tagToRemove.remove();
-        }
-        
+        removeBtn.closest('.selected-member').remove();
         updateMemberIdsInput();
       }
     });
     
     groupCreateForm.addEventListener('submit', (e) => {
-        const memberCount = selectedMemberIds.size;
-        if (memberCount < 2) {
+        if (!memberIdsInput.value) {
             e.preventDefault();
-            alert('グループには自分自身を含め、最低2名（他に1名以上）のメンバーが必要です。');
+            alert('グループには自分以外に、最低1名のメンバーを招待してください。');
         }
     });
   </script>

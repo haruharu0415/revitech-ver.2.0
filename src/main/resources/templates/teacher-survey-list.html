@@ -42,10 +42,14 @@
                                 </small>
                             </div>
                             
-                            <div class="d-flex gap-2">
+                            <div class="d-flex gap-2 align-items-center">
+                                <a th:href="@{/teacher/survey/result/{id}(id=${survey.surveyId})}" class="btn btn-info btn-sm text-white">
+                                    <i class="bi bi-eye-fill"></i> 回答詳細
+                                </a>
+
                                 <form th:action="@{/teacher/survey/delete/{id}(id=${survey.surveyId})}" method="post" 
                                       onsubmit="return confirm('本当にこのアンケートを削除しますか？\n\n※ 集計結果を含むすべての関連データが完全に削除されます。');">
-                                    <button type="submit" class="btn btn-outline-danger">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm">
                                         <i class="bi bi-trash"></i> 削除
                                     </button>
                                 </form>
@@ -63,4 +67,3 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-</html>

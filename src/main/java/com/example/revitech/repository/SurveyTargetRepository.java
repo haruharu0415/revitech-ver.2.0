@@ -7,6 +7,7 @@ import com.example.revitech.entity.SurveyTarget;
 
 @Repository
 public interface SurveyTargetRepository extends JpaRepository<SurveyTarget, Integer> {
-    // ★★★ 追加: アンケートIDで対象者を削除 ★★★
+
+    // 特定のアンケートに紐づく対象者データを全て削除
     void deleteBySurveyId(Integer surveyId);
 }

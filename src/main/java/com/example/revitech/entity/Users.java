@@ -10,12 +10,9 @@ import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import jakarta.persistence.Transient; // 追加
-import lombok.Data;
 
 @Entity
-@Table(name = "Users")
-@Data
+@Table(name = "users")
 public class Users {
 
     @Id
@@ -23,44 +20,170 @@ public class Users {
     @Column(name = "users_id")
     private Integer usersId;
 
-    @Column(name = "name", length = 50, nullable = false, unique = true)
+    @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "email", length = 50, nullable = false, unique = true)
+    @Column(name = "email", nullable = false, unique = true)
     private String email;
 
-    @Column(name = "password", length = 255, nullable = false)
+    @Column(name = "password", nullable = false)
     private String password;
-
-    @Column(name = "status", length = 10, nullable = false)
-    private String status;
 
     @Column(name = "role", nullable = false)
     private Integer role;
 
-    @Column(name = "create_at", nullable = false, updatable = false)
+    @Column(name = "status")
+    private String status;
+
+    @Column(name = "chat_sort_order")
+    private Integer chatSortOrder;
+
+    // --- 作成日時関連 ---
+
+    // 本来の正しいスペル
+    @Column(name = "created_at")
+    private LocalDateTime createdAt;
+
+    // DBに残っている古いスペル ("d"なし)
+    @Column(name = "create_at")
     private LocalDateTime createAt;
 
-    @Column(name = "update_at", nullable = false)
+
+    // --- 更新日時関連（★今回の修正箇所） ---
+
+    // 本来の正しいスペル
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    // ★追加: DBに残っている古いスペル ("d"なし)
+    @Column(name = "update_at")
     private LocalDateTime updateAt;
 
+
+    // --- イベントリスナー ---
+
+    // 新規登録時 (INSERT前)
     @PrePersist
-    protected void onCreate() {
-        createAt = LocalDateTime.now();
-        updateAt = LocalDateTime.now();
+    public void onPrePersist() {
+        LocalDateTime now = LocalDateTime.now();
+        
+        // 作成日時をセット
+        this.createdAt = now;
+        this.createAt = now; 
+
+        // 更新日時もセット (★ updateAt も忘れずに！)
+        this.updatedAt = now;
+        this.updateAt = now; 
+
+        // デフォルト値の設定
+        if (this.chatSortOrder == null) {
+            this.chatSortOrder = 1; 
+        }
+        if (this.status == null) {
+            this.status = "active";
+        }
     }
 
+    // 更新時 (UPDATE前)
     @PreUpdate
-    protected void onUpdate() {
-        updateAt = LocalDateTime.now();
+    public void onPreUpdate() {
+        LocalDateTime now = LocalDateTime.now();
+        
+        // 更新日時を現在時刻で上書き (★ updateAt も更新！)
+        this.updatedAt = now;
+        this.updateAt = now;
     }
-    
-    // ★★★ エラー回避用に追加：アイコンURL取得用メソッド ★★★
-    // データベースには保存しない一時的なフィールドとして定義
-    @Transient
-    public String getIconUrl() {
-        // 本来は TeacherProfile や StudentProfile から取得すべきですが、
-        // 今はエラー回避のため null (デフォルト画像を表示させる) を返します。
-        return null;
+
+    // --- ゲッター・セッター ---
+
+    public Integer getUsersId() {
+        return usersId;
+    }
+
+    public void setUsersId(Integer usersId) {
+        this.usersId = usersId;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public Integer getRole() {
+        return role;
+    }
+
+    public void setRole(Integer role) {
+        this.role = role;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public Integer getChatSortOrder() {
+        return chatSortOrder;
+    }
+
+    public void setChatSortOrder(Integer chatSortOrder) {
+        this.chatSortOrder = chatSortOrder;
+    }
+
+    // --- CreatedAt ---
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getCreateAt() {
+        return createAt;
+    }
+
+    public void setCreateAt(LocalDateTime createAt) {
+        this.createAt = createAt;
+    }
+
+    // --- UpdatedAt ---
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(LocalDateTime updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    // ★追加: updateAt用
+    public LocalDateTime getUpdateAt() {
+        return updateAt;
+    }
+
+    public void setUpdateAt(LocalDateTime updateAt) {
+        this.updateAt = updateAt;
     }
 }

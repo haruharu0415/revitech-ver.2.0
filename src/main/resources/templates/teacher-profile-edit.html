@@ -1,62 +1,107 @@
 <!DOCTYPE html>
-<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>プロフィール編集</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>プロフィール編集 (教員)</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <th:block th:insert="~{header :: header-styles}"></th:block>
 </head>
 <body class="bg-light">
     <div th:replace="~{header :: header-fragment}"></div>
 
-    <main class="container p-4" style="max-width: 800px;">
-        <h2 class="mb-4">プロフィール編集</h2>
+    <main class="container p-4">
         
-        <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
-
-        <div class="card mb-4">
-            <div class="card-header">基本情報</div>
-            <div class="card-body">
-                <form th:action="@{/teacher/profile/update}" method="post" enctype="multipart/form-data">
-                    <div class="mb-3 text-center">
-                        <img th:src="${profile.iconBase64 != null ? profile.iconBase64 : '/images/default-icon.png'}" 
-                             class="rounded-circle border" style="width: 120px; height: 120px; object-fit: cover;">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">アイコン画像 (変更する場合のみ)</label>
-                        <input type="file" name="iconFile" class="form-control" accept="image/*">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">自己紹介</label>
-                        <textarea name="introduction" class="form-control" rows="5" th:text="${profile.introduction}"></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-primary w-100">更新</button>
-                </form>
-            </div>
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show">
+            <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
 
-        <div class="card">
-            <div class="card-header">ギャラリー画像</div>
-            <div class="card-body">
-                <form th:action="@{/teacher/profile/add-images}" method="post" enctype="multipart/form-data" class="mb-3">
-                    <div class="input-group">
-                        <input type="file" name="imageFiles" class="form-control" multiple accept="image/*" required>
-                        <button class="btn btn-secondary">追加</button>
-                    </div>
-                </form>
-                <div class="row g-2">
-                    <div th:each="img : ${images}" class="col-3 position-relative">
-                        <img th:src="${img.imageBase64}" class="img-thumbnail w-100" style="height: 100px; object-fit: cover;">
-                        <form th:action="@{/teacher/profile/delete-image/{id}(id=${img.imageId})}" method="post" class="position-absolute top-0 end-0">
-                            <button class="btn btn-danger btn-sm py-0">&times;</button>
+        <h2 class="mb-4 text-center text-primary fw-bold">プロフィール編集</h2>
+
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white fw-bold">基本情報</div>
+                    <div class="card-body">
+                        <form th:action="@{/teacher/profile/update}" method="post" enctype="multipart/form-data">
+                            
+                            <div class="mb-3 text-center">
+                                <img th:src="${profile.iconBase64 != null ? profile.iconBase64 : '/images/default-icon.png'}" 
+                                     class="rounded-circle shadow-sm border" style="width: 100px; height: 100px; object-fit: cover;">
+                                <div class="mt-2">
+                                    <label for="iconFile" class="form-label small text-muted">アイコン変更</label>
+                                    <input type="file" name="iconFile" id="iconFile" class="form-control form-control-sm mx-auto" style="max-width: 300px;">
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">自己紹介文</label>
+                                <textarea name="introduction" class="form-control" rows="5" th:text="${profile.introduction}" placeholder="自己紹介を入力"></textarea>
+                            </div>
+
+                            <div class="text-center">
+                                <button type="submit" class="btn btn-primary px-4">保存する</button>
+                            </div>
                         </form>
                     </div>
                 </div>
+
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white fw-bold text-info"><i class="bi bi-hash me-2"></i>ハッシュタグ設定</div>
+                    <div class="card-body">
+                        <p class="small text-muted">「#Java」や「#初心者歓迎」など、得意分野や特徴を登録しましょう。</p>
+                        
+                        <form th:action="@{/teacher/profile/add-hashtag}" method="post" class="row g-2 mb-3">
+                            <div class="col-auto flex-grow-1">
+                                <input type="text" name="hashtag" class="form-control" placeholder="#タグを入力" required>
+                            </div>
+                            <div class="col-auto">
+                                <button type="submit" class="btn btn-info text-white">追加</button>
+                            </div>
+                        </form>
+
+                        <div class="d-flex flex-wrap gap-2">
+                            <div th:each="tag : ${hashtags}" class="badge bg-light text-dark border p-2 d-flex align-items-center">
+                                <span th:text="${tag.hashtag}" class="me-2 fs-6">#Tag</span>
+                                <form th:action="@{/teacher/profile/delete-hashtag/{id}(id=${tag.hashtagId})}" method="post">
+                                    <button type="submit" class="btn-close" aria-label="Close" style="font-size: 0.7em;"></button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white fw-bold">ギャラリー画像 (授業風景など)</div>
+                    <div class="card-body">
+                        <form th:action="@{/teacher/profile/add-images}" method="post" enctype="multipart/form-data" class="mb-3">
+                            <div class="input-group">
+                                <input type="file" name="imageFiles" class="form-control" multiple accept="image/*">
+                                <button type="submit" class="btn btn-secondary">追加</button>
+                            </div>
+                        </form>
+
+                        <div class="row g-2">
+                            <div class="col-4 position-relative" th:each="img : ${images}">
+                                <img th:src="${img.imageBase64}" class="img-fluid rounded border" style="width: 100%; height: 100px; object-fit: cover;">
+                                <form th:action="@{/teacher/profile/delete-image/{id}(id=${img.imageId})}" method="post" class="position-absolute top-0 end-0">
+                                    <button type="submit" class="btn btn-sm btn-danger rounded-circle p-0" style="width: 20px; height: 20px; line-height: 1;">&times;</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-3">
+                    <a th:href="@{/review/{id}(id=${user.usersId})}" class="btn btn-link">プロフィール確認画面へ戻る</a>
+                </div>
+
             </div>
         </div>
-        
-        <div class="mt-3 text-center">
-            <a th:href="@{/option}" class="btn btn-link">戻る</a>
-        </div>
     </main>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

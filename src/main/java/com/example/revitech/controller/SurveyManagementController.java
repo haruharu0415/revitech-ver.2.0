@@ -13,9 +13,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import com.example.revitech.dto.TeacherListDto; // TeacherListDto を使用するため追加
+import com.example.revitech.dto.SurveyResponseDetailDto;
+import com.example.revitech.dto.TeacherListDto;
 import com.example.revitech.entity.Survey;
 import com.example.revitech.entity.Users;
+import com.example.revitech.service.ReviewService;
 import com.example.revitech.service.SurveyService;
 import com.example.revitech.service.UsersService;
 
@@ -25,10 +27,14 @@ public class SurveyManagementController {
 
     private final SurveyService surveyService;
     private final UsersService usersService;
+    private final ReviewService reviewService; 
 
-    public SurveyManagementController(SurveyService surveyService, UsersService usersService) {
+    public SurveyManagementController(SurveyService surveyService, 
+                                      UsersService usersService,
+                                      ReviewService reviewService) {
         this.surveyService = surveyService;
         this.usersService = usersService;
+        this.reviewService = reviewService; 
     }
 
     // アンケート作成画面表示
@@ -39,8 +45,7 @@ public class SurveyManagementController {
             return "redirect:/home";
         }
 
-        // ★★★ 修正: 全教員リストを取得して画面に渡す ★★★
-        List<TeacherListDto> teachers = usersService.getTeacherListDetails();
+        List<TeacherListDto> teachers = usersService.getTeacherListDetails(null);
         model.addAttribute("teachers", teachers);
 
         model.addAttribute("subjectUserMap", usersService.findAllStudentsGroupedBySubject());
@@ -50,7 +55,7 @@ public class SurveyManagementController {
     // アンケート保存処理
     @PostMapping("/create")
     public String createSurvey(@RequestParam("title") String title,
-                               @RequestParam("targetTeacherId") Integer targetTeacherId, // ★★★ 追加: 結果を紐づける先生のID ★★★
+                               @RequestParam("targetTeacherId") Integer targetTeacherId,
                                @RequestParam("questionBody") List<String> questionBodies,
                                @RequestParam(value = "targetUserIds", required = false) List<Integer> targetUserIds,
                                @AuthenticationPrincipal User loginUser,
@@ -61,15 +66,13 @@ public class SurveyManagementController {
             return "redirect:/home";
         }
         
-        // ★★★ 修正: targetTeacherId を Service に渡す ★★★
         surveyService.createSurvey(title, currentUser.getUsersId(), targetTeacherId, questionBodies, targetUserIds);
         
         redirectAttributes.addFlashAttribute("successMessage", "アンケート「" + title + "」を作成しました。");
         return "redirect:/teacher/survey/list"; 
     }
     
-    // ... (その他 listSurveys, deleteSurvey は省略) ...
-
+    // アンケート一覧表示
     @GetMapping("/list")
     public String listSurveys(Model model, @AuthenticationPrincipal User loginUser) {
         Users currentUser = usersService.findByEmail(loginUser.getUsername()).orElseThrow();
@@ -83,6 +86,7 @@ public class SurveyManagementController {
         return "teacher-survey-list";
     }
 
+    // アンケート削除
     @PostMapping("/delete/{surveyId}")
     public String deleteSurvey(@PathVariable("surveyId") Integer surveyId,
                                @AuthenticationPrincipal User loginUser,
@@ -101,5 +105,28 @@ public class SurveyManagementController {
         }
 
         return "redirect:/teacher/survey/list";
+    }
+
+    // アンケート回答詳細一覧画面
+    @GetMapping("/result/{surveyId}")
+    public String viewSurveyResults(@PathVariable("surveyId") Integer surveyId,
+                                    Model model,
+                                    @AuthenticationPrincipal User loginUser) {
+        Users currentUser = usersService.findByEmail(loginUser.getUsername()).orElseThrow();
+        if (currentUser.getRole() != 2 && currentUser.getRole() != 3) {
+            return "redirect:/home";
+        }
+
+        // アンケート情報の取得
+        Survey survey = surveyService.findSurveyById(surveyId)
+                        .orElseThrow(() -> new RuntimeException("Survey not found"));
+        
+        // ★★★ 修正: 第2引数に閲覧者の権限(role)を渡す ★★★
+        List<SurveyResponseDetailDto> responses = reviewService.getSurveyResponseDetails(surveyId, currentUser.getRole());
+
+        model.addAttribute("survey", survey);
+        model.addAttribute("responses", responses);
+
+        return "teacher-survey-result"; 
     }
 }
