@@ -1,123 +1,204 @@
 <!DOCTYPE html>
-<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>新規アカウント作成</title>
-    <link th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <title>新規アカウント作成 - Revitech</title>
+    
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    
     <style>
+        :root {
+            --brand-blue: #007bff;
+            --bg-gray: #f4f7f9;
+        }
+
         body {
-            background-color: #f8f9fa; /* 明るい背景色 */
+            background-color: var(--bg-gray);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
-        .signup-container {
-            max-width: 450px;
-            margin-top: 50px;
-            margin-bottom: 50px;
+
+        .top-navbar {
+            background-color: #fff;
+            padding: 15px 60px;
+            border-bottom: 1px solid #e0e0e0;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
         }
-        .card {
-            border: none; /* カードの枠線を消してスッキリさせる */
+
+        .brand-logo {
+            font-weight: 800;
+            color: var(--brand-blue);
+            font-size: 1.5rem;
+            text-decoration: none;
         }
-        /* アイコンをフォーム内に配置するためのラッパー */
-        .input-group-text {
-            background-color: transparent;
-            border-right: none;
+
+        .main-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 120px 20px 80px 20px;
         }
-        .form-control {
-            border-left: none;
+
+        .signup-card {
+            background: #fff;
+            border: none;
+            border-radius: 24px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.04);
+            width: 100%;
+            max-width: 900px;
+            padding: 60px 50px;
         }
-        /* フローティングラベルとアイコンを共存させるための調整 */
-        .form-floating .form-control {
-            border-left: 1px solid #dee2e6;
+
+        .card-header-custom {
+            text-align: center;
+            margin-bottom: 60px;
         }
-        .form-floating > .input-group-text {
-            padding-top: 1.625rem;
-            padding-bottom: 0.625rem;
-            border-right: 1px solid #dee2e6;
-            border-left: none;
+
+        .card-header-custom h2 {
+            font-weight: 800;
+            font-size: 2.2rem;
+            color: #222;
         }
-        .form-floating > label {
-            padding-left: 3rem; /* アイコンの分だけラベルを右にずらす */
+
+        .form-item-wrapper {
+            max-width: 400px;
+            margin: 0 auto;
         }
-        .form-floating > .form-control-plaintext ~ label,
-        .form-floating > .form-control:focus ~ label,
-        .form-floating > .form-control:not(:placeholder-shown) ~ label {
-            padding-left: 0.75rem; /* 入力中・入力後はラベルを元の位置に戻す */
+
+        .form-label {
+            font-weight: 700;
+            color: #555;
+            margin-bottom: 12px;
+            font-size: 0.95rem;
+            display: block;
+        }
+
+        .form-control, .form-select {
+            border-radius: 12px;
+            padding: 15px 18px;
+            border: 1px solid #e0e4e8;
+            background-color: #f9fbfc;
+            font-size: 1rem;
+        }
+
+        .form-control:focus, .form-select:focus {
+            background-color: #fff;
+            border-color: var(--brand-blue);
+            box-shadow: 0 0 0 4px rgba(0,123,255,0.08);
+        }
+
+        .btn-register {
+            background-color: var(--brand-blue);
+            border: none;
+            padding: 18px;
+            border-radius: 14px;
+            font-size: 1.15rem;
+            font-weight: 800;
+            width: 100%;
+            max-width: 400px;
+            margin: 40px auto 0 auto;
+            display: block;
+            color: white;
+        }
+
+        .btn-register:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,123,255,0.25);
+        }
+
+        .btn-back {
+            color: #999;
+            text-decoration: none;
+            font-weight: 600;
+            display: block;
+            text-align: center;
+            margin-top: 25px;
         }
     </style>
 </head>
-<body class="bg-light">
-    <div class="container signup-container">
-        <div class="card shadow-sm">
-            <div class="card-body p-4 p-md-5">
-                <h2 class="card-title text-center fw-bold mb-4">新規アカウント作成</h2>
-                
-                <div th:switch="${signupForm.role}" class="text-center mb-4">
-                    <span th:case="1" class="badge fs-6 rounded-pill text-bg-primary"><i class="bi bi-person-fill"></i> 生徒</span>
-                    <span th:case="2" class="badge fs-6 rounded-pill text-bg-success"><i class="bi bi-person-workspace"></i> 先生</span>
-                    <span th:case="3" class="badge fs-6 rounded-pill text-bg-danger"><i class="bi bi-person-gear"></i> 管理者</span>
+<body>
+
+<div class="top-navbar">
+    <a href="/" class="brand-logo">revitech_ver.2.0</a>
+</div>
+
+<div class="main-container">
+    <div class="card signup-card">
+        <div class="card-header-custom">
+            <h2>アカウント登録</h2>
+            <p class="text-muted fs-5">詳細を入力して、あなたの学びを記録しましょう。</p>
+        </div>
+        
+        <div class="card-body">
+            <form th:action="@{/signup}" th:object="${signupForm}" method="post">
+                <input type="hidden" th:field="*{role}">
+
+                <div class="row g-5">
+                    <div class="col-md-6">
+                        <div class="form-item-wrapper">
+                            <label th:for="name" class="form-label">フルネーム</label>
+                            <input type="text" th:field="*{name}" class="form-control" th:errorclass="is-invalid" placeholder="例：叡智 太郎">
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="form-item-wrapper">
+                            <label th:for="email" class="form-label">メールアドレス</label>
+                            <input type="email" th:field="*{email}" class="form-control" th:errorclass="is-invalid" placeholder="example@it-college.ac.jp">
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                        </div>
+                    </div>
+
+                    <div th:if="${signupForm.role == 1}" class="col-12">
+                        <div class="form-item-wrapper">
+                            <label th:for="subjectId" class="form-label">所属学科</label>
+                            <select th:field="*{subjectId}" id="subjectId" class="form-select" th:errorclass="is-invalid" required>
+                                <option value="">-- 学科を選択してください --</option>
+                                <option th:each="sub : ${subjects}" 
+                                        th:value="${sub.subjectId}" 
+                                        th:text="${sub.subjectName}">
+                                </option>
+                            </select>
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('subjectId')}" th:errors="*{subjectId}"></div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="form-item-wrapper">
+                            <label th:for="password" class="form-label">パスワード</label>
+                            <input type="password" th:field="*{password}" class="form-control" th:errorclass="is-invalid">
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="form-item-wrapper">
+                            <label th:for="passwordConfirm" class="form-label">パスワード（確認）</label>
+                            <input type="password" th:field="*{passwordConfirm}" class="form-control" th:errorclass="is-invalid">
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('passwordConfirm')}" th:errors="*{passwordConfirm}"></div>
+                        </div>
+                    </div>
                 </div>
 
-
-                <form th:action="@{/signup}" th:object="${signupForm}" method="post">
-                    
-                    <input type="hidden" th:field="*{role}" />
-                    
-                    <div th:if="${#fields.hasGlobalErrors()}" class="alert alert-danger" role="alert">
-                        <p th:each="err : ${#fields.globalErrors()}" th:text="${err}" class="mb-0"></p>
-                    </div>
-
-                    <div class="form-floating mb-3">
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-person-badge" style="font-size: 1.2rem;"></i></span>
-                            <input type="text" id="name" class="form-control" th:field="*{name}" th:errorclass="is-invalid" placeholder="名前" required>
-                            <label for="name">名前</label>
-                        </div>
-                        <div th:if="${#fields.hasErrors('name')}" class="invalid-feedback d-block" th:errors="*{name}"></div>
-                    </div>
-                    
-                    <div class="form-floating mb-3">
-                         <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-envelope-at-fill" style="font-size: 1.2rem;"></i></span>
-                            <input type="email" id="email" class="form-control" th:field="*{email}" th:errorclass="is-invalid" placeholder="メールアドレス" required>
-                            <label for="email">メールアドレス</label>
-                        </div>
-                        <div th:if="${#fields.hasErrors('email')}" class="invalid-feedback d-block" th:errors="*{email}"></div>
-                    </div>
-                    
-                    <div class="form-floating mb-3">
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-key-fill" style="font-size: 1.2rem;"></i></span>
-                            <input type="password" id="password" class="form-control" th:field="*{password}" th:errorclass="is-invalid" placeholder="パスワード" required>
-                            <label for="password">パスワード (8文字以上)</label>
-                        </div>
-                        <div th:if="${#fields.hasErrors('password')}" class="invalid-feedback d-block" th:errors="*{password}"></div>
-                    </div>
-                    
-                    <div class="form-floating mb-4">
-                        <div class="input-group">
-                            <span class="input-group-text"><i class="bi bi-shield-lock-fill" style="font-size: 1.2rem;"></i></span>
-                            <input type="password" id="passwordConfirm" class="form-control" th:field="*{passwordConfirm}" th:errorclass="is-invalid" placeholder="パスワード（確認用）" required>
-                            <label for="passwordConfirm">パスワード（確認用）</label>
-                        </div>
-                        <div th:if="${#fields.hasErrors('passwordConfirm')}" class="invalid-feedback d-block" th:errors="*{passwordConfirm}"></div>
-                    </div>
-                    
-                    <div class="d-grid">
-                        <button type="submit" class="btn btn-primary btn-lg fw-bold">登録する</button>
-                    </div>
-                </form>
-
-                <hr class="my-4">
-
-                <div class="text-center">
-                    <p class="mb-2">すでにアカウントをお持ちですか？</p>
-                    <a th:href="@{/login}" class="btn btn-outline-secondary">ログインはこちら</a>
+                <div class="mt-5 text-center">
+                    <button type="submit" class="btn btn-primary btn-register">アカウントを作成</button>
+                    <a th:href="@{/role-select}" class="btn-back">← 戻る</a>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
-    
-    <script th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"></script>
+</div>
+
+<script th:src="@{/js/bootstrap.bundle.min.js}"></script>
 </body>
 </html>
