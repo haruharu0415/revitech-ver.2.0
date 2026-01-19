@@ -10,11 +10,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.revitech.dto.QuestionAverageDto;
+import com.example.revitech.dto.SurveyResponseDetailDto;
 import com.example.revitech.entity.ReviewAnswer;
 import com.example.revitech.entity.TeacherReview;
+import com.example.revitech.entity.Users;
 import com.example.revitech.repository.QuestionRepository;
 import com.example.revitech.repository.ReviewAnswerRepository;
 import com.example.revitech.repository.TeacherReviewRepository;
+import com.example.revitech.repository.UsersRepository;
 
 @Service
 @Transactional
@@ -23,13 +26,16 @@ public class ReviewService {
     private final TeacherReviewRepository teacherReviewRepository;
     private final ReviewAnswerRepository reviewAnswerRepository;
     private final QuestionRepository questionRepository;
+    private final UsersRepository usersRepository; 
 
     public ReviewService(TeacherReviewRepository teacherReviewRepository,
                          ReviewAnswerRepository reviewAnswerRepository,
-                         QuestionRepository questionRepository) {
+                         QuestionRepository questionRepository,
+                         UsersRepository usersRepository) {
         this.teacherReviewRepository = teacherReviewRepository;
         this.reviewAnswerRepository = reviewAnswerRepository;
         this.questionRepository = questionRepository;
+        this.usersRepository = usersRepository;
     }
 
     // --- コントローラーが必要としているメソッド群 ---
@@ -130,7 +136,7 @@ public class ReviewService {
         return teacherReviewRepository.findByTeacherIdAndIsDisclosureGrantedTrue(teacherId);
     }
 
-    // ★★★ 追加メソッド: 総合平均点の算出 ★★★
+    // 総合平均点の算出
     public Double getTeacherOverallAverage(Integer teacherId) {
         List<QuestionAverageDto> averages = getTeacherQuestionAverages(teacherId);
 
@@ -147,5 +153,53 @@ public class ReviewService {
 
         // 小数点第2位を四捨五入して、第1位までにする（例: 4.5）
         return Math.round(overall * 10.0) / 10.0;
+    }
+
+    // ★★★ 修正: 指定されたアンケートの全回答詳細を取得する (Roleによる名前制御付き) ★★★
+    public List<SurveyResponseDetailDto> getSurveyResponseDetails(Integer surveyId, Integer viewerRole) {
+        // 1. このアンケートに対する大元の回答(TeacherReview)を全て取得
+        List<TeacherReview> reviews = teacherReviewRepository.findBySurveyId(surveyId);
+        
+        List<SurveyResponseDetailDto> responseList = new ArrayList<>();
+        
+        for (TeacherReview review : reviews) {
+            SurveyResponseDetailDto dto = new SurveyResponseDetailDto();
+            
+            // 2. 生徒情報の取得と名前の制御
+            String displayName = "匿名ユーザー"; // デフォルトは匿名
+            
+            // 管理者(Role=3)の場合のみ、実名を取得して表示
+            if (viewerRole != null && viewerRole == 3) {
+                Users student = usersRepository.findById(review.getStudentId()).orElse(null);
+                if (student != null) {
+                    displayName = student.getName();
+                }
+            }
+            
+            dto.setStudentName(displayName);
+            
+            // 3. 基本情報のセット
+            dto.setScore(review.getScore());
+            dto.setComment(review.getComment());
+            dto.setAnsweredAt(review.getCreatedAt());
+            
+            // 4. 詳細な質問回答(ReviewAnswer)を取得してセット
+            List<ReviewAnswer> answers = reviewAnswerRepository.findBySurveyIdAndStudentId(surveyId, review.getStudentId());
+            List<SurveyResponseDetailDto.QuestionAnswerDto> details = new ArrayList<>();
+            
+            for (ReviewAnswer ans : answers) {
+                // 質問文を取得
+                String qText = questionRepository.findById(ans.getQuestionId())
+                                .map(q -> q.getQuestionBody()) 
+                                .orElse("質問" + ans.getQuestionId());
+                
+                details.add(new SurveyResponseDetailDto.QuestionAnswerDto(qText, ans.getScore()));
+            }
+            dto.setDetails(details);
+            
+            responseList.add(dto);
+        }
+        
+        return responseList;
     }
 }

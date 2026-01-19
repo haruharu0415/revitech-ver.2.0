@@ -10,7 +10,17 @@
     <style>
         /* 評価入力フォームの星スタイル */
         .star-rating-input { display: flex; flex-direction: row-reverse; justify-content: flex-end; }
-        .star-rating-input input { display: none; }
+        
+        /* ★★★ 修正: display: none だとバリデーションエラー時に送信が黙ってキャンセルされるため修正 ★★★ */
+        /* display: none; を削除し、以下のように「透明で見えない」状態にします */
+        .star-rating-input input { 
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+            pointer-events: none; /* マウスイベントを無効化してラベル操作の邪魔をしないように */
+        }
+        
         .star-rating-input label { font-size: 2rem; color: #ccc; cursor: pointer; transition: color 0.2s; }
         .star-rating-input input:checked ~ label,
         .star-rating-input label:hover,

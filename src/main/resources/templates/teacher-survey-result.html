@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>アンケート回答詳細</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <th:block th:insert="~{header :: header-styles}"></th:block>
+</head>
+<body class="bg-light">
+    <div th:replace="~{header :: header-fragment}"></div>
+
+    <main class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-1"><i class="bi bi-list-check me-2"></i>回答結果詳細</h2>
+                <h5 class="text-muted" th:text="${survey.title}">アンケートタイトル</h5>
+            </div>
+            <a th:href="@{/teacher/survey/list}" class="btn btn-outline-secondary">一覧に戻る</a>
+        </div>
+
+        <div th:if="${#lists.isEmpty(responses)}" class="alert alert-info text-center py-5">
+            まだ回答はありません。
+        </div>
+
+        <div class="row">
+            <div class="col-md-12 mb-4" th:each="res : ${responses}">
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white d-flex justify-content-between align-items-center py-3">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-person-circle fs-4 me-2 text-secondary"></i>
+                            <span class="fw-bold fs-5" th:text="${res.studentName}">生徒名</span>
+                        </div>
+                        <div class="text-muted small">
+                            <i class="bi bi-clock me-1"></i>
+                            <span th:text="${#temporals.format(res.answeredAt, 'yyyy/MM/dd HH:mm')}">日時</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-5 border-end">
+                                <div class="mb-3 text-center">
+                                    <label class="text-muted small">全体満足度</label>
+                                    <div class="text-warning fs-3">
+                                        <span th:each="i : ${#numbers.sequence(1, 5)}">
+                                            <i th:class="${i <= res.score} ? 'bi bi-star-fill' : 'bi bi-star'"></i>
+                                        </span>
+                                        <span class="text-dark fw-bold ms-2" th:text="${res.score}">5</span>
+                                    </div>
+                                </div>
+                                <div class="bg-light p-3 rounded">
+                                    <label class="fw-bold small text-muted mb-1"><i class="bi bi-chat-quote-fill me-1"></i>自由コメント</label>
+                                    <p class="mb-0" style="white-space: pre-wrap;" th:text="${res.comment != null && !res.comment.isEmpty() ? res.comment : '（コメントなし）'}"></p>
+                                </div>
+                            </div>
+
+                            <div class="col-md-7">
+                                <h6 class="fw-bold border-bottom pb-2 mb-3">詳細項目の評価</h6>
+                                <div th:each="detail : ${res.details}" class="mb-2 d-flex justify-content-between align-items-center">
+                                    <span th:text="${detail.questionText}">質問文</span>
+                                    <span class="badge bg-primary rounded-pill fs-6">
+                                        評価: <span th:text="${detail.score}">5</span>
+                                    </span>
+                                </div>
+                                <div th:if="${#lists.isEmpty(res.details)}" class="text-muted small">
+                                    詳細質問はありません。
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

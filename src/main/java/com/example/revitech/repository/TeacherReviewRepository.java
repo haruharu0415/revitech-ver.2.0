@@ -25,4 +25,7 @@ public interface TeacherReviewRepository extends JpaRepository<TeacherReview, In
     void deleteBySurveyId(Integer surveyId);
 
     boolean existsBySurveyIdAndStudentId(Integer surveyId, Integer studentId);
+
+    // ★追加: アンケートIDに紐づくレビュー（回答）を取得
+    List<TeacherReview> findBySurveyId(Integer surveyId);
 }
