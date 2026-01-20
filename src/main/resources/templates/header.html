@@ -1,75 +1,119 @@
 <!DOCTYPE html>
-<!--header.html-->
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <style th:fragment="header-styles">
-        /* ヘッダー全体のスタイル */
+        /* --- ヘッダー全体 --- */
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 0.5rem 1rem;
-            border-bottom: 1px solid #dee2e6;
+            padding: 0.8rem 1.5rem;
+            background-color: #121212;
+            border-bottom: 1px solid #333;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            transition: box-shadow 0.4s ease, border-bottom-color 0.4s ease;
         }
 
-        /* アプリ名アイコンのリンクコンテナ */
+        /* ヘッダー自体のホバー発光 */
+        .header:hover {
+            border-bottom-color: rgba(166, 193, 238, 0.5);
+            box-shadow: 0 10px 30px -10px rgba(166, 193, 238, 0.15);
+        }
+
+        /* --- アプリ名リンクコンテナ --- */
         .app-icon-link {
-            margin-bottom: 0;
             display: flex;
             align-items: center;
             text-decoration: none;
             color: inherit;
-            font-size: 1.5rem;
-            font-weight: bold;
+            transition: opacity 0.3s;
+        }
+       
+        .app-icon-link:hover {
+            opacity: 1;
         }
 
-        /* アプリのアイコン画像 */
+        /* --- アプリのアイコン画像 --- */
         .app-icon {
-            height: 70px;
-            width: 370px;
-            margin-right: 8px;
+            height: 45px;
+            width: auto;
+            margin-right: 12px;
+            /* ベースの淡い影だけ残して、視認性を確保します */
+            filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
         }
+       
+        /* ★★★ 修正点: ホバー時のアイコンに関する記述を全て削除しました ★★★ */
+        /* アイコンは光らず、動かず、そのままです */
 
-        /* アプリのタイトルテキスト */
+        /* --- アプリのタイトルテキスト --- */
         .app-title-text {
-            color: #007bff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             font-size: 1.5rem;
-            font-weight: bold;
+            font-weight: 400;
+            letter-spacing: 1.5px;
+           
+            /* グラデーションアニメーション */
+            background: linear-gradient(
+                90deg,
+                #ffffff 0%,
+                #a6c1ee 25%,
+                #6e8efb 50%,
+                #a6c1ee 75%,
+                #ffffff 100%
+            );
+            background-size: 300% auto;
+            background-position: 0% center;
+           
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+           
+            transition: background-position 0.6s ease, text-shadow 0.4s ease;
+            text-shadow: 0 0 10px rgba(166, 193, 238, 0.2);
         }
 
-        /* ハンバーガーメニューのスタイル */
+        /* リンクホバー時にテキストのグラデーションのみ動かす */
+        .app-icon-link:hover .app-title-text {
+            background-position: 100% center;
+            text-shadow: 0 0 20px rgba(110, 142, 251, 0.6);
+        }
+
+        /* --- ハンバーガーメニュー --- */
         #humberger {
-          position: relative;
-          height: 22px;
-          width: 28px;
-          display: inline-block;
-          box-sizing: border-box;
+            position: relative;
+            height: 24px;
+            width: 32px;
+            display: inline-block;
+            cursor: pointer;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
+       
+        #humberger:hover {
+            transform: scale(1.1);
+        }
+
         #humberger div {
-          position: absolute;
-          left: 0;
-          height: 2px;
-          width: 28px;
-          background-color: #444;
-          border-radius: 2px;
-          display: inline-block;
-          box-sizing: border-box;
+            position: absolute;
+            left: 0;
+            height: 2px;
+            width: 100%;
+            background-color: #ffffff;
+            border-radius: 2px;
+            transition: all 0.3s;
         }
-        #humberger div:nth-of-type(1) {
-          top: 0;
-        }
-        #humberger div:nth-of-type(2) {
-          top: 10px;
-        }
-        #humberger div:nth-of-type(3) {
-          bottom: 0;
-        }
+
+        #humberger div:nth-of-type(1) { top: 0; }
+        #humberger div:nth-of-type(2) { top: 10px; }
+        #humberger div:nth-of-type(3) { bottom: 0; }
+
     </style>
 </head>
 <body>
-    <header th:fragment="header-fragment" class="header bg-light">
+    <header th:fragment="header-fragment" class="header">
+       
         <a th:href="@{/home}" class="app-icon-link">
-            <img th:src="@{/images/logo.png}" alt="アプリ名" class="app-icon" />
+            <img th:src="@{/images/logo.png}" alt="Revitech Logo" class="app-icon" />
             <span class="app-title-text">revitech_ver.2.0</span>
         </a>
 
