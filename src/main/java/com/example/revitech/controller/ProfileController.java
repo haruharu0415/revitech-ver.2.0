@@ -15,7 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.example.revitech.entity.Users;
-import com.example.revitech.form.ProfileEditForm; // フォームクラスがない場合は作成が必要
+import com.example.revitech.form.ProfileEditForm;
 import com.example.revitech.service.UsersService;
 
 @Controller
@@ -35,11 +35,14 @@ public class ProfileController {
         ProfileEditForm form = new ProfileEditForm();
         form.setName(currentUser.getName());
         
-        // ★修正: 先生の場合は自己紹介も取得してセット
+        // 先生の場合は自己紹介も取得してセット
         if (currentUser.getRole() == 2 || currentUser.getRole() == 3) {
             String intro = usersService.getTeacherIntroduction(currentUser.getUsersId());
             form.setIntroduction(intro);
         }
+        // 生徒の場合はStudentProfileから自己紹介を取得する必要があるが、
+        // 今回の追加要件である「学科名」の処理に集中するため、ここでは省略または既存の実装に従う
+        // もし生徒の自己紹介も表示するなら usersService.getStudentIntroduction(...) のようなメソッドが必要
 
         model.addAttribute("profileEditForm", form);
         
@@ -48,7 +51,14 @@ public class ProfileController {
         model.addAttribute("currentIcon", currentIcon);
         
         // 先生判定用フラグ
-        model.addAttribute("isTeacher", (currentUser.getRole() == 2 || currentUser.getRole() == 3));
+        boolean isTeacher = (currentUser.getRole() == 2 || currentUser.getRole() == 3);
+        model.addAttribute("isTeacher", isTeacher);
+
+        // ★★★ 追加: 生徒の場合、学科名を取得して渡す ★★★
+        if (!isTeacher) { // 生徒の場合
+            String subjectName = usersService.getStudentSubjectName(currentUser.getUsersId());
+            model.addAttribute("subjectName", subjectName);
+        }
 
         return "profile-edit";
     }
@@ -67,7 +77,6 @@ public class ProfileController {
         Users currentUser = usersService.findByEmail(loginUser.getUsername()).orElseThrow();
 
         try {
-            // ★修正: 自己紹介(form.getIntroduction())も渡す
             usersService.updateProfile(currentUser.getUsersId(), form.getName(), form.getIntroduction(), iconFile);
             redirectAttributes.addFlashAttribute("successMessage", "プロフィールを更新しました。");
         } catch (IOException e) {
