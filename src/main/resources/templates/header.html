@@ -1,6 +1,6 @@
 <!DOCTYPE html>
-<!--header.html-->
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <style th:fragment="header-styles">
         /* ヘッダー全体のスタイル */
@@ -37,6 +37,31 @@
             font-weight: bold;
         }
 
+        /* 右側の要素をまとめるコンテナ */
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px; /* ボタンとメニューの間隔 */
+        }
+
+        /* 管理者用承認ボタンのスタイル */
+        .admin-approval-btn {
+            display: inline-block;
+            padding: 5px 10px;
+            background-color: #dc3545; /* 赤色で目立たせる */
+            color: white;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: bold;
+            border-radius: 5px;
+            border: 1px solid #dc3545;
+            transition: background-color 0.2s;
+        }
+        .admin-approval-btn:hover {
+            background-color: #bb2d3b;
+            color: white;
+        }
+
         /* ハンバーガーメニューのスタイル */
         #humberger {
           position: relative;
@@ -44,6 +69,7 @@
           width: 28px;
           display: inline-block;
           box-sizing: border-box;
+          cursor: pointer;
         }
         #humberger div {
           position: absolute;
@@ -73,13 +99,20 @@
             <span class="app-title-text">revitech_ver.2.0</span>
         </a>
 
-        <a th:href="@{/option}">
-            <div id="humberger">
-                <div></div>
-                <div></div>
-                <div></div>
-            </div>
-        </a>
+        <div class="header-right">
+            
+            <a th:href="@{/admin/approvals}" sec:authorize="hasRole('3')" class="admin-approval-btn">
+                先生承認画面
+            </a>
+
+            <a th:href="@{/option}">
+                <div id="humberger">
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                </div>
+            </a>
+        </div>
     </header>
 </body>
 </html>

@@ -68,6 +68,7 @@ public class UsersService {
 
     /**
      * 新規登録処理（ユーザー保存 ＋ 学科紐付け）
+     * 先生(2)のみ承認待ち(pending)として登録します。
      */
     @Transactional
     public void register(SignupForm form) {
@@ -76,7 +77,13 @@ public class UsersService {
         user.setEmail(form.getEmail());
         user.setPassword(passwordEncoder.encode(form.getPassword())); 
         user.setRole(form.getRole());
-        user.setStatus("active");
+        
+        // ★修正: 先生(2)のみ pending(承認待ち)。生徒(1)と管理者(3)は active(即時有効)
+        if (form.getRole() == 2) {
+            user.setStatus("pending");
+        } else {
+            user.setStatus("active");
+        }
         
         Users savedUser = usersRepository.save(user);
 
@@ -88,11 +95,29 @@ public class UsersService {
         }
     }
 
-    
+    // --- ★ 管理者承認機能用に追加 ★ ---
 
-       
-    
+    /**
+     * 承認待ちのユーザー一覧を取得
+     */
+    public List<Users> findPendingUsers() {
+        // 全ユーザーからステータスが "pending" のものを抽出
+        return usersRepository.findAll().stream()
+                .filter(u -> "pending".equals(u.getStatus()))
+                .collect(Collectors.toList());
+    }
 
+    /**
+     * ユーザーを承認（activeにする）
+     */
+    @Transactional
+    public void approveUser(Integer userId) {
+        Users user = usersRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setStatus("active");
+        usersRepository.save(user);
+    }
+    
     // --- ★ 管理画面検索用に追加 ★ ---
     public List<Users> searchUsers(String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) { 

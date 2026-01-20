@@ -23,15 +23,20 @@ public class UsersDetailsService implements UserDetailsService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String input) throws UsernameNotFoundException {
-        // ★★★ 修正: メールアドレス または 名前(ユーザー名) で検索 ★★★
-        // 入力された値(input)を、emailとnameの両方の条件で探します
-        Users user = usersRepository.findByEmailOrName(input, input)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email or name: " + input));
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        // ★修正: メールアドレスのみで検索するように変更
+        // (findByEmailOrName だと名前重複時にエラーになるため)
+        Users user = usersRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
 
         // 退会済みチェック
         if ("deleted".equals(user.getStatus())) {
             throw new UsernameNotFoundException("This account has been deleted.");
+        }
+        
+        // 承認待ち(pending)チェック
+        if ("pending".equals(user.getStatus())) {
+            throw new UsernameNotFoundException("アカウントは承認待ちです。管理者の承認をお待ちください。");
         }
 
         // 権限リストの作成
@@ -40,7 +45,7 @@ public class UsersDetailsService implements UserDetailsService {
 
         // UserDetailsを返す
         return new org.springframework.security.core.userdetails.User(
-                user.getEmail(), // 認証後の識別子にはユニークなEmailを使用するのが安全
+                user.getEmail(), 
                 user.getPassword(),
                 authorities
         );

@@ -46,18 +46,9 @@ public class LoginController {
                                     RedirectAttributes redirectAttributes) {
 
         if (role == 1) return "redirect:/signup?role=1";
-
-        if (role == 2) {
-            if ("teacher".equals(teacherPass)) return "redirect:/signup?role=2";
-            redirectAttributes.addFlashAttribute("error", "先生用のパスワードが違います。");
-            return "redirect:/role-select";
-        }
-
-        if (role == 3) {
-            if ("gatikiti5".equals(adminPass)) return "redirect:/signup?role=3";
-            redirectAttributes.addFlashAttribute("error", "管理者用のパスワードが違います。");
-            return "redirect:/role-select";
-        }
+        if (role == 2) return "redirect:/signup?role=2";
+        if (role == 3) return "redirect:/signup?role=3";
+        
         return "redirect:/role-select";
     }
 
@@ -67,7 +58,6 @@ public class LoginController {
         form.setRole(role);
         model.addAttribute("signupForm", form);
 
-        // ★ 学科リストをDBから取得してドロップダウン用に渡す
         List<Subject> subjects = subjectRepository.findAll();
         model.addAttribute("subjects", subjects);
 
@@ -88,16 +78,22 @@ public class LoginController {
             result.rejectValue("email", "error.signupForm", "このメールアドレスは既に使用されています");
         }
         
+        // ★修正: 名前の重複チェックは削除しました（同姓同名を許可）
+        
         if (result.hasErrors()) {
-            // エラーで入力画面に戻る際も、学科リストを再セットしないとセレクトボックスが空になります
             model.addAttribute("subjects", subjectRepository.findAll());
             return "signup";
         }
         
-        // ★ UsersServiceのregisterメソッドを呼び出し、UsersとEnrollmentを保存
+        // UsersServiceで保存（先生のみ pending になる）
         usersService.register(form);
 
-        // 成功したらログイン画面へ。クエリパラメータで成功通知を送ることも可能です
+        // 先生(2)のみ承認待ち画面へ。生徒(1)と管理者(3)は完了画面へ
+        if (form.getRole() == 2) {
+            return "redirect:/login?pending";
+        }
+
+        // 生徒・管理者はログイン画面へ（成功メッセージ付き）
         return "redirect:/login?signup_success";
     }
 }

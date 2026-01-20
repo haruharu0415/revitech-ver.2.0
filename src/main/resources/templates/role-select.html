@@ -25,10 +25,6 @@
             border-color: #0d6efd;
             background-color: #f0f8ff;
         }
-        /* パスワード入力欄（最初は隠しておく） */
-        #teacherPasswordSection, #adminPasswordSection {
-            display: none;
-        }
     </style>
 </head>
 <body class="bg-light pt-5">
@@ -47,7 +43,7 @@
                     <div class="row g-3">
                         
                         <div class="col-12">
-                            <input type="radio" class="role-radio" name="role" id="roleStudent" value="1" checked onchange="togglePasswordForms()">
+                            <input type="radio" class="role-radio" name="role" id="roleStudent" value="1" checked>
                             <label for="roleStudent" class="card role-card p-3">
                                 <div class="d-flex align-items-center">
                                     <i class="bi bi-person-fill fs-2 text-primary me-3"></i>
@@ -60,40 +56,31 @@
                         </div>
                         
                         <div class="col-12">
-                            <input type="radio" class="role-radio" name="role" id="roleTeacher" value="2" onchange="togglePasswordForms()">
+                            <input type="radio" class="role-radio" name="role" id="roleTeacher" value="2">
                             <label for="roleTeacher" class="card role-card p-3">
                                 <div class="d-flex align-items-center">
                                     <i class="bi bi-person-workspace fs-2 text-success me-3"></i>
                                     <div>
                                         <h5 class="mb-0">先生</h5>
                                         <small class="text-muted">先生として登録します。</small>
+                                        <div class="text-warning small mt-1"><i class="bi bi-info-circle"></i> 登録後に管理者の承認が必要です</div>
                                     </div>
                                 </div>
                             </label>
                         </div>
                         
                         <div class="col-12">
-                            <input type="radio" class="role-radio" name="role" id="roleAdmin" value="3" onchange="togglePasswordForms()">
+                            <input type="radio" class="role-radio" name="role" id="roleAdmin" value="3">
                             <label for="roleAdmin" class="card role-card p-3">
                                 <div class="d-flex align-items-center">
                                     <i class="bi bi-person-gear fs-2 text-danger me-3"></i>
                                     <div>
                                         <h5 class="mb-0">管理者</h5>
                                         <small class="text-muted">管理者として登録します。</small>
-                                    </div>
+                                        </div>
                                 </div>
                             </label>
                         </div>
-                    </div>
-
-                    <div id="teacherPasswordSection" class="mt-4">
-                        <label for="teacherPassword" class="form-label fw-bold">先生専用パスワードは何ですか？</label>
-                        <input type="password" name="teacherPassword" id="teacherPassword" class="form-control" placeholder="先生専用パスワード">
-                    </div>
-
-                    <div id="adminPasswordSection" class="mt-4">
-                        <label for="adminPassword" class="form-label fw-bold">管理者専用パスワードは何ですか？</label>
-                        <input type="password" name="adminPassword" id="adminPassword" class="form-control" placeholder="管理者専用パスワード">
                     </div>
 
                     <div class="d-grid mt-4">
@@ -110,27 +97,6 @@
         </div>
     </div>
 
-    <script>
-        function togglePasswordForms() {
-            // IDを取得
-            var teacherSection = document.getElementById('teacherPasswordSection');
-            var adminSection = document.getElementById('adminPasswordSection');
-            
-            // 選択状態に応じて表示/非表示を切り替え
-            if (document.getElementById('roleTeacher').checked) {
-                teacherSection.style.display = 'block';
-                adminSection.style.display = 'none';
-            } else if (document.getElementById('roleAdmin').checked) {
-                teacherSection.style.display = 'none';
-                adminSection.style.display = 'block';
-            } else { // 生徒が選択された場合
-                teacherSection.style.display = 'none';
-                adminSection.style.display = 'none';
-            }
-        }
-        // ページ読み込み時にも一度実行しておく
-        document.addEventListener('DOMContentLoaded', togglePasswordForms);
-    </script>
     <script th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"></script>
 </body>
 </html>

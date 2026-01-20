@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>承認管理 - Revitech</title>
+    <link th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <style>
+        .container { max-width: 1000px; margin-top: 50px; }
+    </style>
+</head>
+<body class="bg-light">
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">Revitech 管理画面</a>
+            <div class="d-flex">
+                <a th:href="@{/home}" class="btn btn-outline-light btn-sm">ホームに戻る</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white py-3">
+                <h4 class="mb-0"><i class="bi bi-person-check-fill text-primary"></i> アカウント承認待ち一覧</h4>
+            </div>
+            <div class="card-body">
+                
+                <div th:if="${pendingUsers.empty}" class="alert alert-info d-flex align-items-center" role="alert">
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                    現在、承認待ちのユーザーはいません。
+                </div>
+
+                <div th:unless="${pendingUsers.empty}" class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>名前</th>
+                            <th>メールアドレス</th>
+                            <th>申請ロール</th>
+                            <th>登録日時</th>
+                            <th class="text-end">操作</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="user : ${pendingUsers}">
+                            <td th:text="${user.usersId}">1</td>
+                            <td class="fw-bold" th:text="${user.name}">山田 太郎</td>
+                            <td th:text="${user.email}">yamada@example.com</td>
+                            <td>
+                                <span th:if="${user.role == 2}" class="badge bg-success rounded-pill"><i class="bi bi-person-workspace"></i> 先生</span>
+                                <span th:if="${user.role == 3}" class="badge bg-danger rounded-pill"><i class="bi bi-person-gear"></i> 管理者</span>
+                            </td>
+                            <td th:text="${#temporals.format(user.createdAt, 'yyyy/MM/dd HH:mm')}">2023/01/01 12:00</td>
+                            <td class="text-end">
+                                <form th:action="@{/admin/approve}" method="post" style="display:inline;">
+                                    <input type="hidden" name="userId" th:value="${user.usersId}">
+                                    <button type="submit" class="btn btn-primary btn-sm" onclick="return confirm('このユーザーを承認しますか？');">
+                                        <i class="bi bi-check-lg"></i> 承認
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"></script>
+</body>
+</html>
