@@ -20,4 +20,8 @@ public class Enrollment {
 
     @Column(name = "users_id", nullable = false)
     private Integer usersId;
+
+    // ★★★ 追加: 所属する学科のID ★★★
+    @Column(name = "subject_id", nullable = false)
+    private Integer subjectId;
 }

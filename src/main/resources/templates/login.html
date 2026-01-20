@@ -16,16 +16,27 @@
                 <h2 class="card-title text-center mb-4">ログイン</h2>
 
                 <div th:if="${param.error}" class="alert alert-danger" role="alert">
-                    名前、メールアドレス、またはパスワードが正しくありません。
+                    メールアドレス、またはパスワードが正しくありません。<br>
+                    もしくはアカウントが無効化されています。
                 </div>
+                
                 <div th:if="${param.logout}" class="alert alert-success" role="alert">
                     ログアウトしました。
                 </div>
 
+                <div th:if="${param.pending}" class="alert alert-warning" role="alert">
+                    <strong>申請を受け付けました。</strong><br>
+                    アカウントは現在承認待ちです。管理者の承認が完了するまでログインできません。
+                </div>
+
+                <div th:if="${param.signup_success}" class="alert alert-success" role="alert">
+                    登録が完了しました。ログインしてください。
+                </div>
+
                 <form th:action="@{/login}" method="post">
                     <div class="mb-3">
-                        <label for="username" class="form-label">名前 または メールアドレス</label>
-                        <input type="text" id="username" name="username" class="form-control" placeholder="Taro Yamada or example@jec.ac.jp" required autofocus>
+                        <label for="username" class="form-label">メールアドレス</label>
+                        <input type="email" id="username" name="username" class="form-control" placeholder="example@jec.ac.jp" required autofocus>
                     </div>
                     <div class="mb-3">
                         <label for="password" class="form-label">パスワード</label>

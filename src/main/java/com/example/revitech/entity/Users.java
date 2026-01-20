@@ -32,27 +32,50 @@ public class Users {
     @Column(name = "role", nullable = false)
     private Integer role;
 
-    // アカウントの状態 (active, deleted など)
     @Column(name = "status")
     private String status;
 
-    // チャットのソート順設定 (1:日付順, 2:名前順)
     @Column(name = "chat_sort_order")
     private Integer chatSortOrder;
 
+    // --- 作成日時関連 ---
+
+    // 本来の正しいスペル
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
+    // DBに残っている古いスペル ("d"なし)
+    @Column(name = "create_at")
+    private LocalDateTime createAt;
+
+
+    // --- 更新日時関連（★今回の修正箇所） ---
+
+    // 本来の正しいスペル
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    // ★追加: DBに残っている古いスペル ("d"なし)
+    @Column(name = "update_at")
+    private LocalDateTime updateAt;
+
+
+    // --- イベントリスナー ---
+
+    // 新規登録時 (INSERT前)
     @PrePersist
     public void onPrePersist() {
         LocalDateTime now = LocalDateTime.now();
-        this.createdAt = now;
-        this.updatedAt = now;
         
-        // デフォルト値設定
+        // 作成日時をセット
+        this.createdAt = now;
+        this.createAt = now; 
+
+        // 更新日時もセット (★ updateAt も忘れずに！)
+        this.updatedAt = now;
+        this.updateAt = now; 
+
+        // デフォルト値の設定
         if (this.chatSortOrder == null) {
             this.chatSortOrder = 1; 
         }
@@ -61,12 +84,17 @@ public class Users {
         }
     }
 
+    // 更新時 (UPDATE前)
     @PreUpdate
     public void onPreUpdate() {
-        this.updatedAt = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now();
+        
+        // 更新日時を現在時刻で上書き (★ updateAt も更新！)
+        this.updatedAt = now;
+        this.updateAt = now;
     }
 
-    // --- 明示的なゲッター・セッター ---
+    // --- ゲッター・セッター ---
 
     public Integer getUsersId() {
         return usersId;
@@ -124,6 +152,7 @@ public class Users {
         this.chatSortOrder = chatSortOrder;
     }
 
+    // --- CreatedAt ---
     public LocalDateTime getCreatedAt() {
         return createdAt;
     }
@@ -132,11 +161,29 @@ public class Users {
         this.createdAt = createdAt;
     }
 
+    public LocalDateTime getCreateAt() {
+        return createAt;
+    }
+
+    public void setCreateAt(LocalDateTime createAt) {
+        this.createAt = createAt;
+    }
+
+    // --- UpdatedAt ---
     public LocalDateTime getUpdatedAt() {
         return updatedAt;
     }
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    // ★追加: updateAt用
+    public LocalDateTime getUpdateAt() {
+        return updateAt;
+    }
+
+    public void setUpdateAt(LocalDateTime updateAt) {
+        this.updateAt = updateAt;
     }
 }

@@ -18,11 +18,16 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.revitech.dto.TeacherListDto;
+import com.example.revitech.entity.Enrollment;
 import com.example.revitech.entity.StudentProfile;
+import com.example.revitech.entity.Subject;
 import com.example.revitech.entity.TeacherHashtag;
 import com.example.revitech.entity.TeacherProfile;
 import com.example.revitech.entity.Users;
+import com.example.revitech.form.SignupForm;
+import com.example.revitech.repository.EnrollmentRepository;
 import com.example.revitech.repository.StudentProfileRepository;
+import com.example.revitech.repository.SubjectRepository;
 import com.example.revitech.repository.TeacherHashtagRepository;
 import com.example.revitech.repository.TeacherProfileRepository;
 import com.example.revitech.repository.TeacherReviewRepository;
@@ -37,15 +42,19 @@ public class UsersService {
     private final TeacherReviewRepository teacherReviewRepository;
     private final StudentProfileRepository studentProfileRepository;
     private final TeacherProfileRepository teacherProfileRepository;
+    private final EnrollmentRepository enrollmentRepository;
+    private final SubjectRepository subjectRepository;
     private final TeacherHashtagRepository teacherHashtagRepository;
-
     private static final String DEFAULT_ICON_PATH = "/images/haru.png";
 
+
     public UsersService(UsersRepository usersRepository, 
-                        PasswordEncoder passwordEncoder, 
+                        PasswordEncoder passwordEncoder,
                         TeacherReviewRepository teacherReviewRepository,
                         StudentProfileRepository studentProfileRepository,
                         TeacherProfileRepository teacherProfileRepository,
+                        EnrollmentRepository enrollmentRepository,
+                        SubjectRepository subjectRepository,
                         TeacherHashtagRepository teacherHashtagRepository) {
         this.usersRepository = usersRepository;
         this.passwordEncoder = passwordEncoder;
@@ -53,8 +62,62 @@ public class UsersService {
         this.studentProfileRepository = studentProfileRepository;
         this.teacherProfileRepository = teacherProfileRepository;
         this.teacherHashtagRepository = teacherHashtagRepository;
+        this.enrollmentRepository = enrollmentRepository;
+        this.subjectRepository = subjectRepository;
     }
 
+    /**
+     * 新規登録処理（ユーザー保存 ＋ 学科紐付け）
+     * 先生(2)のみ承認待ち(pending)として登録します。
+     */
+    @Transactional
+    public void register(SignupForm form) {
+        Users user = new Users();
+        user.setName(form.getName());
+        user.setEmail(form.getEmail());
+        user.setPassword(passwordEncoder.encode(form.getPassword())); 
+        user.setRole(form.getRole());
+        
+        // ★修正: 先生(2)のみ pending(承認待ち)。生徒(1)と管理者(3)は active(即時有効)
+        if (form.getRole() == 2) {
+            user.setStatus("pending");
+        } else {
+            user.setStatus("active");
+        }
+        
+        Users savedUser = usersRepository.save(user);
+
+        if (savedUser.getRole() == 1 && form.getSubjectId() != null) {
+            Enrollment enrollment = new Enrollment();
+            enrollment.setUsersId(savedUser.getUsersId());
+            enrollment.setSubjectId(form.getSubjectId());
+            enrollmentRepository.save(enrollment);
+        }
+    }
+
+    // --- ★ 管理者承認機能用に追加 ★ ---
+
+    /**
+     * 承認待ちのユーザー一覧を取得
+     */
+    public List<Users> findPendingUsers() {
+        // 全ユーザーからステータスが "pending" のものを抽出
+        return usersRepository.findAll().stream()
+                .filter(u -> "pending".equals(u.getStatus()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * ユーザーを承認（activeにする）
+     */
+    @Transactional
+    public void approveUser(Integer userId) {
+        Users user = usersRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setStatus("active");
+        usersRepository.save(user);
+    }
+    
     // --- ★ 管理画面検索用に追加 ★ ---
     public List<Users> searchUsers(String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) { 
@@ -147,27 +210,42 @@ public class UsersService {
         return teacherProfileRepository.findByTeacherId(userId).map(TeacherProfile::getIntroduction).orElse("");
     }
     public Map<String, List<Users>> findAllStudentsGroupedBySubject() {
-        List<Users> students = findByRole(1);
-        Map<String, List<Users>> groupedMap = new LinkedHashMap<>(); 
-        groupedMap.put("情報処理科", new ArrayList<>());
-        groupedMap.put("高度情報処理科", new ArrayList<>());
-        for (Users student : students) {
-            String subjectName = (student.getUsersId() % 2 == 0) ? "情報処理科" : "高度情報処理科";
-            groupedMap.computeIfAbsent(subjectName, k -> new ArrayList<>()).add(student);
+        List<Subject> allSubjects = subjectRepository.findAll();
+        Map<String, List<Users>> groupedMap = new LinkedHashMap<>();
+        
+        for (Subject subject : allSubjects) {
+            List<Enrollment> enrollments = enrollmentRepository.findBySubjectId(subject.getSubjectId());
+            List<Users> studentsInSubject = new ArrayList<>();
+            for (Enrollment en : enrollments) {
+                usersRepository.findById(en.getUsersId()).ifPresent(studentsInSubject::add);
+            }
+            groupedMap.put(subject.getSubjectName(), studentsInSubject);
         }
         return groupedMap;
     }
-    public List<Users> findAll() { return usersRepository.findAll(); }
-    public Optional<Users> findByEmail(String email) { return usersRepository.findByEmail(email); }
-    public Optional<Users> findByName(String name) { return usersRepository.findByName(name); }
-    public Optional<Users> findById(Integer id) { return usersRepository.findById(id); }
-    public List<Users> findByRole(Integer role) { return usersRepository.findByRole(role); }
-    public boolean isEmailTaken(String email) { return usersRepository.findByEmail(email).isPresent(); }
-    public Users save(Users user) {
-        if (user.getPassword() != null && !user.getPassword().startsWith("$2a$")) {
-            user.setPassword(passwordEncoder.encode(user.getPassword()));
-        }
-        return usersRepository.save(user);
+
+    // --- 以下、既存の便利メソッド群 ---
+
+    public boolean isEmailTaken(String email) {
+        return usersRepository.findByEmail(email).isPresent();
     }
+
+    public Optional<Users> findByEmail(String email) {
+        return usersRepository.findByEmail(email);
+    }
+
+    public Optional<Users> findById(Integer id) {
+        return usersRepository.findById(id);
+    }
+    
+    public List<Users> findByRole(Integer role) {
+        return usersRepository.findByRole(role);
+    }
+    
+    public Optional<Users> findByName(String name) {
+        return usersRepository.findByName(name);
+    }
+
     public Users saveRawUser(Users user) { return usersRepository.save(user); }
+
 }

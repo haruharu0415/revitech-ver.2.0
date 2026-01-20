@@ -24,7 +24,9 @@ public class SignupForm {
     @NotBlank(message = "確認用パスワードは必須です")
     private String passwordConfirm;
 
-    // ★★★ 新規追加 ★★★
-    // 役割ID (1:生徒, 2:先生, 3:管理者) を保持するフィールド
+    // 役割ID (1:生徒, 2:先生, 3:管理者)
     private Integer role;
+
+    // ★★★ 追加: 選択された学科のID ★★★
+    private Integer subjectId;
 }

@@ -30,7 +30,7 @@
             color: inherit;
             transition: opacity 0.3s;
         }
-       
+        
         .app-icon-link:hover {
             opacity: 1;
         }
@@ -43,8 +43,7 @@
             /* ベースの淡い影だけ残して、視認性を確保します */
             filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
         }
-       
-        /* ★★★ 修正点: ホバー時のアイコンに関する記述を全て削除しました ★★★ */
+        
         /* アイコンは光らず、動かず、そのままです */
 
         /* --- アプリのタイトルテキスト --- */
@@ -53,7 +52,7 @@
             font-size: 1.5rem;
             font-weight: 400;
             letter-spacing: 1.5px;
-           
+            
             /* グラデーションアニメーション */
             background: linear-gradient(
                 90deg,
@@ -65,10 +64,10 @@
             );
             background-size: 300% auto;
             background-position: 0% center;
-           
+            
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-           
+            
             transition: background-position 0.6s ease, text-shadow 0.4s ease;
             text-shadow: 0 0 10px rgba(166, 193, 238, 0.2);
         }
@@ -88,7 +87,7 @@
             cursor: pointer;
             transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-       
+        
         #humberger:hover {
             transform: scale(1.1);
         }
@@ -111,7 +110,7 @@
 </head>
 <body>
     <header th:fragment="header-fragment" class="header">
-       
+        
         <a th:href="@{/home}" class="app-icon-link">
             <img th:src="@{/images/logo.png}" alt="Revitech Logo" class="app-icon" />
             <span class="app-title-text">revitech_ver.2.0</span>
