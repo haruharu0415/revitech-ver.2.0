@@ -44,4 +44,10 @@ public class MenuController {
             return "redirect:/login?error";
         }
     }
+    
+ // ★★★ 追加: 利用規約画面への遷移 ★★★
+    @GetMapping("/terms")
+    public String terms() {
+        return "terms";
+    }
 }

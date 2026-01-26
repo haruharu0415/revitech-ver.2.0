@@ -7,6 +7,7 @@
     <title>利用規約</title>
     <link th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" rel="stylesheet" />
     <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css}">
+    <style th:replace="~{header :: header-styles}"></style>
     <style>
         body {
             background-color: #f8f9fa;
@@ -38,9 +39,13 @@
         .terms-content .term-item {
             margin-bottom: 1.25rem;
         }
+         
+        
     </style>
 </head>
 <body>
+	<div th:replace="~{header :: header-fragment}"></div>
+	
     <header class="header">
         <!-- オプションページに戻るボタン -->
         <a th:href="@{/option}">
@@ -75,6 +80,10 @@
             </div>
         </div>
     </main>
+    
+    <div class="mt-4 text-center">
+            <a th:href="@{/option}" class="btn btn-link text-secondary">プロフィール画面に戻る</a>
+        </div>
 
     <script th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"></script>
 </body>
