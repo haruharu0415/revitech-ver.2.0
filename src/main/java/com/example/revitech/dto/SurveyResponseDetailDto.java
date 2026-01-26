@@ -7,11 +7,20 @@ import lombok.Data;
 
 @Data
 public class SurveyResponseDetailDto {
+    // ★★★ Serviceがセットしようとしていたフィールド (追加) ★★★
+    private Integer reviewId;        // レビューID (これがないとエラーでした)
+    private LocalDateTime createdAt; // 作成日時 (これがないとエラーでした)
+
+    // ★★★ 貴方様のコードにあったフィールド (維持) ★★★
     private String studentName;      // 生徒名
     private Integer score;           // 全体満足度
     private String comment;          // 自由コメント
+    
+    // (補足: Serviceでは createdAt を入れていますが、用途によってはこちらを使ってください)
     private LocalDateTime answeredAt;// 回答日時
-    private List<QuestionAnswerDto> details; // 各質問への回答リスト
+    
+    // 将来的な拡張用（詳細な質問回答リスト）
+    private List<QuestionAnswerDto> details; 
 
     @Data
     public static class QuestionAnswerDto {

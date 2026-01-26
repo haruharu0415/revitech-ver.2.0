@@ -3,115 +3,304 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>アンケート回答</title>
+    <title>教員レビュー</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <th:block th:insert="~{header :: header-styles}"></th:block>
+    <style th:replace="~{header :: header-styles}"></style>
     <style>
-        /* 評価入力フォームの星スタイル */
-        .star-rating-input { display: flex; flex-direction: row-reverse; justify-content: flex-end; }
-        
-        /* ★★★ 修正: display: none だとバリデーションエラー時に送信が黙ってキャンセルされるため修正 ★★★ */
-        /* display: none; を削除し、以下のように「透明で見えない」状態にします */
-        .star-rating-input input { 
-            position: absolute;
-            opacity: 0;
-            width: 0;
-            height: 0;
-            pointer-events: none; /* マウスイベントを無効化してラベル操作の邪魔をしないように */
+        .star-result { color: #ffc107; font-size: 1.2rem; }
+        .comment-box {
+            background-color: #fff;
+            border-left: 4px solid #0d6efd;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-        
-        .star-rating-input label { font-size: 2rem; color: #ccc; cursor: pointer; transition: color 0.2s; }
-        .star-rating-input input:checked ~ label,
-        .star-rating-input label:hover,
-        .star-rating-input label:hover ~ label { color: #ffc107; }
+        .comment-date { font-size: 0.85rem; color: #6c757d; }
+        .hidden-comment {
+            background-color: #f8f9fa;
+            border-left: 4px solid #6c757d;
+            opacity: 0.7;
+        }
+        .icon-container { position: relative; display: inline-block; }
+        .icon-edit-overlay {
+            position: absolute; bottom: 0; right: 0;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            width: 32px; height: 32px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid #ccc;
+        }
+        .icon-edit-overlay:hover { background-color: #0d6efd; color: white; }
     </style>
 </head>
 <body class="bg-light">
     <div th:replace="~{header :: header-fragment}"></div>
 
-    <main class="container p-3">
+    <main class="container p-4">
         <div class="row justify-content-center">
             <div class="col-lg-8 col-md-10">
                 
-                <div th:if="${survey != null}">
-                    <h1 class="mb-2">
-                        <i class="bi bi-clipboard-data me-2"></i><span th:text="${survey.title}">アンケートタイトル</span>
-                    </h1>
-                    <p class="text-muted mb-4">
-                        担当: <span th:text="${teacher.name}">教員名</span> 先生
-                    </p>
+                <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="bi bi-check-circle-fill me-2"></i><span th:text="${successMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i><span th:text="${errorMessage}"></span>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                <div th:if="${param.error}" class="alert alert-danger" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>権限エラーが発生しました。
+                </div>
+                
+                <div th:if="${teacher != null}">
                     
-                    <div class="card shadow-sm border-0">
-                        <div class="card-header bg-success text-white py-3">
-                            <h4 class="mb-0"><i class="bi bi-pencil-square me-2"></i>回答フォーム</h4>
-                        </div>
-                        <div class="card-body p-4">
-                            <p class="mb-4">授業の改善のため、率直なご意見をお聞かせください。回答は匿名で集計されます。</p>
+                    <div class="card shadow-sm border-0 mb-4">
+                        <div class="card-body p-4 text-center">
                             
-                            <form th:action="@{/student/survey/submit}" th:object="${reviewForm}" method="post">
+                            <div class="mb-3 icon-container">
+                                <img th:src="${teacherIcon}" 
+                                     alt="アイコン" class="rounded-circle shadow-sm" 
+                                     style="width: 120px; height: 120px; object-fit: cover; border: 3px solid #fff;">
                                 
-                                <input type="hidden" th:field="*{surveyId}">
-                                <input type="hidden" th:field="*{teacherId}">
-                                
-                                <div class="mb-5 border-bottom pb-4">
-                                    <label class="form-label fw-bold h5 mb-3">Q. 全体的な満足度を教えてください <span class="badge bg-danger">必須</span></label>
-                                    <div class="d-flex align-items-center">
-                                        <div class="star-rating-input">
-                                            <input type="radio" id="star5" th:field="*{score}" value="5" required><label for="star5" title="非常に良い">★</label>
-                                            <input type="radio" id="star4" th:field="*{score}" value="4"><label for="star4" title="良い">★</label>
-                                            <input type="radio" id="star3" th:field="*{score}" value="3"><label for="star3" title="普通">★</label>
-                                            <input type="radio" id="star2" th:field="*{score}" value="2"><label for="star2" title="悪い">★</label>
-                                            <input type="radio" id="star1" th:field="*{score}" value="1"><label for="star1" title="非常に悪い">★</label>
-                                        </div>
-                                    </div>
+                                <div th:if="${user != null and user.role == 2 and user.usersId == teacher.usersId}">
+                                    <label for="reviewIconUpload" class="icon-edit-overlay" title="アイコンを変更">
+                                        <i class="bi bi-camera-fill"></i>
+                                    </label>
+                                    <form th:action="@{/teacher/profile/update-icon}" method="post" enctype="multipart/form-data" id="iconUpdateForm">
+                                        <input type="file" id="reviewIconUpload" name="iconFile" accept="image/*" style="display: none;" onchange="document.getElementById('iconUpdateForm').submit();">
+                                    </form>
                                 </div>
-                                
-                                <div class="mb-5 border-bottom pb-4" th:if="${!#lists.isEmpty(questions)}">
-                                    <h5 class="fw-bold mb-3">詳細評価</h5>
-                                    
-                                    <div th:each="q, stat : ${questions}" class="mb-4 bg-light p-3 rounded">
-                                        <label class="form-label fw-bold d-block mb-2" 
-                                               th:text="${'Q' + (stat.index + 1) + '. ' + q.questionBody}">質問</label>
-                                        
-                                        <div class="btn-group w-100" role="group">
-                                            <input type="radio" class="btn-check" th:name="|answers[${q.questionId}]|" th:id="|q${q.questionId}-5|" value="5" autocomplete="off" required>
-                                            <label class="btn btn-outline-success" th:for="|q${q.questionId}-5|">5:とても良い</label>
+                            </div>
+                            
+                            <h2 class="mb-1 fw-bold">
+                                <span th:text="${teacher.name}">教員名</span> 先生
+                            </h2>
+                            <p class="text-muted mb-2">アンケート集計結果＆プロフィール</p>
 
-                                            <input type="radio" class="btn-check" th:name="|answers[${q.questionId}]|" th:id="|q${q.questionId}-4|" value="4" autocomplete="off">
-                                            <label class="btn btn-outline-success" th:for="|q${q.questionId}-4|">4:良い</label>
+                            <div class="mb-3">
+                                <span th:each="tag : ${hashtags}" class="badge rounded-pill bg-light text-primary border border-primary me-1 p-2">
+                                    <i class="bi bi-hash"></i><span th:text="${tag.hashtag}">タグ</span>
+                                    <form th:if="${user != null and user.usersId == teacher.usersId}" 
+                                          th:action="@{/teacher/hashtag/delete/{id}(id=${tag.hashtagId})}" method="post" style="display:inline;">
+                                        <button type="submit" class="btn-close ms-1" style="font-size: 0.5rem;"></button>
+                                    </form>
+                                </span>
+                            </div>
 
-                                            <input type="radio" class="btn-check" th:name="|answers[${q.questionId}]|" th:id="|q${q.questionId}-3|" value="3" autocomplete="off">
-                                            <label class="btn btn-outline-secondary" th:for="|q${q.questionId}-3|">3:普通</label>
-
-                                            <input type="radio" class="btn-check" th:name="|answers[${q.questionId}]|" th:id="|q${q.questionId}-2|" value="2" autocomplete="off">
-                                            <label class="btn btn-outline-warning" th:for="|q${q.questionId}-2|">2:悪い</label>
-
-                                            <input type="radio" class="btn-check" th:name="|answers[${q.questionId}]|" th:id="|q${q.questionId}-1|" value="1" autocomplete="off">
-                                            <label class="btn btn-outline-danger" th:for="|q${q.questionId}-1|">1:とても悪い</label>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="mb-4">
-                                    <label for="comment" class="form-label fw-bold h5">自由コメント <span class="badge bg-secondary">任意</span></label>
-                                    <textarea id="comment" th:field="*{comment}" class="form-control" rows="4" placeholder="授業の良い点や要望などがあれば自由にご記入ください。"></textarea>
-                                </div>
-
-                                <div class="d-grid gap-2">
-                                    <button type="submit" class="btn btn-success btn-lg fw-bold py-3">
-                                        <i class="bi bi-paperplane-fill me-2"></i>回答を送信する
-                                    </button>
-                                    <a th:href="@{/student/survey/list}" class="btn btn-outline-secondary">キャンセルして一覧に戻る</a>
-                                </div>
-                            </form>
+                            <div th:if="${user != null and user.usersId == teacher.usersId}" class="mb-3">
+                                <form th:action="@{/teacher/hashtag/add}" method="post" class="d-flex justify-content-center gap-2">
+                                    <input type="hidden" name="teacherId" th:value="${teacher.usersId}">
+                                    <input type="text" name="hashtag" class="form-control form-control-sm w-50" placeholder="新しいタグを追加 (例: 熱血)" required>
+                                    <button type="submit" class="btn btn-primary btn-sm">追加</button>
+                                </form>
+                            </div>
+                            <div th:if="${user != null and user.role == 2 and user.usersId == teacher.usersId}" class="mt-2">
+                                <a th:href="@{/teacher/profile/edit}" class="btn btn-outline-primary btn-sm rounded-pill">
+                                    <i class="bi bi-pencil-square me-1"></i>プロフィール詳細を編集
+                                </a>
+                            </div>
                         </div>
                     </div>
+
+                    <div th:if="${user != null and user.role == 2 and user.usersId == teacher.usersId}" class="card shadow-sm border-0 mb-4 border-danger">
+                        <div class="card-header bg-danger text-white py-2">
+                            <h5 class="mb-0"><i class="bi bi-shield-lock-fill me-2"></i>コメントNGワード設定 (本人限定)</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="small text-muted mb-3">ここで設定した言葉を含むコメントは、投稿できなくなります。</p>
+                            <form th:action="@{/teacher/ban/add}" method="post" class="row g-2 mb-4">
+                                <input type="hidden" name="teacherId" th:value="${teacher.usersId}">
+                                <div class="col-auto flex-grow-1">
+                                    <input type="text" name="word" class="form-control" placeholder="禁止する言葉を入力" required>
+                                </div>
+                                <div class="col-auto">
+                                    <button type="submit" class="btn btn-danger">追加</button>
+                                </div>
+                            </form>
+                            <div th:if="${banWords != null and !banWords.isEmpty()}">
+                                <h6 class="fw-bold border-bottom pb-2">登録済みのNGワード</h6>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <div th:each="bw : ${banWords}" class="badge bg-secondary d-flex align-items-center p-2">
+                                        <span th:text="${bw.word}" class="me-2 fs-6">言葉</span>
+                                        <form th:action="@{/teacher/ban/delete/{id}(id=${bw.banId})}" method="post" style="display:inline;">
+                                            <button type="submit" class="btn-close btn-close-white" aria-label="Close" style="width: 0.5em; height: 0.5em;"></button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            <div th:if="${banWords == null or banWords.isEmpty()}" class="text-muted small">
+                                まだ設定されていません。
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card shadow-sm border-0 mb-5" th:if="${teacherProfile != null and teacherProfile.introduction != null and !teacherProfile.introduction.isEmpty()}">
+                        <div class="card-header bg-white py-3">
+                            <h4 class="mb-0 text-success"><i class="bi bi-person-lines-fill me-2"></i>自己紹介</h4>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text fs-5" style="white-space: pre-wrap; line-height: 1.8;" th:text="${teacherProfile.introduction}"></p>
+                        </div>
+                    </div>
+
+                    <div th:if="${profileImages != null and !profileImages.isEmpty()}" id="teacherCarousel" class="carousel slide mb-5 shadow-sm rounded overflow-hidden" data-bs-ride="carousel">
+                        <div class="carousel-inner">
+                            <div th:each="img, stat : ${profileImages}" th:class="${stat.first} ? 'carousel-item active' : 'carousel-item'">
+                                <img th:src="${img.imageBase64}" class="d-block w-100" style="height: 400px; object-fit: contain; background-color: #f8f9fa;" alt="ギャラリー画像">
+                            </div>
+                        </div>
+                        <button class="carousel-control-prev" type="button" data-bs-target="#teacherCarousel" data-bs-slide="prev" th:if="${#lists.size(profileImages) > 1}">
+                            <span class="carousel-control-prev-icon bg-dark rounded-circle p-3" aria-hidden="true"></span>
+                            <span class="visually-hidden">Previous</span>
+                        </button>
+                        <button class="carousel-control-next" type="button" data-bs-target="#teacherCarousel" data-bs-slide="next" th:if="${#lists.size(profileImages) > 1}">
+                            <span class="carousel-control-next-icon bg-dark rounded-circle p-3" aria-hidden="true"></span>
+                            <span class="visually-hidden">Next</span>
+                        </button>
+                    </div>
+
+                    <div class="card shadow-sm border-0 mb-5">
+                        <div class="card-header bg-white py-3">
+                            <h4 class="mb-0 text-primary"><i class="bi bi-bar-chart-fill me-2"></i>アンケート集計結果</h4>
+                        </div>
+                        <div class="card-body">
+                            <div th:if="${overallScore != null and overallScore > 0}" class="text-center mb-4 p-3 bg-light rounded border">
+                                <h5 class="text-muted fw-bold mb-2">総合評価</h5>
+                                <div class="d-flex justify-content-center align-items-center">
+                                    <span class="display-4 fw-bold text-warning me-2">
+                                        <span th:text="${overallScore}">0.0</span>
+                                    </span>
+                                    <div class="text-warning" style="font-size: 1.5rem;">
+                                        <i th:class="${overallScore >= 1} ? 'bi bi-star-fill' : (${overallScore >= 0.5} ? 'bi bi-star-half' : 'bi bi-star')"></i>
+                                        <i th:class="${overallScore >= 2} ? 'bi bi-star-fill' : (${overallScore >= 1.5} ? 'bi bi-star-half' : 'bi bi-star')"></i>
+                                        <i th:class="${overallScore >= 3} ? 'bi bi-star-fill' : (${overallScore >= 2.5} ? 'bi bi-star-half' : 'bi bi-star')"></i>
+                                        <i th:class="${overallScore >= 4} ? 'bi bi-star-fill' : (${overallScore >= 3.5} ? 'bi bi-star-half' : 'bi bi-star')"></i>
+                                        <i th:class="${overallScore >= 5} ? 'bi bi-star-fill' : (${overallScore >= 4.5} ? 'bi bi-star-half' : 'bi bi-star')"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div th:if="${averages != null and !averages.isEmpty()}" class="list-group list-group-flush">
+                                <div th:each="avg : ${averages}" class="list-group-item px-0 py-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h5 class="mb-0 fw-bold" th:text="${avg.questionText}">質問内容</h5> </div>
+                                    <div class="d-flex align-items-center">
+                                        <div class="progress flex-grow-1 me-3" style="height: 10px;">
+                                            <div class="progress-bar bg-warning" role="progressbar" 
+                                                 th:style="'width: ' + (${avg.averageScore} * 20) + '%'" 
+                                                 th:aria-valuenow="${avg.averageScore}" aria-valuemin="0" aria-valuemax="5"></div>
+                                        </div>
+                                        <span class="star-result fw-bold">
+                                            <i class="bi bi-star-fill me-1"></i><span th:text="${#numbers.formatDecimal(avg.averageScore, 1, 1)}">0.0</span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div th:if="${averages == null or averages.isEmpty()}" class="alert alert-info text-center m-3">
+                                <i class="bi bi-info-circle fs-4 d-block mb-2"></i>
+                                まだ回答データが集まっていません。<br>
+                                <small>生徒からの評価コメントに点数が登録されると、ここにグラフが表示されます。</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card shadow-sm border-0">
+                        <div class="card-header bg-white py-3">
+                            <h4 class="mb-0 text-secondary"><i class="bi bi-chat-square-text-fill me-2"></i>みんなのコメント</h4>
+                        </div>
+                        <div class="card-body bg-light">
+                            
+                            <div th:if="${user != null and user.role == 1}" class="mb-4">
+                                <form th:action="@{/review/{teacherId}/comment(teacherId=${teacher.usersId})}" method="post" class="bg-white p-3 rounded shadow-sm border">
+                                    <div class="mb-2">
+                                        <label for="quickComment" class="form-label fw-bold text-muted small">コメントを投稿する（匿名）</label>
+                                        <textarea id="quickComment" name="comment" class="form-control" rows="3" placeholder="先生への応援メッセージや感想などを入力してください..." required></textarea>
+                                    </div>
+                                    <div class="text-end">
+                                        <button type="submit" class="btn btn-primary btn-sm px-4">
+                                            <i class="bi bi-send-fill me-2"></i>投稿
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <div th:each="review : ${reviews}">
+                                <div th:if="${review.comment != null && !review.comment.trim().isEmpty()}" 
+                                     class="comment-box" 
+                                     th:classappend="${review.isHidden == 1} ? 'hidden-comment'">
+                                    
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-person-circle fs-4 text-secondary me-2"></i>
+                                            <span class="fw-bold text-dark me-2">匿名ユーザー</span>
+                                            
+                                            <span th:if="${review.isHidden == 1}" class="badge bg-secondary me-1">非表示中</span>
+                                            
+                                            <span th:if="${review.isDisclosureRequested == true and review.isDisclosureGranted != true}" class="badge bg-warning text-dark me-1">開示請求中</span>
+                                            <span th:if="${review.isDisclosureGranted == true}" class="badge bg-danger me-1">開示済み</span>
+                                        </div>
+                                        <span class="comment-date">
+                                            <i class="bi bi-clock me-1"></i>
+                                            <span th:text="${#temporals.format(review.createdAt, 'yyyy/MM/dd HH:mm')}">日時</span>
+                                        </span>
+                                    </div>
+                                    
+                                    <p class="mb-2 ps-1" style="white-space: pre-wrap;" th:text="${review.comment}">コメント内容</p>
+                                    
+                                    <div class="border-top pt-2 mt-2 d-flex gap-2 justify-content-end" 
+                                         th:if="${user != null and (user.role == 2 or user.role == 3)}">
+                                        
+                                        <form th:if="${user.role == 2 and user.usersId == teacher.usersId and review.isDisclosureRequested != true}" 
+                                              th:action="@{/review/request-disclosure/{id}(id=${review.reviewId})}" method="post"
+                                              onsubmit="return confirm('このコメントの投稿者情報の開示を管理者に請求しますか？');">
+                                            <button type="submit" class="btn btn-outline-warning btn-sm">
+                                                <i class="bi bi-exclamation-circle"></i> 開示請求
+                                            </button>
+                                        </form>
+
+                                        <a th:if="${user.role == 2 and user.usersId == teacher.usersId and review.isDisclosureGranted == true}" 
+                                           th:href="@{/review/disclosure-info/{id}(id=${review.reviewId})}" 
+                                           class="btn btn-danger btn-sm">
+                                            <i class="bi bi-eye"></i> 開示情報を見る
+                                        </a>
+
+                                        <form th:if="${user.role == 3 and review.isDisclosureRequested == true and review.isDisclosureGranted != true}" 
+                                              th:action="@{/review/grant-disclosure/{id}(id=${review.reviewId})}" method="post"
+                                              onsubmit="return confirm('このコメントの開示請求を許可しますか？');">
+                                            <button type="submit" class="btn btn-success btn-sm">
+                                                <i class="bi bi-check-lg"></i> 開示を許可
+                                            </button>
+                                        </form>
+
+                                        <form th:if="${user.role == 3}" 
+                                              th:action="@{/review/toggle-hidden/{id}(id=${review.reviewId})}" method="post">
+                                            <button type="submit" class="btn btn-sm" 
+                                                    th:classappend="${review.isHidden == 0} ? 'btn-outline-secondary' : 'btn-outline-primary'">
+                                                <i class="bi" th:classappend="${review.isHidden == 0} ? 'bi-eye-slash' : 'bi-eye'"></i>
+                                                <span th:text="${review.isHidden == 0} ? '非表示にする' : '表示に戻す'"></span>
+                                            </button>
+                                        </form>
+                                    </div>
+
+                                </div>
+                            </div>
+
+                            <div th:if="${#lists.isEmpty(reviews)}" class="text-center py-4 text-muted">
+                                まだコメントはありません。一番乗りのコメントを投稿しましょう！
+                            </div>
+                            
+                        </div>
+                    </div>
+
                 </div>
 
-                <div th:if="${survey == null}" class="alert alert-danger text-center p-5">
-                    指定されたアンケートが見つかりませんでした。<br>
-                    <a th:href="@{/student/survey/list}" class="btn btn-primary mt-3">一覧に戻る</a>
+                <div th:if="${teacher == null}" class="alert alert-danger text-center p-5">
+                    指定された教員が見つかりませんでした。<br>
+                    <a th:href="@{/teacher-list}" class="btn btn-primary mt-3">教員一覧に戻る</a>
                 </div>
 
             </div>

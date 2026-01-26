@@ -30,6 +30,63 @@
 
     <main class="main-content container">
 
+        <div class="modal fade" id="adminNotificationModal" tabindex="-1" aria-hidden="true" th:if="${pendingCount}">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-warning text-dark">
+                        <h5 class="modal-title fw-bold"><i class="bi bi-person-plus-fill me-2"></i>アカウント承認待ち</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="fs-5">現在 <span class="fw-bold text-danger" th:text="${pendingCount}"></span> 件の<br>教員アカウント承認申請があります。</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                        <a th:href="@{/admin/approvals}" class="btn btn-primary">確認画面へ</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="adminDisclosureModal" tabindex="-1" aria-hidden="true" th:if="${disclosureCount}">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title fw-bold"><i class="bi bi-shield-lock-fill me-2"></i>開示請求の通知</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="fs-5">現在 <span class="fw-bold text-danger" th:text="${disclosureCount}"></span> 件の<br>情報開示請求が届いています。</p>
+                        <p class="small text-muted">内容を確認し、承認または却下を行ってください。</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                        <a th:href="@{/disclosure/list}" class="btn btn-danger">請求リストへ</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="teacherGrantedModal" tabindex="-1" aria-hidden="true" th:if="${grantedCount}">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-success text-white">
+                        <h5 class="modal-title fw-bold"><i class="bi bi-check-circle-fill me-2"></i>開示請求の許可</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="fs-5"><span class="fw-bold" th:text="${grantedCount}"></span> 件の開示請求が許可されました。</p>
+                        <p class="small text-muted">申請した情報の閲覧が可能です。</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">閉じる</button>
+                        <a th:href="@{/disclosure/list}" class="btn btn-success">確認する</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
         <div th:if="${user != null and user.role == 3 and disclosureRequests != null and !disclosureRequests.isEmpty()}" class="alert alert-warning shadow-sm mb-4">
             <h5 class="alert-heading fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i>開示請求が届いています</h5>
             <div class="list-group list-group-flush mt-2 bg-white rounded">
@@ -167,6 +224,33 @@
 
     </main>
     
-    <script th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 画面上にウィンドウの要素が存在するかどうかで判定します
+            
+            // 1. アカウント承認待ちウィンドウ
+            var adminModalEl = document.getElementById('adminNotificationModal');
+            if (adminModalEl) {
+                var adminModal = new bootstrap.Modal(adminModalEl);
+                adminModal.show();
+            }
+            
+            // 2. 開示請求ウィンドウ
+            var disclosureModalEl = document.getElementById('adminDisclosureModal');
+            if (disclosureModalEl) {
+                var disclosureModal = new bootstrap.Modal(disclosureModalEl);
+                disclosureModal.show();
+            }
+
+            // 3. 開示許可ウィンドウ
+            var teacherModalEl = document.getElementById('teacherGrantedModal');
+            if (teacherModalEl) {
+                var teacherModal = new bootstrap.Modal(teacherModalEl);
+                teacherModal.show();
+            }
+        });
+    </script>
 </body>
 </html>

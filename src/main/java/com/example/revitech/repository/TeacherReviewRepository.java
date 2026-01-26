@@ -10,22 +10,17 @@ import com.example.revitech.entity.TeacherReview;
 @Repository
 public interface TeacherReviewRepository extends JpaRepository<TeacherReview, Integer> {
 
-    // --- ReviewService用 ---
-    
-    // 特定の先生のレビューを全て取得
-    List<TeacherReview> findByTeacherId(Integer teacherId);
-
-    // 管理者通知用: 開示請求中かつ未処理
+    // 既存のメソッド
+    List<TeacherReview> findByTeacherIdOrderByCreatedAtDesc(Integer teacherId);
     List<TeacherReview> findByIsDisclosureRequestedTrueAndIsDisclosureGrantedFalse();
-
-    // 先生通知用: 開示許可済み
-    List<TeacherReview> findByTeacherIdAndIsDisclosureGrantedTrue(Integer teacherId);
-
-    // --- SurveyService用 ---
+    List<TeacherReview> findByIsDisclosureGrantedTrue();
+    List<TeacherReview> findBySurveyId(Integer surveyId);
     void deleteBySurveyId(Integer surveyId);
-
     boolean existsBySurveyIdAndStudentId(Integer surveyId, Integer studentId);
 
-    // ★追加: アンケートIDに紐づくレビュー（回答）を取得
-    List<TeacherReview> findBySurveyId(Integer surveyId);
+    // ★★★ 追加: これがないとエラーになります ★★★
+    List<TeacherReview> findByTeacherId(Integer teacherId);
+    
+    // ★★★ 追加: 開示ステータスでの検索用 ★★★
+    List<TeacherReview> findByDisclosureStatus(Integer status);
 }

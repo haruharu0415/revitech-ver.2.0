@@ -16,7 +16,7 @@
                 <h2 class="card-title text-center mb-4">ログイン</h2>
 
                 <div th:if="${param.error}" class="alert alert-danger" role="alert">
-                    メールアドレス、またはパスワードが正しくありません。<br>
+                    ユーザー名またはパスワードが正しくありません。<br>
                     もしくはアカウントが無効化されています。
                 </div>
                 
@@ -35,8 +35,8 @@
 
                 <form th:action="@{/login}" method="post">
                     <div class="mb-3">
-                        <label for="username" class="form-label">メールアドレス</label>
-                        <input type="email" id="username" name="username" class="form-control" placeholder="example@jec.ac.jp" required autofocus>
+                        <label for="username" class="form-label">ユーザー名 / メールアドレス</label>
+                        <input type="text" id="username" name="username" class="form-control" placeholder="ユーザー名 または メールアドレス" required autofocus>
                     </div>
                     <div class="mb-3">
                         <label for="password" class="form-label">パスワード</label>

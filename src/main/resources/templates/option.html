@@ -76,6 +76,11 @@
                                     <i class="bi bi-pencil-fill me-2"></i>プロフィールを編集
                                 </a>
 
+                                <div th:if="${user != null and user.role == 3}">
+                                     <a th:href="@{/admin/approvals}" class="btn btn-primary text-white rounded-pill w-100">
+                                        <i class="bi bi-person-check-fill me-2"></i>アカウント承認
+                                    </a>
+                                </div>
                                 <div th:if="${user != null and (user.role == 2 or user.role == 3)}">
                                      <a th:href="@{/teacher/survey/list}" class="btn btn-warning text-white rounded-pill w-100">
                                         <i class="bi bi-list-check me-2"></i>アンケート管理・削除

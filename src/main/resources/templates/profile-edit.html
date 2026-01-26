@@ -53,6 +53,12 @@
                     <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
                 </div>
 
+                <div class="mb-4" th:if="${isTeacher}">
+                    <label for="introduction" class="form-label fw-bold">自己紹介 (先生用)</label>
+                    <textarea class="form-control" id="introduction" th:field="*{introduction}" 
+                              rows="5" placeholder="生徒へのメッセージや自己紹介を入力してください"></textarea>
+                </div>
+
                 <div class="text-center mt-4">
                     <button type="submit" class="btn btn-primary btn-lg">変更を保存</button>
                 </div>

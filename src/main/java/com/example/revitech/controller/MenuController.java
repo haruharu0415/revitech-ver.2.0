@@ -20,16 +20,28 @@ public class MenuController {
 
     @GetMapping("/option")
     public String option(@AuthenticationPrincipal UserDetails userDetails, Model model) {
-        if (userDetails != null) {
-            Users user = usersService.findByEmail(userDetails.getUsername()).orElse(null);
-            
-            if (user != null) {
-                // ★★★ 修正箇所：userオブジェクトとiconUrlを両方渡す ★★★
-                model.addAttribute("user", user);
-                String iconUrl = usersService.getUserIconPath(user.getUsersId());
-                model.addAttribute("iconUrl", iconUrl);
-            }
+        // 未ログイン時はログイン画面へ
+        if (userDetails == null) {
+            return "redirect:/login";
         }
-        return "option";
+
+        // ユーザー情報を取得
+        Users user = usersService.findByNameOrEmail(userDetails.getUsername()).orElse(null);
+        
+        if (user != null) {
+            model.addAttribute("user", user);
+            String iconUrl = usersService.getUserIconPath(user.getUsersId());
+            model.addAttribute("iconUrl", iconUrl);
+
+            // ★★★ 追加: 学生(Role=1)なら学科名を取得して画面に渡す ★★★
+            if (user.getRole() == 1) {
+                String subjectName = usersService.getStudentSubjectName(user.getUsersId());
+                model.addAttribute("subjectName", subjectName);
+            }
+            
+            return "option";
+        } else {
+            return "redirect:/login?error";
+        }
     }
 }
