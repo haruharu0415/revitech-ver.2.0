@@ -23,29 +23,35 @@ public class UsersDetailsService implements UserDetailsService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        // ★修正: メールアドレスのみで検索するように変更
-        // (findByEmailOrName だと名前重複時にエラーになるため)
-        Users user = usersRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
+    public UserDetails loadUserByUsername(String usernameOrEmail) throws UsernameNotFoundException {
+        // ★★★ 修正箇所: findByEmail ではなく findByNameOrEmail を使います ★★★
+        // これで、入力された文字列が「名前」でも「メール」でも、どちらかにヒットすればログインできます
+        Users user = usersRepository.findByNameOrEmail(usernameOrEmail, usernameOrEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + usernameOrEmail));
 
-        // 退会済みチェック
-        if ("deleted".equals(user.getStatus())) {
-            throw new UsernameNotFoundException("This account has been deleted.");
-        }
-        
-        // 承認待ち(pending)チェック
+        // 承認待ち(pending)や削除済み(deleted)のユーザーはログインさせないチェック
         if ("pending".equals(user.getStatus())) {
-            throw new UsernameNotFoundException("アカウントは承認待ちです。管理者の承認をお待ちください。");
+            throw new UsernameNotFoundException("このアカウントは承認待ちです。");
+        }
+        if ("deleted".equals(user.getStatus())) {
+            throw new UsernameNotFoundException("このアカウントは削除されています。");
         }
 
-        // 権限リストの作成
+        // 権限の設定 (Role=3ならADMIN, それ以外はUSERなど)
         Collection<GrantedAuthority> authorities = new ArrayList<>();
-        authorities.add(new SimpleGrantedAuthority("ROLE_" + user.getRole()));
+        if (user.getRole() == 3) {
+            authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
+        } else {
+            authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
+        }
+        // 先生(Role=2)用の権限も必要なら追加
+        if (user.getRole() == 2) {
+             authorities.add(new SimpleGrantedAuthority("ROLE_TEACHER"));
+        }
 
-        // UserDetailsを返す
+        // Spring Security用のユーザー情報を返す
         return new org.springframework.security.core.userdetails.User(
-                user.getEmail(), 
+                user.getEmail(), // または user.getName()。認証の識別子として使いたい方
                 user.getPassword(),
                 authorities
         );

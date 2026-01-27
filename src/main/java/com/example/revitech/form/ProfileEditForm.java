@@ -12,7 +12,10 @@ public class ProfileEditForm {
     @NotBlank(message = "名前は必須です")
     @Size(max = 50, message = "名前は50文字以内で入力してください")
     private String name;
-    private String introduction; //
-    // 画像ファイル（変更しない場合は空で来ることもあるので必須チェックは外します）
+
+    // ★★★ 追加: 自己紹介 (教員のみ使用) ★★★
+    private String introduction;
+
+    // ★★★ 維持: アイコン画像ファイル ★★★
     private MultipartFile iconFile;
 }
