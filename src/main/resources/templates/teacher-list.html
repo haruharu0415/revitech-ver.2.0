@@ -29,7 +29,7 @@
                 <form th:action="@{/teacher-list}" method="get" class="d-flex">
                     <input type="text" name="keyword" class="form-control me-2" placeholder="名前 または #ハッシュタグ で検索" th:value="${keyword}">
                     <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> 検索</button>
-                    <a th:href="@{/teacher-list}" class="btn btn-outline-secondary ms-2 text-nowrap">リセット</a>
+                    <a th:href="@{/teacher-list}" class="btn btn-outline-secondary ms-2 text-nowrap">文字削除</a>
                 </form>
             </div>
         </div>

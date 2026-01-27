@@ -20,6 +20,9 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Intege
     // 未読数をカウント（指定日時より新しいメッセージの数）
     long countByRoomIdAndCreatedAtAfter(Integer roomId, LocalDateTime timestamp);
 
-    // ★★★ 追加: 指定した部屋のメッセージを全て削除 ★★★
+    // ★★★ 追加: 指定日時より新しく、かつ「送信者が自分以外(userId != myUserId)」のメッセージ数をカウント ★★★
+    long countByRoomIdAndCreatedAtAfterAndUserIdNot(Integer roomId, LocalDateTime timestamp, Integer userId);
+
+    // 指定した部屋のメッセージを全て削除
     void deleteByRoomId(Integer roomId);
 }

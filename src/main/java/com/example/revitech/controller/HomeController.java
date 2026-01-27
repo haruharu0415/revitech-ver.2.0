@@ -22,9 +22,8 @@ public class HomeController {
     private final UsersService usersService;
     private final ChatRoomService chatRoomService;
     private final NewsService newsService;
-    private final ReviewService reviewService; // ★★★ 追加
+    private final ReviewService reviewService;
 
-    // コンストラクタに ReviewService を追加
     public HomeController(UsersService usersService, 
                           ChatRoomService chatRoomService, 
                           NewsService newsService,
@@ -51,20 +50,25 @@ public class HomeController {
             if (user != null) {
                 model.addAttribute("user", user);
 
-                // 既存機能
+                // ニュース取得
                 model.addAttribute("carouselNews", newsService.findTopNewsForUser(user, 5));
+                
+                // 未読グループ取得
                 model.addAttribute("unreadGroups", chatRoomService.findUnreadGroupRooms(user.getUsersId()));
-                model.addAttribute("unreadDms", chatRoomService.findUnreadDmRooms(user.getUsersId()));
+
+                // ★★★ 修正: ここが原因でした！ ★★★
+                // 古い findUnreadDmRooms (Entityを返す) ではなく、
+                // 新しい getUnreadDmList (DTOを返す) を呼ぶように変更しました。
+                // これで相手の名前(partnerName)が入ったデータが画面に渡ります。
+                model.addAttribute("unreadDms", chatRoomService.getUnreadDmList(user.getUsersId()));
 
                 // --- 管理者(Role=3) 通知処理 ---
                 if (user.getRole() == 3) {
-                    // 1. アカウント承認待ち
                     List<Users> pendingUsers = usersService.findPendingUsers();
                     if (!pendingUsers.isEmpty()) {
                         model.addAttribute("pendingCount", pendingUsers.size());
                     }
                     
-                    // 2. ★★★ 追加: 開示請求の通知 ★★★
                     List<TeacherReview> disclosureRequests = reviewService.findPendingDisclosures();
                     if (!disclosureRequests.isEmpty()) {
                         model.addAttribute("disclosureRequests", disclosureRequests);
@@ -74,10 +78,8 @@ public class HomeController {
                 
                 // --- 教員(Role=2) 通知処理 ---
                 if (user.getRole() == 2) {
-                    // 3. ★★★ 追加: 開示許可の通知 ★★★
                     List<TeacherReview> allGranted = reviewService.findUncheckedGrantedDisclosures(user.getUsersId());
                     
-                    // まだ確認していない(TeacherChecked != 1)ものだけを抽出して通知する
                     List<TeacherReview> newGranted = allGranted.stream()
                         .filter(r -> r.getTeacherChecked() == null || r.getTeacherChecked() != 1)
                         .collect(Collectors.toList());
