@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-<!-- terms.html-->
 <html lang="ja" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
@@ -38,18 +37,29 @@
         .terms-content .term-item {
             margin-bottom: 1.25rem;
         }
+        /* 同意エリアのスタイル */
+        .agree-area {
+            background-color: #fff;
+            padding: 1.5rem;
+            border-top: 1px solid #dee2e6;
+            position: sticky;
+            bottom: 0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        }
     </style>
 </head>
 <body>
     <header class="header">
-        <!-- オプションページに戻るボタン -->
-        <a th:href="@{/option}">
+        <a th:href="@{/option}" th:if="${mode != 'signup'}">
             <i class="bi bi-arrow-left back-arrow"></i>
+        </a>
+        <a th:href="@{/login}" th:if="${mode == 'signup'}">
+            <i class="bi bi-x-lg back-arrow"></i>
         </a>
         <h1 class="title">利用規約</h1>
     </header>
 
-    <main class="container">
+    <main class="container pb-5">
         <div class="terms-content">
             <h3>利用規約</h3>
             <p>本アプリのアカウントを作成することにより、以下の利用規約に同意したものとみなします。</p>
@@ -76,6 +86,44 @@
         </div>
     </main>
 
+    <div class="agree-area" th:if="${mode == 'signup'}">
+        <form th:action="@{/signup}" method="get">
+            <input type="hidden" name="role" value="1">
+            
+            <div class="form-check d-flex justify-content-center mb-4">
+                <input class="form-check-input me-2" type="checkbox" id="agreeCheck">
+                <label class="form-check-label fw-bold" for="agreeCheck">
+                    利用規約に同意する
+                </label>
+            </div>
+            
+            <div class="d-grid gap-2">
+                <button type="submit" id="submitBtn" class="btn btn-primary py-2" disabled>
+                    同意して登録へ進む
+                </button>
+                
+                <a th:href="@{/login}" class="btn btn-outline-secondary py-2">
+                    同意しない（トップへ）
+                </a>
+            </div>
+        </form>
+    </div>
+
     <script th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const check = document.getElementById('agreeCheck');
+            const btn = document.getElementById('submitBtn');
+
+            // 要素が存在する場合のみ処理（signupモード以外でエラーにならないように）
+            if(check && btn){
+                check.addEventListener('change', function() {
+                    // チェックが入ったらボタンの disabled を外す
+                    btn.disabled = !this.checked;
+                });
+            }
+        });
+    </script>
 </body>
 </html>

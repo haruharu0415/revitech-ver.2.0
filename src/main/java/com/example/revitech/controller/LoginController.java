@@ -39,13 +39,23 @@ public class LoginController {
         return "role-select";
     }
 
+    // ★★★ 追加: 利用規約画面の表示ハンドラ ★★★
+    @GetMapping("/terms")
+    public String terms(@RequestParam(name = "mode", required = false) String mode, Model model) {
+        // 画面側で th:if="${mode == 'signup'}" 等で判定するために渡す
+        model.addAttribute("mode", mode);
+        return "terms";
+    }
+
     @PostMapping("/role-check")
     public String checkRolePassword(@RequestParam("role") int role,
                                     @RequestParam(name = "teacherPassword", required = false) String teacherPass,
                                     @RequestParam(name = "adminPassword", required = false) String adminPass,
                                     RedirectAttributes redirectAttributes) {
 
-        if (role == 1) return "redirect:/signup?role=1";
+        // ★★★ 修正: Role=1(生徒)の場合は利用規約画面へ誘導する ★★★
+        if (role == 1) return "redirect:/terms?mode=signup";
+        
         if (role == 2) return "redirect:/signup?role=2";
         if (role == 3) return "redirect:/signup?role=3";
         
@@ -78,7 +88,7 @@ public class LoginController {
             result.rejectValue("email", "error.signupForm", "このメールアドレスは既に使用されています");
         }
         
-        // ★修正: 名前の重複チェックは削除しました（同姓同名を許可）
+        // 名前の重複チェックはなし（同姓同名を許可）
         
         if (result.hasErrors()) {
             model.addAttribute("subjects", subjectRepository.findAll());
