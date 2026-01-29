@@ -3,33 +3,70 @@ package com.example.revitech.dto;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import lombok.Data;
-
-@Data
 public class SurveyResponseDetailDto {
-    // ★★★ Serviceがセットしようとしていたフィールド (追加) ★★★
-    private Integer reviewId;        // レビューID (これがないとエラーでした)
-    private LocalDateTime createdAt; // 作成日時 (これがないとエラーでした)
 
-    // ★★★ 貴方様のコードにあったフィールド (維持) ★★★
-    private String studentName;      // 生徒名
-    private Integer score;           // 全体満足度
-    private String comment;          // 自由コメント
-    
-    // (補足: Serviceでは createdAt を入れていますが、用途によってはこちらを使ってください)
-    private LocalDateTime answeredAt;// 回答日時
-    
-    // 将来的な拡張用（詳細な質問回答リスト）
-    private List<QuestionAnswerDto> details; 
+    private Integer reviewId;
+    private String studentName;
+    private LocalDateTime answeredAt;
+    private Integer score;
+    private String comment;
+    private List<Detail> details;
 
-    @Data
-    public static class QuestionAnswerDto {
-        private String questionText; // 質問内容
-        private Integer score;       // その質問への点数
-        
-        public QuestionAnswerDto(String questionText, Integer score) {
+    public SurveyResponseDetailDto() {
+    }
+
+    public SurveyResponseDetailDto(Integer reviewId, String studentName, LocalDateTime answeredAt, Integer score, String comment, List<Detail> details) {
+        this.reviewId = reviewId;
+        this.studentName = studentName;
+        this.answeredAt = answeredAt;
+        this.score = score;
+        this.comment = comment;
+        this.details = details;
+    }
+
+    // ★★★ エラー解消用: この内部クラス(Detail)が必要です ★★★
+    public static class Detail {
+        private String questionText;
+        private Integer score;
+
+        public Detail(String questionText, Integer score) {
             this.questionText = questionText;
             this.score = score;
         }
+
+        public String getQuestionText() {
+            return questionText;
+        }
+
+        public void setQuestionText(String questionText) {
+            this.questionText = questionText;
+        }
+
+        public Integer getScore() {
+            return score;
+        }
+
+        public void setScore(Integer score) {
+            this.score = score;
+        }
     }
+
+    // Getters and Setters
+    public Integer getReviewId() { return reviewId; }
+    public void setReviewId(Integer reviewId) { this.reviewId = reviewId; }
+
+    public String getStudentName() { return studentName; }
+    public void setStudentName(String studentName) { this.studentName = studentName; }
+
+    public LocalDateTime getAnsweredAt() { return answeredAt; }
+    public void setAnsweredAt(LocalDateTime answeredAt) { this.answeredAt = answeredAt; }
+
+    public Integer getScore() { return score; }
+    public void setScore(Integer score) { this.score = score; }
+
+    public String getComment() { return comment; }
+    public void setComment(String comment) { this.comment = comment; }
+
+    public List<Detail> getDetails() { return details; }
+    public void setDetails(List<Detail> details) { this.details = details; }
 }

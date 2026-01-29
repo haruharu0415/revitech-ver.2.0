@@ -47,8 +47,18 @@
             <div th:if="${!#lists.isEmpty(searchResults)}" class="list-group shadow-sm">
                 <a th:each="user : ${searchResults}" th:href="@{/dm(receiverId=${user.usersId})}" class="list-group-item list-group-item-action p-3 d-flex align-items-center justify-content-between">
                     <div class="d-flex align-items-center">
-                        <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center me-3" style="width: 45px; height: 45px; font-size: 1.2rem;">
-                             <i class="bi bi-person-fill"></i>
+                        
+                        <div class="me-3">
+                             <img th:if="${user.iconUrl != null}"
+                                  th:src="${user.iconUrl}"
+                                  class="rounded-circle border"
+                                  style="width: 45px; height: 45px; object-fit: cover;">
+                             
+                             <div th:unless="${user.iconUrl != null}" 
+                                  class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" 
+                                  style="width: 45px; height: 45px; font-size: 1.2rem;">
+                                  <i class="bi bi-person-fill"></i>
+                             </div>
                         </div>
                         <div>
                             <div class="fw-bold fs-5" th:text="${user.name}">ユーザー名</div>

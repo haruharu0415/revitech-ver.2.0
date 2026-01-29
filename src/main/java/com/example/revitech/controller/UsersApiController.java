@@ -1,8 +1,9 @@
 package com.example.revitech.controller;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -23,10 +24,11 @@ public class UsersApiController {
     }
 
     @GetMapping("/search")
-    public List<UserSearchDto> searchUsers(@RequestParam String query) {
-        List<Users> searchResults = usersService.searchUsers(query);
-        return searchResults.stream()
-                .map(user -> new UserSearchDto(user.getUsersId(), user.getName(), user.getEmail()))
-                .collect(Collectors.toList());
+    public List<UserSearchDto> searchUsers(@RequestParam String query, @AuthenticationPrincipal User loginUser) {
+        // ★ ログイン中のユーザーIDを取得
+        Users currentUser = usersService.findByEmail(loginUser.getUsername()).orElseThrow();
+        
+        // ★ 自分のIDを渡して除外してもらう
+        return usersService.searchUsers(query, currentUser.getUsersId());
     }
 }

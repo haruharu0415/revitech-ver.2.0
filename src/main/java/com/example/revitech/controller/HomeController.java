@@ -1,15 +1,16 @@
 package com.example.revitech.controller;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.User;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
-import com.example.revitech.entity.TeacherReview;
+import com.example.revitech.dto.DmDisplayDto; // ★import追加
+import com.example.revitech.entity.ChatRoom;
+import com.example.revitech.entity.News;
 import com.example.revitech.entity.Users;
 import com.example.revitech.service.ChatRoomService;
 import com.example.revitech.service.NewsService;
@@ -22,73 +23,51 @@ public class HomeController {
     private final UsersService usersService;
     private final ChatRoomService chatRoomService;
     private final NewsService newsService;
-    private final ReviewService reviewService; // ★★★ 追加
+    private final ReviewService reviewService;
 
-    // コンストラクタに ReviewService を追加
-    public HomeController(UsersService usersService, 
-                          ChatRoomService chatRoomService, 
-                          NewsService newsService,
-                          ReviewService reviewService) {
+    public HomeController(UsersService usersService, ChatRoomService chatRoomService, NewsService newsService, ReviewService reviewService) {
         this.usersService = usersService;
         this.chatRoomService = chatRoomService;
         this.newsService = newsService;
         this.reviewService = reviewService;
     }
 
-    @GetMapping("/")
-    public String index() {
-        return "redirect:/home";
-    }
-
     @GetMapping("/home")
-    public String home(Model model) {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        
-        if (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName())) {
-            String usernameOrEmail = auth.getName();
-            Users user = usersService.findByNameOrEmail(usernameOrEmail).orElse(null);
+    public String home(@AuthenticationPrincipal User loginUser, Model model) {
+        Users user = usersService.findByEmail(loginUser.getUsername()).orElseThrow();
+        model.addAttribute("user", user);
+
+        // 管理者用通知
+        if (user.getRole() == 3) {
+            long pendingCount = usersService.findPendingUsers().size();
+            model.addAttribute("pendingCount", pendingCount > 0 ? pendingCount : null);
             
-            if (user != null) {
-                model.addAttribute("user", user);
-
-                // 既存機能
-                model.addAttribute("carouselNews", newsService.findTopNewsForUser(user, 5));
-                model.addAttribute("unreadGroups", chatRoomService.findUnreadGroupRooms(user.getUsersId()));
-                model.addAttribute("unreadDms", chatRoomService.findUnreadDmRooms(user.getUsersId()));
-
-                // --- 管理者(Role=3) 通知処理 ---
-                if (user.getRole() == 3) {
-                    // 1. アカウント承認待ち
-                    List<Users> pendingUsers = usersService.findPendingUsers();
-                    if (!pendingUsers.isEmpty()) {
-                        model.addAttribute("pendingCount", pendingUsers.size());
-                    }
-                    
-                    // 2. ★★★ 追加: 開示請求の通知 ★★★
-                    List<TeacherReview> disclosureRequests = reviewService.findPendingDisclosures();
-                    if (!disclosureRequests.isEmpty()) {
-                        model.addAttribute("disclosureRequests", disclosureRequests);
-                        model.addAttribute("disclosureCount", disclosureRequests.size());
-                    }
-                }
-                
-                // --- 教員(Role=2) 通知処理 ---
-                if (user.getRole() == 2) {
-                    // 3. ★★★ 追加: 開示許可の通知 ★★★
-                    List<TeacherReview> allGranted = reviewService.findUncheckedGrantedDisclosures(user.getUsersId());
-                    
-                    // まだ確認していない(TeacherChecked != 1)ものだけを抽出して通知する
-                    List<TeacherReview> newGranted = allGranted.stream()
-                        .filter(r -> r.getTeacherChecked() == null || r.getTeacherChecked() != 1)
-                        .collect(Collectors.toList());
-
-                    if (!newGranted.isEmpty()) {
-                        model.addAttribute("grantedDisclosures", newGranted);
-                        model.addAttribute("grantedCount", newGranted.size());
-                    }
-                }
-            }
+            long disclosureCount = reviewService.countPendingDisclosureRequests();
+            model.addAttribute("disclosureCount", disclosureCount > 0 ? disclosureCount : null);
+            
+            model.addAttribute("disclosureRequests", reviewService.getPendingDisclosureRequests());
         }
+
+        // 先生用通知 (開示許可)
+        if (user.getRole() == 2) {
+            long grantedCount = reviewService.countGrantedDisclosuresForTeacher(user.getUsersId());
+            model.addAttribute("grantedCount", grantedCount > 0 ? grantedCount : null);
+            
+            model.addAttribute("grantedDisclosures", reviewService.getGrantedDisclosuresForTeacher(user.getUsersId()));
+        }
+
+        // ニュース
+        List<News> carouselNews = newsService.getTopNews(3);
+        model.addAttribute("carouselNews", carouselNews);
+
+        // チャット通知
+        List<ChatRoom> unreadGroups = chatRoomService.findUnreadGroupRooms(user.getUsersId());
+        model.addAttribute("unreadGroups", unreadGroups);
+
+        // ★★★ 修正箇所: ここで List<DmDisplayDto> を受け取るように変更 ★★★
+        List<DmDisplayDto> unreadDms = chatRoomService.findUnreadDmRooms(user.getUsersId());
+        model.addAttribute("unreadDms", unreadDms);
+
         return "home";
     }
 }

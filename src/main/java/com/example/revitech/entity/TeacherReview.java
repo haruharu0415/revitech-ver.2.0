@@ -9,11 +9,9 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import lombok.Data;
 
 @Entity
 @Table(name = "teacher_reviews")
-@Data
 public class TeacherReview {
 
     @Id
@@ -27,7 +25,7 @@ public class TeacherReview {
     @Column(name = "student_id", nullable = false)
     private Integer studentId;
 
-    @Column(name = "score")
+    @Column(name = "score", nullable = false)
     private Integer score;
 
     @Column(name = "comment", columnDefinition = "TEXT")
@@ -35,43 +33,58 @@ public class TeacherReview {
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
-
-    // ★★★ 以下、追加したフィールド (これが不足していました！) ★★★
-
-    // 0:なし, 1:請求中, 2:開示済み
-    @Column(name = "disclosure_status")
-    private Integer disclosureStatus;
-
-    // 開示請求がされたか
+    
     @Column(name = "is_disclosure_requested")
     private Boolean isDisclosureRequested;
 
-    // 開示が許可されたか
     @Column(name = "is_disclosure_granted")
     private Boolean isDisclosureGranted;
 
-    // 先生が確認したか (通知用)
-    @Column(name = "teacher_checked")
-    private Integer teacherChecked;
-
-    // 非表示フラグ (0:表示, 1:非表示)
     @Column(name = "is_hidden")
-    private Integer isHidden;
-    
-    // アンケート機能との連携用
+    private Integer isHidden = 0;
+
+    // ★★★ エラー解消用: このフィールドが必要です ★★★
     @Column(name = "survey_id")
     private Integer surveyId;
 
     @PrePersist
-    protected void onCreate() {
-        if (createdAt == null) {
-            createdAt = LocalDateTime.now();
+    public void onPrePersist() {
+        if (this.createdAt == null) {
+            this.createdAt = LocalDateTime.now();
         }
-        // デフォルト値の設定
-        if (disclosureStatus == null) disclosureStatus = 0;
-        if (isDisclosureRequested == null) isDisclosureRequested = false;
-        if (isDisclosureGranted == null) isDisclosureGranted = false;
-        if (teacherChecked == null) teacherChecked = 0;
-        if (isHidden == null) isHidden = 0;
+        if (this.isHidden == null) {
+            this.isHidden = 0;
+        }
     }
+
+    // Getters and Setters
+    public Integer getReviewId() { return reviewId; }
+    public void setReviewId(Integer reviewId) { this.reviewId = reviewId; }
+
+    public Integer getTeacherId() { return teacherId; }
+    public void setTeacherId(Integer teacherId) { this.teacherId = teacherId; }
+
+    public Integer getStudentId() { return studentId; }
+    public void setStudentId(Integer studentId) { this.studentId = studentId; }
+
+    public Integer getScore() { return score; }
+    public void setScore(Integer score) { this.score = score; }
+
+    public String getComment() { return comment; }
+    public void setComment(String comment) { this.comment = comment; }
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public Boolean getIsDisclosureRequested() { return isDisclosureRequested; }
+    public void setIsDisclosureRequested(Boolean isDisclosureRequested) { this.isDisclosureRequested = isDisclosureRequested; }
+
+    public Boolean getIsDisclosureGranted() { return isDisclosureGranted; }
+    public void setIsDisclosureGranted(Boolean isDisclosureGranted) { this.isDisclosureGranted = isDisclosureGranted; }
+
+    public Integer getIsHidden() { return isHidden; }
+    public void setIsHidden(Integer isHidden) { this.isHidden = isHidden; }
+
+    public Integer getSurveyId() { return surveyId; }
+    public void setSurveyId(Integer surveyId) { this.surveyId = surveyId; }
 }

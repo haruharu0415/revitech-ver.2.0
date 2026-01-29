@@ -250,7 +250,14 @@
                                         </span>
                                     </div>
                                     
-                                    <p class="mb-2 ps-1" style="white-space: pre-wrap;" th:text="${review.comment}">コメント内容</p>
+                                    <p class="mb-2 ps-1" style="white-space: pre-wrap;" 
+                                       th:if="${review.isHidden == 0 or (user != null and (user.role == 3 or (user.role == 2 and user.usersId == teacher.usersId)))}"
+                                       th:text="${review.comment}">コメント内容</p>
+                                    
+                                    <p class="mb-2 ps-1 text-secondary fst-italic" 
+                                       th:if="${review.isHidden == 1 and (user == null or (user.role != 3 and (user.role != 2 or user.usersId != teacher.usersId)))}">
+                                        <i class="bi bi-eye-slash me-1"></i>現在このコメントは非表示になってます
+                                    </p>
                                     
                                     <div class="border-top pt-2 mt-2 d-flex gap-2 justify-content-end" 
                                          th:if="${user != null and (user.role == 2 or user.role == 3)}">

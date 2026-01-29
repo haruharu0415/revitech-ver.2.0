@@ -1,24 +1,22 @@
 package com.example.revitech.service;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.revitech.dto.SurveyResponseDetailDto;
-import com.example.revitech.dto.SurveyResponseDetailDto.QuestionAnswerDto;
 import com.example.revitech.entity.BanWord;
-import com.example.revitech.entity.SurveyAnswer;
-import com.example.revitech.entity.SurveyQuestion;
+import com.example.revitech.entity.ReviewAnswer;
 import com.example.revitech.entity.TeacherReview;
 import com.example.revitech.entity.Users;
 import com.example.revitech.repository.BanWordRepository;
-import com.example.revitech.repository.SurveyAnswerRepository;
-import com.example.revitech.repository.SurveyQuestionRepository;
+import com.example.revitech.repository.QuestionRepository;
+import com.example.revitech.repository.ReviewAnswerRepository;
 import com.example.revitech.repository.TeacherReviewRepository;
 import com.example.revitech.repository.UsersRepository;
 
@@ -27,120 +25,162 @@ import com.example.revitech.repository.UsersRepository;
 public class ReviewService {
 
     private final TeacherReviewRepository teacherReviewRepository;
-    private final UsersRepository usersRepository;
     private final BanWordRepository banWordRepository;
-    private final SurveyQuestionRepository surveyQuestionRepository;
-    private final SurveyAnswerRepository surveyAnswerRepository;
+    private final ReviewAnswerRepository reviewAnswerRepository;
+    private final QuestionRepository questionRepository;
+    private final UsersRepository usersRepository; // ★追加
 
     public ReviewService(TeacherReviewRepository teacherReviewRepository, 
-                         UsersRepository usersRepository,
                          BanWordRepository banWordRepository,
-                         SurveyQuestionRepository surveyQuestionRepository,
-                         SurveyAnswerRepository surveyAnswerRepository) {
+                         ReviewAnswerRepository reviewAnswerRepository,
+                         QuestionRepository questionRepository,
+                         UsersRepository usersRepository) { // ★追加
         this.teacherReviewRepository = teacherReviewRepository;
-        this.usersRepository = usersRepository;
         this.banWordRepository = banWordRepository;
-        this.surveyQuestionRepository = surveyQuestionRepository;
-        this.surveyAnswerRepository = surveyAnswerRepository;
+        this.reviewAnswerRepository = reviewAnswerRepository;
+        this.questionRepository = questionRepository;
+        this.usersRepository = usersRepository;
     }
 
-    // ★★★ 追加: 先生ごとの詳細項目平均点を取得 ★★★
-    public List<Map<String, Object>> getTeacherAverageScores(Integer teacherId) {
-        return surveyAnswerRepository.findAverageScoresByTeacherId(teacherId);
+    // --- 既存メソッド ---
+    public List<TeacherReview> getReviewsByTeacherId(Integer teacherId) {
+        return teacherReviewRepository.findByTeacherIdOrderByCreatedAtDesc(teacherId);
     }
 
-    // --- 以下、既存メソッド (変更なし) ---
-
-    public List<SurveyResponseDetailDto> getSurveyResponseDetails(Integer surveyId, Integer viewerRole) {
-        List<TeacherReview> reviews = teacherReviewRepository.findBySurveyId(surveyId);
-        List<SurveyQuestion> questions = surveyQuestionRepository.findBySurveyIdOrderByQuestionIdAsc(surveyId);
-
-        return reviews.stream().map(review -> {
-            SurveyResponseDetailDto dto = new SurveyResponseDetailDto();
-            dto.setReviewId(review.getReviewId());
-            dto.setScore(review.getScore());
-            dto.setComment(review.getComment());
-            dto.setCreatedAt(review.getCreatedAt());
-            dto.setAnsweredAt(review.getCreatedAt());
-            
-            Users student = usersRepository.findById(review.getStudentId()).orElse(null);
-            if (student != null) {
-                dto.setStudentName("匿名ユーザー"); 
-            } else {
-                dto.setStudentName("不明なユーザー");
-            }
-
-            List<SurveyAnswer> answers = surveyAnswerRepository.findByReviewId(review.getReviewId());
-            Map<Integer, Integer> scoreMap = answers.stream()
-                .collect(Collectors.toMap(SurveyAnswer::getQuestionId, SurveyAnswer::getScore, (v1, v2) -> v1));
-
-            List<QuestionAnswerDto> details = new ArrayList<>();
-            for (SurveyQuestion q : questions) {
-                Integer score = scoreMap.get(q.getQuestionId());
-                if (score == null) score = 0;
-                details.add(new QuestionAnswerDto(q.getQuestionBody(), score));
-            }
-            dto.setDetails(details);
-            
-            return dto;
-        }).collect(Collectors.toList());
+    public List<TeacherReview> findByTeacherId(Integer teacherId) {
+        return getReviewsByTeacherId(teacherId);
+    }
+    
+    public TeacherReview saveReview(TeacherReview review) {
+        return teacherReviewRepository.save(review);
     }
 
+    public TeacherReview findById(Integer reviewId) {
+        return teacherReviewRepository.findById(reviewId).orElseThrow();
+    }
+    
+    // --- NGワードチェック ---
     public boolean containsBanWord(Integer teacherId, String comment) {
-        if (comment == null || comment.trim().isEmpty()) return false;
+        if (comment == null || comment.isEmpty()) return false;
         List<BanWord> banWords = banWordRepository.findByTeacherId(teacherId);
-        String lowerComment = comment.toLowerCase();
         for (BanWord bw : banWords) {
-            if (bw.getWord() != null && lowerComment.contains(bw.getWord().toLowerCase())) {
+            if (comment.contains(bw.getWord())) {
                 return true;
             }
         }
         return false;
     }
 
-    public void saveReview(TeacherReview review) {
-        if (review.getCreatedAt() == null) {
-            review.setCreatedAt(LocalDateTime.now());
+    // --- 平均スコア計算 ---
+    public List<Map<String, Object>> getTeacherAverageScores(Integer teacherId) {
+        List<Object[]> results = reviewAnswerRepository.findAverageScoreByQuestionForTeacher(teacherId);
+        if (results == null || results.isEmpty()) return new ArrayList<>();
+
+        List<Map<String, Object>> averages = new ArrayList<>();
+        for (Object[] row : results) {
+            Integer questionId = (Integer) row[0];
+            Double avgScore = (Double) row[1];
+
+            String questionText = questionRepository.findById(questionId)
+                    .map(q -> q.getQuestionBody())
+                    .orElse("質問 " + questionId);
+
+            Map<String, Object> map = new HashMap<>();
+            map.put("questionId", questionId);
+            map.put("questionText", questionText);
+            map.put("averageScore", avgScore);
+            averages.add(map);
         }
-        if (review.getIsHidden() == null) review.setIsHidden(0);
-        if (review.getDisclosureStatus() == null) review.setDisclosureStatus(0);
-        if (review.getIsDisclosureRequested() == null) review.setIsDisclosureRequested(false);
-        if (review.getIsDisclosureGranted() == null) review.setIsDisclosureGranted(false);
-        if (review.getTeacherChecked() == null) review.setTeacherChecked(0);
-        teacherReviewRepository.save(review);
+        return averages;
     }
 
-    public List<TeacherReview> findByTeacherId(Integer teacherId) { return teacherReviewRepository.findByTeacherId(teacherId); }
-    public TeacherReview findById(Integer id) { return teacherReviewRepository.findById(id).orElseThrow(() -> new RuntimeException("Review not found with id: " + id)); }
+    // --- 開示請求関連 ---
+    public long countPendingDisclosureRequests() {
+        return teacherReviewRepository.countPendingDisclosureRequests();
+    }
+
+    public List<TeacherReview> getPendingDisclosureRequests() {
+        return teacherReviewRepository.findPendingDisclosureRequests();
+    }
+
+    public List<TeacherReview> findPendingDisclosures() {
+        return getPendingDisclosureRequests();
+    }
+
+    public long countGrantedDisclosuresForTeacher(Integer teacherId) {
+        return teacherReviewRepository.countByTeacherIdAndIsDisclosureGrantedTrue(teacherId);
+    }
+
+    public List<TeacherReview> getGrantedDisclosuresForTeacher(Integer teacherId) {
+        return teacherReviewRepository.findByTeacherIdAndIsDisclosureGrantedTrue(teacherId);
+    }
+
+    public List<TeacherReview> findUncheckedGrantedDisclosures(Integer teacherId) {
+        return getGrantedDisclosuresForTeacher(teacherId);
+    }
+
     public void requestDisclosure(Integer reviewId) {
         TeacherReview review = findById(reviewId);
         review.setIsDisclosureRequested(true);
-        review.setDisclosureStatus(1);
+        review.setIsDisclosureGranted(false);
         teacherReviewRepository.save(review);
     }
+
     public void grantDisclosure(Integer reviewId) {
         TeacherReview review = findById(reviewId);
         review.setIsDisclosureGranted(true);
-        review.setDisclosureStatus(2);
-        review.setTeacherChecked(0);
         teacherReviewRepository.save(review);
     }
+
     public void toggleHidden(Integer reviewId) {
         TeacherReview review = findById(reviewId);
-        int current = (review.getIsHidden() == null) ? 0 : review.getIsHidden();
-        review.setIsHidden(current == 0 ? 1 : 0);
+        Integer current = review.getIsHidden();
+        review.setIsHidden(current == 1 ? 0 : 1);
         teacherReviewRepository.save(review);
     }
-    public List<TeacherReview> findPendingDisclosures() { return teacherReviewRepository.findByDisclosureStatus(1); }
-    public List<TeacherReview> findUncheckedGrantedDisclosures(Integer teacherId) {
-        return teacherReviewRepository.findByTeacherId(teacherId).stream()
-                .filter(r -> r.getDisclosureStatus() != null && r.getDisclosureStatus() == 2)
-                .filter(r -> r.getTeacherChecked() == null || r.getTeacherChecked() == 0)
-                .collect(Collectors.toList());
-    }
+    
     public void markAsChecked(Integer reviewId) {
-        TeacherReview review = findById(reviewId);
-        review.setTeacherChecked(1);
-        teacherReviewRepository.save(review);
+        // 実装が必要であればここに記述
+    }
+
+    // ★★★ 追加: アンケート結果詳細取得 (SurveyManagementController用) ★★★
+    public List<SurveyResponseDetailDto> getSurveyResponseDetails(Integer surveyId, Integer viewerRole) {
+        // SurveyIdに紐づくレビューを取得
+        List<TeacherReview> reviews = teacherReviewRepository.findBySurveyId(surveyId);
+        
+        List<SurveyResponseDetailDto> responseDtos = new ArrayList<>();
+
+        for (TeacherReview review : reviews) {
+            SurveyResponseDetailDto dto = new SurveyResponseDetailDto();
+            dto.setReviewId(review.getReviewId());
+            dto.setAnsweredAt(review.getCreatedAt());
+            dto.setScore(review.getScore());
+            dto.setComment(review.getComment());
+
+            // 生徒名の取得
+            String studentName = "匿名";
+            Optional<Users> studentOpt = usersRepository.findById(review.getStudentId());
+            if (studentOpt.isPresent()) {
+                studentName = studentOpt.get().getName();
+            }
+            // 必要であれば viewerRole によって名前を隠す処理をここに入れる
+            dto.setStudentName(studentName);
+
+            // 詳細回答の取得
+            List<ReviewAnswer> answers = reviewAnswerRepository.findByReviewId(review.getReviewId());
+            List<SurveyResponseDetailDto.Detail> details = new ArrayList<>();
+            
+            for (ReviewAnswer ans : answers) {
+                String qText = questionRepository.findById(ans.getQuestionId())
+                        .map(q -> q.getQuestionBody())
+                        .orElse("質問削除済み");
+                details.add(new SurveyResponseDetailDto.Detail(qText, ans.getScore()));
+            }
+            dto.setDetails(details);
+            
+            responseDtos.add(dto);
+        }
+        
+        return responseDtos;
     }
 }

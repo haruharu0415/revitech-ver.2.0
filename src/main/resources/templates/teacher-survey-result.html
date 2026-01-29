@@ -40,30 +40,30 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-5 border-end">
-                                <div class="mb-3 text-center">
-                                    <label class="text-muted small">全体満足度</label>
-                                    <div class="text-warning fs-3">
-                                        <span th:each="i : ${#numbers.sequence(1, 5)}">
-                                            <i th:class="${i <= res.score} ? 'bi bi-star-fill' : 'bi bi-star'"></i>
-                                        </span>
-                                        <span class="text-dark fw-bold ms-2" th:text="${res.score}">5</span>
-                                    </div>
-                                </div>
-                                <div class="bg-light p-3 rounded">
-                                    <label class="fw-bold small text-muted mb-1"><i class="bi bi-chat-quote-fill me-1"></i>自由コメント</label>
+                                <div class="bg-light p-3 rounded h-100">
+                                    <label class="fw-bold small text-muted mb-2 border-bottom w-100 pb-1">
+                                        <i class="bi bi-chat-quote-fill me-1"></i>自由コメント
+                                    </label>
                                     <p class="mb-0" style="white-space: pre-wrap;" th:text="${res.comment != null && !res.comment.isEmpty() ? res.comment : '（コメントなし）'}"></p>
                                 </div>
                             </div>
 
                             <div class="col-md-7">
                                 <h6 class="fw-bold border-bottom pb-2 mb-3">詳細項目の評価</h6>
-                                <div th:each="detail : ${res.details}" class="mb-2 d-flex justify-content-between align-items-center">
-                                    <span th:text="${detail.questionText}">質問文</span>
-                                    <span class="badge bg-primary rounded-pill fs-6">
-                                        評価: <span th:text="${detail.score}">5</span>
-                                    </span>
+                                <div th:each="detail : ${res.details}" class="mb-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="fw-bold" th:text="${detail.questionText}">質問文</span>
+                                        <span class="badge bg-primary rounded-pill px-3 py-2 fs-6">
+                                            評価: <span th:text="${detail.score}">5</span>
+                                        </span>
+                                    </div>
+                                    <div class="progress" style="height: 5px;">
+                                        <div class="progress-bar bg-success" role="progressbar" 
+                                             th:style="'width: ' + (${detail.score} * 20) + '%'" 
+                                             th:aria-valuenow="${detail.score}" aria-valuemin="0" aria-valuemax="5"></div>
+                                    </div>
                                 </div>
-                                <div th:if="${#lists.isEmpty(res.details)}" class="text-muted small">
+                                <div th:if="${#lists.isEmpty(res.details)}" class="text-muted small text-center py-4">
                                     詳細質問はありません。
                                 </div>
                             </div>

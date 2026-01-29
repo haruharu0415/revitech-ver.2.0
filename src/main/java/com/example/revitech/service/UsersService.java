@@ -4,12 +4,12 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.HashSet; // 追加
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set; // 追加
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.example.revitech.dto.TeacherListDto;
+import com.example.revitech.dto.UserSearchDto;
 import com.example.revitech.entity.BanWord;
 import com.example.revitech.entity.Enrollment;
 import com.example.revitech.entity.StudentProfile;
@@ -76,7 +77,7 @@ public class UsersService {
         this.banWordRepository = banWordRepository;
     }
 
-    // --- 検索機能の強化 (ここが今回のメイン！) ---
+    // --- 検索機能の強化 ---
     public List<TeacherListDto> getTeacherListDetails(String keyword) {
         List<Users> teachers;
 
@@ -88,8 +89,7 @@ public class UsersService {
             usersRepository.findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(kw, kw)
                            .forEach(u -> teacherIds.add(u.getUsersId()));
 
-            // 2. ハッシュタグで検索してIDを取得 (ここを強化！)
-            // キーワードが含まれるタグを持つ先生も追加します（#の有無に関わらずヒットします）
+            // 2. ハッシュタグで検索してIDを取得
             teacherHashtagRepository.findByHashtagContaining(kw)
                                     .forEach(t -> teacherIds.add(t.getTeacherId()));
 
@@ -108,7 +108,7 @@ public class UsersService {
             teachers = findByRole(2);
         }
         
-        // DTOへの変換 (ここは変更なし)
+        // DTOへの変換
         return teachers.stream()
             .filter(teacher -> !"deleted".equals(teacher.getStatus()))
             .map(teacher -> {
@@ -125,9 +125,9 @@ public class UsersService {
             }).collect(Collectors.toList());
     }
 
-    // --- その他 既存メソッド (変更なし) ---
+    // --- その他 既存メソッド ---
     
-    // NGワード管理 (前回の空白除去修正済み)
+    // NGワード管理
     @Transactional
     public void addBanWord(Integer teacherId, String word) {
         if (word == null || word.trim().isEmpty()) return;
@@ -166,10 +166,29 @@ public class UsersService {
     public List<Users> findPendingUsers() { return usersRepository.findAll().stream().filter(u -> "pending".equals(u.getStatus())).collect(Collectors.toList()); }
     @Transactional
     public void approveUser(Integer userId) { Users user = usersRepository.findById(userId).orElseThrow(); user.setStatus("active"); usersRepository.save(user); }
-    public List<Users> searchUsers(String keyword) {
+    
+    // ★★★ 修正箇所：引数に excludeUserId を追加し、自分を除外する処理を追加 ★★★
+    public List<UserSearchDto> searchUsers(String keyword, Integer excludeUserId) {
         if (keyword == null || keyword.trim().isEmpty()) return List.of(); 
-        return usersRepository.findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(keyword, keyword);
+        
+        List<Users> users = usersRepository.findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(keyword, keyword);
+        
+        // UsersリストをUserSearchDtoリストに変換（アイコンパスを取得しながら）
+        return users.stream()
+                // 自分自身(excludeUserId)を除外
+                .filter(user -> !user.getUsersId().equals(excludeUserId))
+                .map(user -> {
+                    String iconUrl = getUserIconPath(user.getUsersId());
+                    return new UserSearchDto(
+                        user.getUsersId(),
+                        user.getName(),
+                        user.getEmail(),
+                        iconUrl,
+                        user.getRole()
+                    );
+                }).collect(Collectors.toList());
     }
+
     @Transactional
     public void updateProfile(Integer userId, String newName, String introduction, MultipartFile iconFile) throws IOException {
         Users user = usersRepository.findById(userId).orElseThrow();
