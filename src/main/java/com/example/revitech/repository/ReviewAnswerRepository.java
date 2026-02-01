@@ -12,10 +12,17 @@ import com.example.revitech.entity.ReviewAnswer;
 @Repository
 public interface ReviewAnswerRepository extends JpaRepository<ReviewAnswer, Integer> {
     
-    // 特定のレビューに紐づく回答を取得
+    // レビューIDで詳細回答を取得
     List<ReviewAnswer> findByReviewId(Integer reviewId);
 
-    // ★★★ エラー解消用: 先生ごとの質問別平均スコアを算出するクエリ ★★★
+    // 質問ごとの平均スコア（レーダーチャート等用）
     @Query("SELECT ra.questionId, AVG(ra.score) FROM ReviewAnswer ra JOIN TeacherReview tr ON ra.reviewId = tr.reviewId WHERE tr.teacherId = :teacherId GROUP BY ra.questionId")
     List<Object[]> findAverageScoreByQuestionForTeacher(@Param("teacherId") Integer teacherId);
+
+    // 先生に対する「全ての詳細回答」の平均スコアを算出（総合評価用）
+    @Query("SELECT AVG(ra.score) FROM ReviewAnswer ra JOIN TeacherReview tr ON ra.reviewId = tr.reviewId WHERE tr.teacherId = :teacherId")
+    Double findTotalAverageScoreByTeacherId(@Param("teacherId") Integer teacherId);
+
+    // ★★★ 追加: アンケートIDに紐づく詳細回答を削除するメソッド ★★★
+    void deleteBySurveyId(Integer surveyId);
 }

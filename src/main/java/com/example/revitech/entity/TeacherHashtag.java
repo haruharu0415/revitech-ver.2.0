@@ -12,13 +12,15 @@ import lombok.Data;
 @Table(name = "teacher_hashtags")
 @Data
 public class TeacherHashtag {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "hashtag_id") // DBのカラム名に合わせてください（例: id, hashtag_id）
     private Integer hashtagId;
 
-    @Column(name = "teacher_id", nullable = false)
+    @Column(name = "teacher_id")
     private Integer teacherId;
 
-    @Column(name = "hashtag", nullable = false)
+    @Column(name = "hashtag")
     private String hashtag;
 }

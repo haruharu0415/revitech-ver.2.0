@@ -1,21 +1,27 @@
 package com.example.revitech.controller;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
-import com.example.revitech.dto.DmDisplayDto; // ★import追加
+import com.example.revitech.dto.DmDisplayDto;
 import com.example.revitech.entity.ChatRoom;
 import com.example.revitech.entity.News;
+import com.example.revitech.entity.TeacherReview;
 import com.example.revitech.entity.Users;
 import com.example.revitech.service.ChatRoomService;
 import com.example.revitech.service.NewsService;
 import com.example.revitech.service.ReviewService;
 import com.example.revitech.service.UsersService;
+
+import jakarta.servlet.http.HttpSession;
 
 @Controller
 public class HomeController {
@@ -32,10 +38,16 @@ public class HomeController {
         this.reviewService = reviewService;
     }
 
+    @SuppressWarnings("unchecked")
     @GetMapping("/home")
-    public String home(@AuthenticationPrincipal User loginUser, Model model) {
-        Users user = usersService.findByEmail(loginUser.getUsername()).orElseThrow();
-        model.addAttribute("user", user);
+    public String home(@AuthenticationPrincipal UserDetails userDetails, Model model, HttpSession session) {
+        Users user = null;
+        if (userDetails != null) {
+            user = usersService.findByEmail(userDetails.getUsername()).orElseThrow();
+            model.addAttribute("user", user);
+        } else {
+            return "redirect:/login";
+        }
 
         // 管理者用通知
         if (user.getRole() == 3) {
@@ -50,21 +62,32 @@ public class HomeController {
 
         // 先生用通知 (開示許可)
         if (user.getRole() == 2) {
-            long grantedCount = reviewService.countGrantedDisclosuresForTeacher(user.getUsersId());
-            model.addAttribute("grantedCount", grantedCount > 0 ? grantedCount : null);
+            // ★★★ 修正: UsersServiceから全件取得し、セッションを使ってフィルタリング ★★★
+            List<TeacherReview> allGranted = usersService.getGrantedReviews(user.getUsersId());
             
-            model.addAttribute("grantedDisclosures", reviewService.getGrantedDisclosuresForTeacher(user.getUsersId()));
+            // セッションから「消去済みID」を取得して除外する
+            Set<Integer> readIds = (Set<Integer>) session.getAttribute("readNotificationIds");
+            if (readIds == null) readIds = new HashSet<>();
+            
+            final Set<Integer> finalReadIds = readIds; 
+            List<TeacherReview> displayList = allGranted.stream()
+                .filter(r -> !finalReadIds.contains(r.getReviewId()))
+                .collect(Collectors.toList());
+
+            model.addAttribute("grantedCount", !displayList.isEmpty() ? displayList.size() : null);
+            model.addAttribute("grantedDisclosures", displayList);
         }
 
         // ニュース
-        List<News> carouselNews = newsService.getTopNews(3);
+        List<News> myNews = newsService.findNewsForUser(user);
+        List<News> carouselNews = myNews.size() > 3 ? myNews.subList(0, 3) : myNews;
         model.addAttribute("carouselNews", carouselNews);
 
         // チャット通知
         List<ChatRoom> unreadGroups = chatRoomService.findUnreadGroupRooms(user.getUsersId());
         model.addAttribute("unreadGroups", unreadGroups);
 
-        // ★★★ 修正箇所: ここで List<DmDisplayDto> を受け取るように変更 ★★★
+        // DM通知
         List<DmDisplayDto> unreadDms = chatRoomService.findUnreadDmRooms(user.getUsersId());
         model.addAttribute("unreadDms", unreadDms);
 

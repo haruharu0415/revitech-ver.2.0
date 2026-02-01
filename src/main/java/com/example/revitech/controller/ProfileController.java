@@ -1,102 +1,132 @@
 package com.example.revitech.controller;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam; // 追加
 
-import com.example.revitech.entity.BanWord;
-import com.example.revitech.entity.TeacherHashtag;
 import com.example.revitech.entity.Users;
 import com.example.revitech.form.ProfileEditForm;
+import com.example.revitech.repository.SubjectRepository;
 import com.example.revitech.service.UsersService;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.Valid;
 
 @Controller
 public class ProfileController {
 
     private final UsersService usersService;
+    private final SubjectRepository subjectRepository;
 
-    public ProfileController(UsersService usersService) {
+    public ProfileController(UsersService usersService, SubjectRepository subjectRepository) {
         this.usersService = usersService;
+        this.subjectRepository = subjectRepository;
     }
 
-    // プロフィール編集画面
+    // --- プロフィール編集画面の表示 ---
     @GetMapping("/profile/edit")
-    public String editProfile(@AuthenticationPrincipal UserDetails userDetails, Model model) {
-        if (userDetails == null) return "redirect:/login";
+    public String showProfileEdit(@AuthenticationPrincipal UserDetails userDetails, Model model) {
         Users user = usersService.findByNameOrEmail(userDetails.getUsername()).orElseThrow();
+        
         ProfileEditForm form = new ProfileEditForm();
         form.setName(user.getName());
-        if (user.getRole() == 2 || user.getRole() == 3) {
-            form.setIntroduction(usersService.getTeacherIntroduction(user.getUsersId()));
+        
+        boolean isTeacher = (user.getRole() == 2 || user.getRole() == 3);
+        model.addAttribute("isTeacher", isTeacher);
+        
+        if (isTeacher) {
+            String intro = usersService.getTeacherIntroduction(user.getUsersId());
+            form.setIntroduction(intro);
+            
+            // 現在の担当科目(ハッシュタグ由来)を取得してフォームにセット
+            List<Integer> currentSubjectIds = usersService.getTeacherSubjectIds(user.getUsersId());
+            form.setTeacherSubjectIds(currentSubjectIds);
+            
+            // 学科一覧を画面に渡す
+            model.addAttribute("subjects", subjectRepository.findAll());
         }
+
         model.addAttribute("profileEditForm", form);
-        model.addAttribute("user", user);
         model.addAttribute("currentIcon", usersService.getUserIconPath(user.getUsersId()));
-        model.addAttribute("isTeacher", (user.getRole() == 2 || user.getRole() == 3));
+        
         return "profile-edit";
     }
 
-    // プロフィール更新
+    // --- プロフィール更新処理 ---
     @PostMapping("/profile/edit")
-    public String updateProfile(@Validated ProfileEditForm form, BindingResult result,
-                                @AuthenticationPrincipal UserDetails userDetails, Model model) throws IOException {
-        if (userDetails == null) return "redirect:/login";
+    public String updateProfile(@AuthenticationPrincipal UserDetails userDetails,
+                                @ModelAttribute @Valid ProfileEditForm form,
+                                BindingResult result,
+                                Model model) {
         Users user = usersService.findByNameOrEmail(userDetails.getUsername()).orElseThrow();
+        
         if (result.hasErrors()) {
-            model.addAttribute("user", user);
+            boolean isTeacher = (user.getRole() == 2 || user.getRole() == 3);
+            model.addAttribute("isTeacher", isTeacher);
             model.addAttribute("currentIcon", usersService.getUserIconPath(user.getUsersId()));
-            model.addAttribute("isTeacher", (user.getRole() == 2 || user.getRole() == 3));
+            if (isTeacher) {
+                model.addAttribute("subjects", subjectRepository.findAll());
+            }
             return "profile-edit";
         }
-        usersService.updateProfile(user.getUsersId(), form.getName(), form.getIntroduction(), form.getIconFile());
-        if (user.getRole() == 2) return "redirect:/review/" + user.getUsersId();
-        return "redirect:/home";
+
+        try {
+            usersService.updateProfile(
+                user.getUsersId(),
+                form.getName(),
+                form.getIntroduction(),
+                form.getIconFile(),
+                form.getTeacherSubjectIds()
+            );
+        } catch (IOException e) {
+            e.printStackTrace();
+            return "redirect:/profile/edit?error";
+        }
+
+        return "redirect:/option";
     }
 
-    // ハッシュタグ追加
+    // --- ハッシュタグ削除機能 (GET/POST両対応) ---
+    @RequestMapping(value = "/teacher/hashtag/delete/{id}", method = {RequestMethod.GET, RequestMethod.POST})
+    public String deleteHashtag(@PathVariable("id") Integer id, HttpServletRequest request) {
+        usersService.deleteHashtag(id);
+        
+        String referer = request.getHeader("Referer");
+        return "redirect:" + (referer != null ? referer : "/home");
+    }
+
+    // ★★★ 追加: ハッシュタグ追加機能 ★★★
     @PostMapping("/teacher/hashtag/add")
-    public String addHashtag(@RequestParam("teacherId") Integer teacherId, @RequestParam("hashtag") String hashtag) {
-        usersService.addHashtag(teacherId, hashtag);
-        return "redirect:/review/" + teacherId;
-    }
+    public String addHashtag(@RequestParam("hashtag") String hashtag,
+                             @RequestParam(name="teacherId", required=false) Integer formTeacherId,
+                             @AuthenticationPrincipal UserDetails userDetails,
+                             HttpServletRequest request) {
+        
+        // ログインユーザーを取得
+        Users currentUser = usersService.findByNameOrEmail(userDetails.getUsername()).orElseThrow();
+        
+        // 追加対象の先生IDを決定 (フォームから送られてこなければ、ログインユーザー自身とする)
+        Integer targetTeacherId = (formTeacherId != null) ? formTeacherId : currentUser.getUsersId();
 
-    // ハッシュタグ削除
-    @PostMapping("/teacher/hashtag/delete/{id}")
-    public String deleteHashtag(@PathVariable("id") Integer id) {
-        TeacherHashtag tag = usersService.findHashtagById(id).orElse(null);
-        if (tag != null) {
-            Integer teacherId = tag.getTeacherId();
-            usersService.deleteHashtag(id);
-            return "redirect:/review/" + teacherId;
+        // 権限チェック: 自分自身 または 管理者(Role=3) のみ追加可能
+        if (currentUser.getUsersId().equals(targetTeacherId) || currentUser.getRole() == 3) {
+             usersService.addHashtag(targetTeacherId, hashtag);
         }
-        return "redirect:/home";
-    }
-
-    // ★★★ 修正: NGワード追加 (URLを変更して既存コントローラーとの競合を回避) ★★★
-    @PostMapping("/teacher/ban/register") 
-    public String addBanWord(@RequestParam("teacherId") Integer teacherId, @RequestParam("word") String word) {
-        usersService.addBanWord(teacherId, word);
-        return "redirect:/review/" + teacherId;
-    }
-
-    // ★★★ 修正: NGワード削除 (URLを変更) ★★★
-    @PostMapping("/teacher/ban/remove/{id}")
-    public String deleteBanWord(@PathVariable("id") Integer id) {
-        BanWord bw = usersService.findBanWordById(id).orElse(null);
-        if (bw != null) {
-            Integer teacherId = bw.getTeacherId();
-            usersService.deleteBanWord(id);
-            return "redirect:/review/" + teacherId;
-        }
-        return "redirect:/home";
+        
+        // 元のページに戻る
+        String referer = request.getHeader("Referer");
+        return "redirect:" + (referer != null ? referer : "/home");
     }
 }

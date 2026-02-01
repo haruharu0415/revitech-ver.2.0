@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient; // 追加
 
 @Entity
 @Table(name = "teacher_reviews")
@@ -43,9 +44,13 @@ public class TeacherReview {
     @Column(name = "is_hidden")
     private Integer isHidden = 0;
 
-    // ★★★ エラー解消用: このフィールドが必要です ★★★
     @Column(name = "survey_id")
     private Integer surveyId;
+
+    // ★★★ 修正: @Column を削除し @Transient に変更 ★★★
+    // これによりDBの列を探さなくなり、エラーが解消します
+    @Transient
+    private Boolean isChecked = false;
 
     @PrePersist
     public void onPrePersist() {
@@ -55,9 +60,12 @@ public class TeacherReview {
         if (this.isHidden == null) {
             this.isHidden = 0;
         }
+        if (this.isChecked == null) {
+            this.isChecked = false;
+        }
     }
 
-    // Getters and Setters
+    // --- Getters and Setters ---
     public Integer getReviewId() { return reviewId; }
     public void setReviewId(Integer reviewId) { this.reviewId = reviewId; }
 
@@ -87,4 +95,26 @@ public class TeacherReview {
 
     public Integer getSurveyId() { return surveyId; }
     public void setSurveyId(Integer surveyId) { this.surveyId = surveyId; }
+
+    public Boolean getIsChecked() { return isChecked; }
+    public void setIsChecked(Boolean isChecked) { this.isChecked = isChecked; }
+
+    public Integer getDisclosureStatus() {
+        if (Boolean.TRUE.equals(this.isDisclosureGranted)) return 2;
+        if (Boolean.TRUE.equals(this.isDisclosureRequested)) return 1;
+        return 0;
+    }
+
+    public void setDisclosureStatus(Integer status) {
+        if (status == null) status = 0;
+        if (status == 2) {
+            this.isDisclosureGranted = true;
+        } else if (status == 1) {
+            this.isDisclosureRequested = true;
+            this.isDisclosureGranted = false;
+        } else {
+            this.isDisclosureRequested = false;
+            this.isDisclosureGranted = false;
+        }
+    }
 }

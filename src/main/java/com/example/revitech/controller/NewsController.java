@@ -4,11 +4,10 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -36,82 +35,53 @@ public class NewsController {
         this.newsService = newsService;
         this.usersService = usersService;
     }
-
-    @GetMapping 
-    public String listNews(Model model, @AuthenticationPrincipal User user) {
-        
-        Users loginUser = null;
-        if (user != null) {
-            Optional<Users> userOpt = usersService.findByEmail(user.getUsername());
-            if (userOpt.isPresent()) {
-                loginUser = userOpt.get();
-            }
-        }
-
-        // ユーザーに応じたお知らせを取得
-        List<News> newsList = newsService.findNewsForUser(loginUser);
-        model.addAttribute("newsList", newsList);
-
-        // 登録ボタン表示制御
+    
+    @GetMapping
+    public String list(Model model, @AuthenticationPrincipal UserDetails userDetails) {
+        Users user = null;
         boolean canRegister = false;
-        if (loginUser != null) {
-            Integer role = loginUser.getRole();
-            // roleがnullでないことを確認してからチェック
-            if (role != null && (role == 2 || role == 9 || role == 3)) {
+
+        if (userDetails != null) {
+            user = usersService.findByEmail(userDetails.getUsername()).orElse(null);
+            if (user != null && (user.getRole() == 2 || user.getRole() == 3)) {
                 canRegister = true;
             }
         }
-        model.addAttribute("canRegister", canRegister);
 
-        return "news/list"; 
-    }
-    
-    @GetMapping("/{id}")
-    public String showDetail(@PathVariable Integer id, Model model, @AuthenticationPrincipal User user) {
-        Optional<News> newsOpt = newsService.findById(id);
+        List<News> newsList = newsService.findNewsForUser(user);
         
-        if (newsOpt.isPresent()) {
-            model.addAttribute("news", newsOpt.get());
-            
-            boolean canDelete = false;
-            if (user != null) {
-                Optional<Users> loginUser = usersService.findByEmail(user.getUsername());
-                
-                if (loginUser.isPresent()) {
-                    Integer role = loginUser.get().getRole();
-                    // roleがnullでないことを確認してからチェック
-                    if (role != null && (role == 2 || role == 9 || role == 3)) {
-                        canDelete = true;
-                    }
-                }
-            }
-            model.addAttribute("canDelete", canDelete);
-            
-            return "news/detail";
-        } else {
-            return "redirect:/news";
-        }
+        model.addAttribute("newsList", newsList);
+        model.addAttribute("canRegister", canRegister);
+        
+        return "news/list";
     }
-    
-    @GetMapping("/register") 
-    public String showRegistrationForm(Model model) {
+
+    @GetMapping("/register")
+    public String showRegisterForm(Model model, @AuthenticationPrincipal UserDetails userDetails) {
+        if (userDetails != null) {
+            Users user = usersService.findByEmail(userDetails.getUsername()).orElse(null);
+            if (user == null || user.getRole() == 1) {
+                return "redirect:/news";
+            }
+        }
+        
         model.addAttribute("news", new News());
         
-        Map<String, List<Users>> subjectUserMap = usersService.findAllStudentsGroupedBySubject();
-        model.addAttribute("subjectUserMap", subjectUserMap);
+        // ★★★ 修正: findAllStudents() ではなく、register.html が必要としている subjectUserMap を渡す ★★★
+        // SurveyManagementControllerですでに実装済みのメソッドを利用
+        model.addAttribute("subjectUserMap", usersService.findAllStudentsGroupedBySubject());
         
-        return "news/register"; 
+        return "news/register";
     }
-    
-    @PostMapping("/register")
-    public String registerNews(
-            @ModelAttribute News news, 
-            @AuthenticationPrincipal User user,
+
+    @PostMapping("/create")
+    public String createNews(@ModelAttribute News news, 
+            @AuthenticationPrincipal UserDetails userDetails,
             @RequestParam("imageFiles") List<MultipartFile> imageFiles) {
         
         Integer senderId = 1; 
-        if (user != null) {
-             Optional<Users> sender = usersService.findByEmail(user.getUsername());
+        if (userDetails != null) {
+             Optional<Users> sender = usersService.findByEmail(userDetails.getUsername());
              if (sender.isPresent()) {
                  senderId = sender.get().getUsersId();
              }
@@ -139,6 +109,16 @@ public class NewsController {
 
         newsService.createNews(news);
         return "redirect:/news"; 
+    }
+    
+    @GetMapping("/{id}")
+    public String detail(@PathVariable Integer id, Model model) {
+        Optional<News> news = newsService.findById(id);
+        if (news.isPresent()) {
+            model.addAttribute("news", news.get());
+            return "news/detail";
+        }
+        return "redirect:/news";
     }
 
     @PostMapping("/delete/{id}")

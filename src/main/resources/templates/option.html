@@ -69,9 +69,17 @@
                             <div class="mb-1 fs-3 fw-bold text-dark">
                                 <span th:text="${user != null ? user.name : 'ユーザー名'}"></span>
                             </div>
-                            <p class="text-muted small mb-4" th:text="${user != null ? user.email : ''}"></p>
+                            <p class="text-muted small mb-2" th:text="${user != null ? user.email : ''}"></p>
+
+                            <div th:if="${subjectInfo != null}" class="mb-4">
+                                <span class="badge bg-light text-dark border px-3 py-2 fw-normal" 
+                                      style="font-size: 0.9rem;">
+                                    <span th:text="${subjectLabel}"></span>: 
+                                    <span th:text="${subjectInfo}" class="fw-bold"></span>
+                                </span>
+                            </div>
                            
-                            <div class="d-grid gap-3 col-10 mx-auto">
+                            <div class="d-grid gap-3 col-10 mx-auto mt-3">
                                 <a th:href="@{/profile/edit}" class="btn btn-outline-primary rounded-pill">
                                     <i class="bi bi-pencil-fill me-2"></i>プロフィールを編集
                                 </a>

@@ -71,13 +71,19 @@ public class SurveyService {
     
     // アンケート削除
     public void deleteSurvey(Integer surveyId) {
+        // 1. ターゲット設定を削除
         surveyTargetRepository.deleteBySurveyId(surveyId);
         
-        // 関連する回答も削除する必要がある場合はここに追加
-        // reviewAnswerRepository.deleteBySurveyId(surveyId); 
+        // 2. ★★★ 修正: 詳細回答(ReviewAnswer)を削除（コメントアウトを解除） ★★★
+        reviewAnswerRepository.deleteBySurveyId(surveyId); 
         
+        // 3. 親の回答(TeacherReview)を削除
         teacherReviewRepository.deleteBySurveyId(surveyId);
+        
+        // 4. 質問項目を削除
         questionRepository.deleteBySurveyId(surveyId);
+        
+        // 5. アンケート本体を削除
         surveyRepository.deleteById(surveyId);
     }
 
@@ -103,7 +109,6 @@ public class SurveyService {
         return teacherReviewRepository.existsBySurveyIdAndStudentId(surveyId, studentId);
     }
 
-    // ★★★ 修正箇所: ここで ReviewAnswer に新しい3項目をセットします ★★★
     public void saveSurveyResponse(Integer studentId, ReviewForm form) {
         if (hasStudentAnswered(form.getSurveyId(), studentId)) {
             throw new IllegalStateException("ALREADY_ANSWERED");
@@ -131,8 +136,6 @@ public class SurveyService {
                     answer.setQuestionId(questionId);
                     answer.setScore(score);
                     
-                    // ★★★ 追加: ここが抜けていました！ ★★★
-                    // これらをセットしないと、詳細画面の検索(findBySurveyIdAndStudentId)に引っかかりません
                     answer.setSurveyId(form.getSurveyId());
                     answer.setStudentId(studentId);
                     answer.setTeacherId(form.getTeacherId());

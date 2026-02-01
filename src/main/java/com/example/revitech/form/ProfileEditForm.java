@@ -1,21 +1,23 @@
 package com.example.revitech.form;
 
+import java.util.List;
+
 import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
 public class ProfileEditForm {
 
-    @NotBlank(message = "名前は必須です")
-    @Size(max = 50, message = "名前は50文字以内で入力してください")
+    @NotBlank
     private String name;
 
-    // ★★★ 追加: 自己紹介 (教員のみ使用) ★★★
     private String introduction;
 
-    // ★★★ 維持: アイコン画像ファイル ★★★
+    // アイコン画像（アップロード用）
     private MultipartFile iconFile;
+    
+    // ★★★ 追加: 先生の担当科目IDリスト ★★★
+    private List<Integer> teacherSubjectIds;
 }

@@ -14,7 +14,7 @@ import com.example.revitech.entity.ChatRoom;
 import com.example.revitech.entity.Users;
 import com.example.revitech.repository.ChatGroupRepository;
 import com.example.revitech.repository.ChatRoomRepository;
-import com.example.revitech.service.ChatRoomService; // ★追加
+import com.example.revitech.service.ChatRoomService;
 import com.example.revitech.service.UsersService;
 
 @Controller
@@ -23,16 +23,16 @@ public class ChatController {
     private final ChatRoomRepository chatRoomRepository;
     private final ChatGroupRepository chatGroupRepository;
     private final UsersService usersService;
-    private final ChatRoomService chatRoomService; // ★追加
+    private final ChatRoomService chatRoomService;
 
     public ChatController(ChatRoomRepository chatRoomRepository, 
                           ChatGroupRepository chatGroupRepository,
                           UsersService usersService,
-                          ChatRoomService chatRoomService) { // ★コンストラクタに追加
+                          ChatRoomService chatRoomService) {
         this.chatRoomRepository = chatRoomRepository;
         this.chatGroupRepository = chatGroupRepository;
         this.usersService = usersService;
-        this.chatRoomService = chatRoomService; // ★追加
+        this.chatRoomService = chatRoomService;
     }
 
     // チャット画面への入り口 (DM・グループ共通)
@@ -51,11 +51,10 @@ public class ChatController {
         }
         ChatRoom room = roomOpt.get();
 
-        // ★★★ ここが重要！チャットを開いた時点で「既読」にする ★★★
-        // これにより、通知欄からでも一覧からでも、開けば通知が消えます
+        // 既読処理
         chatRoomService.markRoomAsRead(user.getUsersId(), roomId);
 
-        // ★分岐: グループ(type=2)なら group-chat.html、それ以外は dm.html
+        // グループ(type=2)の場合
         if (room.getType() != null && room.getType() == 2) { 
             Optional<ChatGroup> groupOpt = chatGroupRepository.findById(roomId);
             if (groupOpt.isPresent()) {
@@ -64,9 +63,13 @@ public class ChatController {
             }
         }
 
-        // DMの場合
+        // ★★★ 修正: DMの場合は、相手の名前を動的に取得して表示する ★★★
+        // getDmPartnerNameを使って相手の名前を表示します
+        String partnerName = chatRoomService.getDmPartnerName(roomId, user.getUsersId());
+        
         model.addAttribute("roomId", room.getRoomId());
-        model.addAttribute("chatName", room.getName());
+        model.addAttribute("chatName", partnerName); // 相手の名前をセット
+        
         return "dm";
     }
 

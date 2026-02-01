@@ -1,10 +1,7 @@
 package com.example.revitech.controller;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.OptionalDouble;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -16,6 +13,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.example.revitech.entity.BanWord;
+import com.example.revitech.entity.TeacherHashtag;
 import com.example.revitech.entity.TeacherImage;
 import com.example.revitech.entity.TeacherProfile;
 import com.example.revitech.entity.TeacherReview;
@@ -36,132 +35,101 @@ public class CommentController {
 
     @GetMapping("/review/{teacherId}")
     public String showReviewPage(@PathVariable("teacherId") Integer teacherId,
-                                 @AuthenticationPrincipal UserDetails userDetails,
-                                 Model model) {
+                                 Model model,
+                                 @AuthenticationPrincipal UserDetails userDetails) {
         
+        // 教員情報の取得
         Users teacher = usersService.findById(teacherId).orElse(null);
         if (teacher == null) {
-            return "redirect:/teacher-list";
+            return "redirect:/teacher-list"; 
         }
         model.addAttribute("teacher", teacher);
 
-        Users currentUser = null;
-        if (userDetails != null) {
-            currentUser = usersService.findByNameOrEmail(userDetails.getUsername()).orElse(null);
-            model.addAttribute("user", currentUser);
-        }
-
-        List<TeacherReview> reviews = reviewService.findByTeacherId(teacherId);
-        model.addAttribute("reviews", reviews);
-
+        // 教員プロフィール詳細の取得
         TeacherProfile profile = usersService.findTeacherProfile(teacherId);
         model.addAttribute("teacherProfile", profile);
         
-        String iconPath = usersService.getUserIconPath(teacherId);
-        model.addAttribute("teacherIcon", iconPath);
+        // アイコン画像
+        String teacherIcon = usersService.getUserIconPath(teacherId);
+        model.addAttribute("teacherIcon", teacherIcon);
 
-        // 総合スコア（既存のまま）
-        double overallScore = 0.0;
-        if (reviews != null && !reviews.isEmpty()) {
-            OptionalDouble average = reviews.stream()
-                                            .filter(r -> r != null && r.getScore() != null) 
-                                            .mapToInt(TeacherReview::getScore)
-                                            .average();
-            if (average.isPresent()) {
-                overallScore = Math.round(average.getAsDouble() * 10.0) / 10.0;
+        // ギャラリー画像
+        List<TeacherImage> images = usersService.getTeacherImages(teacherId);
+        model.addAttribute("profileImages", images);
+
+        // ハッシュタグ
+        List<TeacherHashtag> hashtags = usersService.getTeacherHashtags(teacherId);
+        model.addAttribute("hashtags", hashtags);
+
+        // NGワード (本人確認用)
+        if (userDetails != null) {
+            Users loginUser = usersService.findByNameOrEmail(userDetails.getUsername()).orElse(null);
+            model.addAttribute("user", loginUser);
+            if (loginUser != null && loginUser.getUsersId().equals(teacherId)) {
+                List<BanWord> banWords = usersService.getBanWordsByTeacherId(teacherId);
+                model.addAttribute("banWords", banWords);
             }
         }
+
+        // レビュー一覧取得
+        List<TeacherReview> reviews = reviewService.findByTeacherId(teacherId);
+        model.addAttribute("reviews", reviews);
+
+        // ★★★ 修正箇所: 総合スコアの計算ロジックを変更 ★★★
+        // 以前のTeacherReview.score (全体評価) は使わず、詳細回答(ReviewAnswer)の平均を使う
+        Double overallScore = reviewService.getTeacherOverallScore(teacherId);
         model.addAttribute("overallScore", overallScore);
 
-        // ★★★ 修正: 詳細項目の平均点をDBから取得 ★★★
+        // 項目別平均スコア (グラフ用)
         List<Map<String, Object>> averages = reviewService.getTeacherAverageScores(teacherId);
-        
-        // データがない場合は空リストを渡す（th:ifで「データなし」と表示される）
-        if (averages == null) {
-            averages = new ArrayList<>();
-        }
         model.addAttribute("averages", averages);
 
-        List<TeacherImage> profileImages = usersService.getTeacherImages(teacherId);
-        model.addAttribute("profileImages", profileImages);
-
-        model.addAttribute("hashtags", usersService.getTeacherHashtags(teacherId));
-        model.addAttribute("banWords", usersService.getBanWordsByTeacherId(teacherId));
-        
         return "review";
     }
 
+    // コメント投稿
     @PostMapping("/review/{teacherId}/comment")
-    public String addComment(@PathVariable("teacherId") Integer teacherId,
-                             @RequestParam("comment") String comment,
-                             @AuthenticationPrincipal UserDetails userDetails,
-                             RedirectAttributes redirectAttributes) {
+    public String postComment(@PathVariable("teacherId") Integer teacherId,
+                              @RequestParam("comment") String comment,
+                              @AuthenticationPrincipal UserDetails userDetails,
+                              RedirectAttributes redirectAttributes) {
         
         if (userDetails == null) return "redirect:/login";
+        Users student = usersService.findByNameOrEmail(userDetails.getUsername()).orElseThrow();
         
-        if (reviewService.containsBanWord(teacherId, comment)) {
-            redirectAttributes.addFlashAttribute("errorMessage", "投稿できませんでした。コメントに禁止されている言葉が含まれています。");
+        if (student.getRole() != 1) {
+            redirectAttributes.addFlashAttribute("errorMessage", "コメントできるのは生徒だけです。");
             return "redirect:/review/" + teacherId;
         }
-        
-        Users student = usersService.findByNameOrEmail(userDetails.getUsername()).orElse(null);
-        if (student == null) return "redirect:/home";
 
+        // NGワードチェック
+        if (reviewService.containsBanWord(teacherId, comment)) {
+            redirectAttributes.addFlashAttribute("errorMessage", "コメントに禁止ワードが含まれています。");
+            return "redirect:/review/" + teacherId;
+        }
+
+        // コメントのみの投稿として保存 (scoreは0)
         TeacherReview review = new TeacherReview();
         review.setTeacherId(teacherId);
         review.setStudentId(student.getUsersId());
         review.setComment(comment);
-        review.setScore(3); 
+        review.setScore(0); // スコアなし
+        review.setIsHidden(0);
+        review.setIsDisclosureRequested(false);
+        review.setIsDisclosureGranted(false);
         
         reviewService.saveReview(review);
         
         redirectAttributes.addFlashAttribute("successMessage", "コメントを投稿しました！");
-
         return "redirect:/review/" + teacherId;
     }
 
-    // --- 以下、既存メソッド (変更なし) ---
-    @GetMapping("/disclosure/list")
-    public String disclosureList(@AuthenticationPrincipal UserDetails userDetails, Model model) {
-        if (userDetails == null) return "redirect:/login";
-        Users currentUser = usersService.findByNameOrEmail(userDetails.getUsername()).orElse(null);
-        if (currentUser == null) return "redirect:/home";
-        model.addAttribute("user", currentUser);
-        List<Map<String, Object>> displayList = new ArrayList<>();
-        if (currentUser.getRole() == 3) {
-            model.addAttribute("pageTitle", "開示請求管理");
-            for (TeacherReview review : reviewService.findPendingDisclosures()) {
-                Map<String, Object> map = new HashMap<>();
-                map.put("reviewId", review.getReviewId());
-                map.put("comment", review.getComment());
-                map.put("createdAt", review.getCreatedAt());
-                map.put("teacherId", review.getTeacherId());
-                map.put("disclosureStatus", 1);
-                displayList.add(map);
-            }
-        } else if (currentUser.getRole() == 2) {
-            model.addAttribute("pageTitle", "開示された情報");
-            for (TeacherReview review : reviewService.findUncheckedGrantedDisclosures(currentUser.getUsersId())) {
-                Map<String, Object> map = new HashMap<>();
-                map.put("reviewId", review.getReviewId());
-                map.put("comment", review.getComment());
-                map.put("createdAt", review.getCreatedAt());
-                map.put("teacherId", review.getTeacherId());
-                map.put("disclosureStatus", 2);
-                displayList.add(map);
-            }
-        }
-        model.addAttribute("disclosureList", displayList);
-        return "disclosure-list";
-    }
-
+    // --- 開示請求関連 ---
     @PostMapping("/review/request-disclosure/{reviewId}")
     public String requestDisclosure(@PathVariable("reviewId") Integer reviewId,
                                     @AuthenticationPrincipal UserDetails userDetails) {
-        if (userDetails == null) return "redirect:/login";
         reviewService.requestDisclosure(reviewId);
-        TeacherReview review = reviewService.findById(reviewId);
-        return "redirect:/review/" + review.getTeacherId() + "?requested=true";
+        return "redirect:/review/" + reviewService.findById(reviewId).getTeacherId();
     }
 
     @PostMapping("/review/grant-disclosure/{reviewId}")

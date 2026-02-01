@@ -33,11 +33,18 @@ public class MenuController {
             String iconUrl = usersService.getUserIconPath(user.getUsersId());
             model.addAttribute("iconUrl", iconUrl);
 
-            // ★★★ 追加: 学生(Role=1)なら学科名を取得して画面に渡す ★★★
-            if (user.getRole() == 1) {
+            // ★★★ 修正: Roleごとに「学科/科目」の情報を取得してViewに渡す ★★★
+            if (user.getRole() == 1) { // 生徒の場合
                 String subjectName = usersService.getStudentSubjectName(user.getUsersId());
-                model.addAttribute("subjectName", subjectName);
+                model.addAttribute("subjectLabel", "所属学科");
+                model.addAttribute("subjectInfo", subjectName);
+            } 
+            else if (user.getRole() == 2) { // 先生の場合
+                String subjectNames = usersService.getTeacherSubjectNames(user.getUsersId());
+                model.addAttribute("subjectLabel", "担当科目");
+                model.addAttribute("subjectInfo", subjectNames);
             }
+            // 管理者(Role=3)は subjectInfo をセットしないので表示されない
             
             return "option";
         } else {

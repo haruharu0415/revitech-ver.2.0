@@ -28,13 +28,13 @@ public class ReviewService {
     private final BanWordRepository banWordRepository;
     private final ReviewAnswerRepository reviewAnswerRepository;
     private final QuestionRepository questionRepository;
-    private final UsersRepository usersRepository; // ★追加
+    private final UsersRepository usersRepository;
 
     public ReviewService(TeacherReviewRepository teacherReviewRepository, 
                          BanWordRepository banWordRepository,
                          ReviewAnswerRepository reviewAnswerRepository,
                          QuestionRepository questionRepository,
-                         UsersRepository usersRepository) { // ★追加
+                         UsersRepository usersRepository) {
         this.teacherReviewRepository = teacherReviewRepository;
         this.banWordRepository = banWordRepository;
         this.reviewAnswerRepository = reviewAnswerRepository;
@@ -94,6 +94,14 @@ public class ReviewService {
         return averages;
     }
 
+    // ★★★ 修正: 先生の総合平均スコアを取得（四捨五入して小数点第1位まで） ★★★
+    public Double getTeacherOverallScore(Integer teacherId) {
+        Double avg = reviewAnswerRepository.findTotalAverageScoreByTeacherId(teacherId);
+        if (avg == null) return 0.0;
+        // 小数点第2位を四捨五入
+        return Math.round(avg * 10.0) / 10.0;
+    }
+
     // --- 開示請求関連 ---
     public long countPendingDisclosureRequests() {
         return teacherReviewRepository.countPendingDisclosureRequests();
@@ -143,11 +151,9 @@ public class ReviewService {
         // 実装が必要であればここに記述
     }
 
-    // ★★★ 追加: アンケート結果詳細取得 (SurveyManagementController用) ★★★
+    // --- アンケート結果詳細取得 ---
     public List<SurveyResponseDetailDto> getSurveyResponseDetails(Integer surveyId, Integer viewerRole) {
-        // SurveyIdに紐づくレビューを取得
         List<TeacherReview> reviews = teacherReviewRepository.findBySurveyId(surveyId);
-        
         List<SurveyResponseDetailDto> responseDtos = new ArrayList<>();
 
         for (TeacherReview review : reviews) {
@@ -157,16 +163,13 @@ public class ReviewService {
             dto.setScore(review.getScore());
             dto.setComment(review.getComment());
 
-            // 生徒名の取得
             String studentName = "匿名";
             Optional<Users> studentOpt = usersRepository.findById(review.getStudentId());
             if (studentOpt.isPresent()) {
                 studentName = studentOpt.get().getName();
             }
-            // 必要であれば viewerRole によって名前を隠す処理をここに入れる
             dto.setStudentName(studentName);
 
-            // 詳細回答の取得
             List<ReviewAnswer> answers = reviewAnswerRepository.findByReviewId(review.getReviewId());
             List<SurveyResponseDetailDto.Detail> details = new ArrayList<>();
             
@@ -180,7 +183,6 @@ public class ReviewService {
             
             responseDtos.add(dto);
         }
-        
         return responseDtos;
     }
 }

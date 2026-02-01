@@ -23,8 +23,21 @@
                     <div class="list-group list-group-flush">
                         <a th:each="dm : ${dmList}" 
                            th:href="@{/chat/room/{id}(id=${dm.roomId})}" 
-                           class="list-group-item list-group-item-action d-flex align-items-center">
-                            <i class="bi bi-person-circle fs-4 me-3 text-secondary"></i>
+                           class="list-group-item list-group-item-action d-flex align-items-center p-3">
+                            
+                            <div class="me-3">
+                                <img th:if="${dm.iconUrl != null}"
+                                     th:src="${dm.iconUrl}"
+                                     class="rounded-circle border"
+                                     style="width: 45px; height: 45px; object-fit: cover;">
+                                
+                                <div th:unless="${dm.iconUrl != null}" 
+                                     class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center" 
+                                     style="width: 45px; height: 45px; font-size: 1.2rem;">
+                                     <i class="bi bi-person-fill"></i>
+                                </div>
+                            </div>
+
                             <div>
                                 <div class="fw-bold" th:text="${dm.partnerName}">相手の名前</div>
                                 <small class="text-muted">チャットを開く</small>
@@ -45,21 +58,27 @@
             <div class="col-md-8">
                 <div class="card shadow-sm">
                     <div class="card-header bg-white fw-bold d-flex justify-content-between align-items-center">
-                        <span><i class="bi bi-people-fill me-2"></i>参加中のグループ</span>
-                        
-                        <a th:if="${user.role == 2 or user.role == 3}"
-                           th:href="@{/group/create}" class="btn btn-sm btn-success">
+                        <span><i class="bi bi-people-fill me-2"></i>グループチャット</span>
+                        <a th:if="${user.role == 2 or user.role == 3}" 
+                           th:href="@{/group/create}" class="btn btn-sm btn-primary">
                             <i class="bi bi-plus-lg"></i> 新規作成
                         </a>
                     </div>
-                    
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-6" th:each="group : ${groups}">
-                                <div class="card h-100 border-0 shadow-sm bg-light">
-                                    <div class="card-body">
-                                        <h5 class="card-title fw-bold" th:text="${group.name}">グループ名</h5>
-                                        <p class="card-text text-muted small">メンバーとチャットします。</p>
+                    <div class="card-body p-0">
+                        <div class="row g-0">
+                            <div th:each="group : ${groups}" class="col-12 border-bottom">
+                                <div class="p-4 d-flex align-items-center">
+                                    <div class="rounded-circle bg-light text-primary d-flex align-items-center justify-content-center me-3" style="width: 60px; height: 60px; font-size: 1.5rem;">
+                                        <i class="bi bi-people"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-start mb-1">
+                                            <h5 class="mb-0 fw-bold">
+                                                <a th:href="@{/group/chat/{id}(id=${group.roomId})}" class="text-decoration-none text-dark" th:text="${group.roomName}">グループ名</a>
+                                            </h5>
+                                            <span th:if="${group.hasUnread}" class="badge bg-danger rounded-pill">New</span>
+                                        </div>
+                                        <p class="text-muted mb-2 small">メンバーとチャットします。</p>
                                         
                                         <div class="d-flex gap-2">
                                             <a th:href="@{/group/chat/{id}(id=${group.roomId})}" class="btn btn-primary btn-sm flex-grow-1">

@@ -174,7 +174,7 @@
                                 <h5 class="text-muted fw-bold mb-2">総合評価</h5>
                                 <div class="d-flex justify-content-center align-items-center">
                                     <span class="display-4 fw-bold text-warning me-2">
-                                        <span th:text="${overallScore}">0.0</span>
+                                        <span th:text="${#numbers.formatDecimal(overallScore, 1, 1)}">0.0</span>
                                     </span>
                                     <div class="text-warning" style="font-size: 1.5rem;">
                                         <i th:class="${overallScore >= 1} ? 'bi bi-star-fill' : (${overallScore >= 0.5} ? 'bi bi-star-half' : 'bi bi-star')"></i>

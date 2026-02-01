@@ -42,7 +42,7 @@
                     </div>
 
                     <div class="card-body p-4">
-                        <form th:action="@{/news/register}" th:object="${news}" method="post" enctype="multipart/form-data">
+                        <form th:action="@{/news/create}" th:object="${news}" method="post" enctype="multipart/form-data">
 
                             <div class="mb-4">
                                 <label for="title" class="form-label fw-bold">タイトル <span class="badge bg-danger">必須</span></label>

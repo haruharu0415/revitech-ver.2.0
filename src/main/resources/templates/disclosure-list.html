@@ -45,11 +45,16 @@
                                     <i class="bi bi-box-arrow-up-right me-1"></i>確認・対応
                                 </a>
 
-                                <a th:if="${user.role == 2}" 
+                                <a th:if="${user.role == 2 and item.disclosureStatus == 2}" 
                                    th:href="@{/review/disclosure-info/{id}(id=${item.reviewId})}" 
                                    class="btn btn-danger btn-sm text-white">
                                     <i class="bi bi-eye-fill me-1"></i>詳細を見る
                                 </a>
+                                
+                                <span th:if="${user.role == 2 and item.disclosureStatus == 1}" 
+                                      class="text-muted small">
+                                    <i class="bi bi-hourglass-split"></i> 承認待ち...
+                                </span>
                             </div>
                         </div>
                     </div>

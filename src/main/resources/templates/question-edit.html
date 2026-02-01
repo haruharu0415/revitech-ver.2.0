@@ -1,50 +1,163 @@
 <!DOCTYPE html>
-<html lang="ja" xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>質問編集</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <style th:replace="~{header :: header-styles}"></style>
+    <link th:href="@{/webjars/bootstrap/5.3.3/css/bootstrap.min.css}" rel="stylesheet" />
+    <link rel="stylesheet" th:href="@{/webjars/bootstrap-icons/1.11.3/font/bootstrap-icons.min.css}">
+    <link th:href="@{/css/menu.css}" rel="stylesheet" />
+    <title>プロフィール編集</title>
+    <style>
+        .preview-icon-img {
+            border: 3px solid #0d6efd;
+            object-fit: cover;
+        }
+        /* ドロップダウン選択済みテキストのスタイル */
+        #selectedSubjectsText {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 90%;
+            display: inline-block;
+        }
+    </style>
 </head>
-<body class="bg-light">
-    <div th:replace="~{header :: header-fragment}"></div>
+<body>
+    <div class="d-flex pt-3">
+        <a th:href="@{/option}" class="text-primary me-4"> 
+            <i class="bi bi-arrow-left back-arrow"></i>
+        </a>
+        <div class="menu-container mx-auto">
+            <h2 class="text-center mb-5">プロフィール編集</h2>
 
-    <main class="container p-3" style="max-width: 600px;">
-        <h1 class="mb-4 text-primary"><i class="bi bi-pencil-square me-2"></i>質問編集</h1>
-        
-        <div th:if="${errorMessage}" class="alert alert-danger" role="alert" th:text="${errorMessage}">
-            エラーが発生しました。
-        </div>
+            <form th:action="@{/profile/edit}" method="post" enctype="multipart/form-data" 
+                  th:object="${profileEditForm}" class="p-4 border rounded shadow-sm">
+                
+                <div th:if="${error}" class="alert alert-danger" role="alert">
+                    <p th:text="${error}" class="mb-0"></p>
+                </div>
+                
+                <h4 class="mb-3">アイコン画像</h4>
 
-        <div class="card shadow-sm">
-            <div class="card-header bg-white fw-bold">
-                質問ID: <span th:text="${question.questionId}">1</span> の編集
-            </div>
-            <div class="card-body">
-                <form th:action="@{/question/edit/{id}(id=${question.questionId})}" method="post">
+                <div class="text-center mb-4">
+                    <img id="currentIcon"
+                         th:src="${currentIcon != null ? currentIcon : '/images/icons/haru.png'}" 
+                         alt="現在のアイコン"
+                         class="rounded-circle preview-icon-img mb-3"
+                         style="width: 120px; height: 120px;">
+                    <p class="text-muted">現在のアイコン</p>
+                </div>
+
+                <div class="mb-4">
+                    <label for="iconFile" class="form-label fw-bold">新しいアイコン画像を選択</label>
+                    <input class="form-control" type="file" id="iconFile" name="iconFile" accept="image/*" onchange="previewImage(event)">
+                    <div class="form-text">PNG, JPG, JPEG形式に対応しています。</div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="name" class="form-label fw-bold">ユーザー名</label>
+                    <input type="text" class="form-control" id="name" th:field="*{name}" 
+                           th:errorclass="is-invalid" required>
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                </div>
+
+                <div class="mb-4" th:if="${isTeacher}">
+                    <label for="introduction" class="form-label fw-bold">自己紹介 (先生用)</label>
+                    <textarea class="form-control" id="introduction" th:field="*{introduction}" 
+                              rows="5" placeholder="生徒へのメッセージや自己紹介を入力してください"></textarea>
+                </div>
+
+                <div class="mb-4" th:if="${isTeacher}">
+                    <label class="form-label fw-bold">担当科目 (複数選択可)</label>
                     
-                    <div class="mb-3">
-                        <label for="questionBody" class="form-label fw-bold">質問内容</label>
-                        <textarea id="questionBody" name="questionBody" class="form-control" rows="3" required th:text="${question.questionBody}">
-                            現在の質問内容
-                        </textarea>
-                    </div>
-
-                    <div class="d-grid gap-2 pt-3">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check-lg"></i> 変更を保存
+                    <div class="dropdown" style="width: 100%;">
+                        <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start d-flex justify-content-between align-items-center bg-white" 
+                                type="button" id="multiSelectDropdown" data-bs-toggle="dropdown" aria-expanded="false" 
+                                style="border-radius: 6px; border-color: #dee2e6;">
+                            <span id="selectedSubjectsText" class="text-muted">科目を選択してください</span>
                         </button>
-                        <a th:href="@{/question/create}" class="btn btn-outline-secondary">
-                            キャンセルして一覧に戻る
-                        </a>
+                        
+                        <ul class="dropdown-menu w-100 p-3 shadow-sm border-0" aria-labelledby="multiSelectDropdown" 
+                            style="max-height: 300px; overflow-y: auto;">
+                            
+                            <li th:each="sub : ${subjects}" class="mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input teacher-checkbox" type="checkbox" 
+                                           name="teacherSubjectIds"
+                                           th:field="*{teacherSubjectIds}"
+                                           th:value="${sub.subjectId}" 
+                                           th:id="${'sub-' + sub.subjectId}">
+                                    <label class="form-check-label w-100" 
+                                           th:for="${'sub-' + sub.subjectId}" 
+                                           th:text="${sub.subjectName}" 
+                                           style="cursor: pointer;">
+                                        科目名
+                                    </label>
+                                </div>
+                            </li>
+                        </ul>
                     </div>
-                </form>
-            </div>
-        </div>
-    </main>
+                    <div class="form-text mt-2">担当する科目をチェックしてください。</div>
+                </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+                <div class="text-center mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">変更を保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        function previewImage(event) {
+            const input = event.target;
+            const preview = document.getElementById('currentIcon');
+            
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        // ★★★ 追加: ドロップダウンの表示更新処理 ★★★
+        document.querySelectorAll('.teacher-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', updateSelectedText);
+            checkbox.addEventListener('click', (e) => e.stopPropagation());
+        });
+        
+        document.querySelectorAll('.dropdown-menu label').forEach(label => {
+            label.addEventListener('click', (e) => e.stopPropagation());
+        });
+        
+        document.querySelectorAll('.dropdown-menu li').forEach(li => {
+            li.addEventListener('click', (e) => e.stopPropagation());
+        });
+
+        function updateSelectedText() {
+            const checkedBoxes = document.querySelectorAll('.teacher-checkbox:checked');
+            const textSpan = document.getElementById('selectedSubjectsText');
+            
+            if (checkedBoxes.length === 0) {
+                textSpan.textContent = "科目を選択してください";
+                textSpan.classList.add("text-muted");
+                textSpan.classList.remove("text-dark");
+            } else {
+                const names = Array.from(checkedBoxes).map(cb => {
+                    return cb.nextElementSibling.textContent.trim();
+                });
+                textSpan.textContent = names.join(', ');
+                textSpan.classList.remove("text-muted");
+                textSpan.classList.add("text-dark");
+            }
+        }
+
+        // ページ読み込み時に初期状態を反映
+        window.addEventListener('load', function() {
+            updateSelectedText();
+        });
+    </script>
+    <script th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"></script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>お知らせ一覧 | 生徒用</title>
+    <title>お知らせ一覧</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" 
           rel="stylesheet" 
           integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" 
@@ -43,9 +43,9 @@
                         
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <div>
-                                <span th:if="${news.recipientUserIds != null and news.recipientUserIds.size() > 0}" 
+                                <span th:if="${news.recipientIds != null and !news.recipientIds.isEmpty()}" 
                                       class="badge bg-success me-2">
-                                    <i class="bi bi-people-fill"></i> 受信者: <span th:text="${news.recipientUserIds.size()}">10</span>名
+                                    <i class="bi bi-people-fill"></i> 受信者: <span th:text="${#strings.arraySplit(news.recipientIds, ',').length}"></span>名
                                 </span>
                                 
                                 <span class="badge bg-info text-dark me-2">
@@ -53,9 +53,9 @@
                                     投稿: <span th:text="${#temporals.format(news.newsDatetime, 'yyyy/MM/dd HH:mm')}">2025/11/11 13:00</span>
                                 </span>
                                 
-                                <span class="badge bg-info text-dark">
-                                    <i class="bi bi-person-fill"></i> 送信者: 
-                                    <span th:text="${news.sender != null ? news.sender.name : 'ID:' + news.senderId}">送信者名</span>
+                                <span class="badge bg-secondary">
+                                    <i class="bi bi-person-fill"></i> 送信者ID: 
+                                    <span th:text="${news.senderId}">1</span>
                                 </span>
                             </div>
                         </div>
@@ -88,7 +88,7 @@
             
             <div class="col-12" th:if="${newsList.isEmpty()}">
                 <div class="alert alert-info text-center" role="alert">
-                    現在、登録されているお知らせはありません。
+                    現在、表示できるお知らせはありません。
                 </div>
             </div>
             

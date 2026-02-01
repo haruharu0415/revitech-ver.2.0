@@ -48,7 +48,10 @@
                         <p class="text-muted small mb-2" th:text="${teacher.email}">email</p>
                         
                         <div class="mb-2">
-                            <span th:each="subject : ${teacher.subjects}" class="badge bg-secondary me-1" th:text="${subject}">科目</span>
+                            <span th:each="subject : ${teacher.subjects}" 
+                                  class="badge bg-primary me-1 rounded-pill">
+                                <i class="bi bi-book me-1"></i><span th:text="${subject}">科目</span>
+                            </span>
                         </div>
 
                         <div class="mb-3">

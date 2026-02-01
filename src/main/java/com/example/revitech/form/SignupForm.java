@@ -1,32 +1,37 @@
 package com.example.revitech.form;
 
+import java.util.List;
+
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull; // 使う場合のみ
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
 public class SignupForm {
 
-    @NotBlank(message = "名前は必須です")
-    @Size(max = 50, message = "名前は50文字以内で入力してください")
+    @NotBlank
     private String name;
-    
-    @NotBlank(message = "メールアドレスは必須です")
-    @Email(message = "有効なメールアドレスを入力してください")
-    @Size(max = 50, message = "メールアドレスは50文字以内で入力してください")
+
+    @NotBlank
+    @Email
     private String email;
 
-    @NotBlank(message = "パスワードは必須です")
-    @Size(min = 8, message = "パスワードは8文字以上で入力してください")
+    @NotBlank
+    @Size(min = 4, max = 100)
     private String password;
+    
+    // パスワード確認用フィールドがない場合は追加してください
+    private String passwordConfirm; 
 
-    @NotBlank(message = "確認用パスワードは必須です")
-    private String passwordConfirm;
+    @NotNull
+    private Integer role; // 1:Student, 2:Teacher
 
-    // 役割ID (1:生徒, 2:先生, 3:管理者)
-    private Integer role;
-
-    // ★★★ 追加: 選択された学科のID ★★★
+    // ★修正: ここに @NotNull がついていたら必ず削除してください！
+    // 先生の場合はnullになるため、必須チェックをつけると登録できません。
     private Integer subjectId;
+
+    // 先生用の担当科目リスト
+    private List<Integer> teacherSubjectIds;
 }

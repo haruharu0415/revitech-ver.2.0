@@ -12,6 +12,14 @@
             border: 3px solid #0d6efd;
             object-fit: cover;
         }
+        /* ドロップダウン選択済みテキストのスタイル */
+        #selectedSubjectsText {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 90%;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
@@ -59,6 +67,39 @@
                               rows="5" placeholder="生徒へのメッセージや自己紹介を入力してください"></textarea>
                 </div>
 
+                <div class="mb-4" th:if="${isTeacher}">
+                    <label class="form-label fw-bold">担当科目 (複数選択可)</label>
+                    
+                    <div class="dropdown" style="width: 100%;">
+                        <button class="btn btn-outline-secondary dropdown-toggle w-100 text-start d-flex justify-content-between align-items-center bg-white" 
+                                type="button" id="multiSelectDropdown" data-bs-toggle="dropdown" aria-expanded="false" 
+                                style="border-radius: 6px; border-color: #dee2e6;">
+                            <span id="selectedSubjectsText" class="text-muted">科目を選択してください</span>
+                        </button>
+                        
+                        <ul class="dropdown-menu w-100 p-3 shadow-sm border-0" aria-labelledby="multiSelectDropdown" 
+                            style="max-height: 300px; overflow-y: auto;">
+                            
+                            <li th:each="sub : ${subjects}" class="mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input teacher-checkbox" type="checkbox" 
+                                           name="teacherSubjectIds"
+                                           th:field="*{teacherSubjectIds}"
+                                           th:value="${sub.subjectId}" 
+                                           th:id="${'sub-' + sub.subjectId}">
+                                    <label class="form-check-label w-100" 
+                                           th:for="${'sub-' + sub.subjectId}" 
+                                           th:text="${sub.subjectName}" 
+                                           style="cursor: pointer;">
+                                        科目名
+                                    </label>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="form-text mt-2">担当する科目をチェックしてください。</div>
+                </div>
+
                 <div class="text-center mt-4">
                     <button type="submit" class="btn btn-primary btn-lg">変更を保存</button>
                 </div>
@@ -79,6 +120,43 @@
                 reader.readAsDataURL(input.files[0]);
             }
         }
+
+        // ★★★ 追加: ドロップダウンの表示更新処理 ★★★
+        document.querySelectorAll('.teacher-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', updateSelectedText);
+            checkbox.addEventListener('click', (e) => e.stopPropagation());
+        });
+        
+        document.querySelectorAll('.dropdown-menu label').forEach(label => {
+            label.addEventListener('click', (e) => e.stopPropagation());
+        });
+        
+        document.querySelectorAll('.dropdown-menu li').forEach(li => {
+            li.addEventListener('click', (e) => e.stopPropagation());
+        });
+
+        function updateSelectedText() {
+            const checkedBoxes = document.querySelectorAll('.teacher-checkbox:checked');
+            const textSpan = document.getElementById('selectedSubjectsText');
+            
+            if (checkedBoxes.length === 0) {
+                textSpan.textContent = "科目を選択してください";
+                textSpan.classList.add("text-muted");
+                textSpan.classList.remove("text-dark");
+            } else {
+                const names = Array.from(checkedBoxes).map(cb => {
+                    return cb.nextElementSibling.textContent.trim();
+                });
+                textSpan.textContent = names.join(', ');
+                textSpan.classList.remove("text-muted");
+                textSpan.classList.add("text-dark");
+            }
+        }
+
+        // ページ読み込み時に初期状態を反映
+        window.addEventListener('load', function() {
+            updateSelectedText();
+        });
     </script>
     <script th:src="@{/webjars/bootstrap/5.3.3/js/bootstrap.bundle.min.js}"></script>
 </body>
