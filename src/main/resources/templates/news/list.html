@@ -26,6 +26,16 @@
 <body>
 
     <div class="container mt-5">
+        
+        <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+            <span th:text="${successMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+            <span th:text="${errorMessage}"></span>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1>📰 お知らせ一覧</h1>
             
@@ -78,10 +88,20 @@
                             お知らせの本文の冒頭部分。長い場合は省略されます。
                         </p>
                     </div> 
-                    <div class="card-footer bg-light text-end">
-                        <a th:href="@{/news/{id}(id=${news.newsId})}" class="btn btn-sm btn-outline-primary">
+                    
+                    <div class="card-footer bg-light d-flex justify-content-end align-items-center">
+                        <a th:href="@{/news/{id}(id=${news.newsId})}" class="btn btn-sm btn-outline-primary me-2">
                             詳細を見る
                         </a>
+                        
+                        <form th:if="${canRegister}" 
+                              th:action="@{/news/delete/{id}(id=${news.newsId})}" 
+                              method="post" 
+                              onsubmit="return confirm('本当にこのお知らせを削除しますか？');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash"></i> 削除
+                            </button>
+                        </form>
                     </div>
                 </div> 
             </div>

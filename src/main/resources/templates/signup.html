@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>新規アカウント作成 (教員用) - Revitech</title>
+    <title>新規アカウント作成 - Revitech</title>
     
     <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
     
@@ -147,15 +147,21 @@
 
 <div class="main-container">
     <div class="card signup-card">
+        
         <div class="card-header-custom">
-            <h2>教員アカウント登録</h2>
-            <p class="text-muted fs-5">詳細を入力して、担当科目を登録しましょう。</p>
+            <h2 th:if="${signupForm.role == 1}">生徒アカウント登録</h2>
+            <h2 th:if="${signupForm.role == 2}">教員アカウント登録</h2>
+            <h2 th:if="${signupForm.role == 3}">管理者アカウント登録</h2>
+            
+            <p class="text-muted fs-5" th:if="${signupForm.role == 1}">所属学科を選択して登録してください。</p>
+            <p class="text-muted fs-5" th:if="${signupForm.role == 2}">詳細を入力して、担当科目を登録しましょう。</p>
+            <p class="text-muted fs-5" th:if="${signupForm.role == 3}">管理者情報を入力してください。</p>
         </div>
         
         <div class="card-body">
             <form th:action="@{/signup}" th:object="${signupForm}" method="post">
                 
-                <input type="hidden" name="role" value="2">
+                <input type="hidden" th:field="*{role}">
 
                 <div class="row g-5">
                     
@@ -175,7 +181,20 @@
                         </div>
                     </div>
 
-                    <div class="col-12" id="teacherSubjectArea">
+                    <div class="col-12" th:if="${signupForm.role == 1}">
+                        <div class="form-item-wrapper">
+                            <label class="form-label">所属学科</label>
+                            <select class="form-select" th:field="*{subjectId}" th:errorclass="is-invalid">
+                                <option value="" selected>学科を選択してください</option>
+                                <option th:each="sub : ${subjects}" 
+                                        th:value="${sub.subjectId}" 
+                                        th:text="${sub.subjectName}">学科名</option>
+                            </select>
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('subjectId')}" th:errors="*{subjectId}"></div>
+                        </div>
+                    </div>
+
+                    <div class="col-12" id="teacherSubjectArea" th:if="${signupForm.role == 2}">
                         <div class="form-item-wrapper">
                             <label class="form-label">担当科目 (複数選択可)</label>
                             
@@ -208,7 +227,7 @@
                             <div class="form-text mt-2">クリックして担当科目をチェックしてください（複数選択可）</div>
                         </div>
                     </div>
-
+                    
                     <div class="col-md-6">
                         <div class="form-item-wrapper">
                             <label th:for="password" class="form-label">パスワード</label>
@@ -227,7 +246,7 @@
                 </div>
 
                 <div class="mt-5 text-center">
-                    <button type="submit" class="btn btn-primary btn-register">教員アカウントを作成</button>
+                    <button type="submit" class="btn btn-primary btn-register">アカウントを作成</button>
                     <a th:href="@{/role-select}" class="btn-back">← 戻る</a>
                 </div>
             </form>
@@ -237,29 +256,23 @@
 
 <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
 
-<script>
-    // ★変更点4: 切り替え関数(toggleSubjectSelect)は不要になったため削除
-
-    // ★ドロップダウン内のチェックボックス処理
+<script th:if="${signupForm.role == 2}">
+    // ★教員用 (Role=2) の時のみ実行されるスクリプト
+    
+    // ドロップダウン内のチェックボックス処理
     document.querySelectorAll('.teacher-checkbox').forEach(checkbox => {
-        // チェックが変わったらテキストを更新
         checkbox.addEventListener('change', updateSelectedText);
-        
-        // メニュー内でクリックしてもドロップダウンが閉じないようにする
         checkbox.addEventListener('click', (e) => e.stopPropagation());
     });
     
-    // ラベルをクリックした時も閉じないようにする
     document.querySelectorAll('.dropdown-menu label').forEach(label => {
         label.addEventListener('click', (e) => e.stopPropagation());
     });
     
-    // リスト項目自体（余白など）をクリックしても閉じないように
     document.querySelectorAll('.dropdown-menu li').forEach(li => {
         li.addEventListener('click', (e) => e.stopPropagation());
     });
 
-    // 選択された科目名をボタンに表示する関数
     function updateSelectedText() {
         const checkedBoxes = document.querySelectorAll('.teacher-checkbox:checked');
         const textSpan = document.getElementById('selectedSubjectsText');
@@ -269,9 +282,7 @@
             textSpan.classList.add("text-muted");
             textSpan.classList.remove("text-dark");
         } else {
-            // チェックされた項目のラベルテキストを集めてカンマ区切りにする
             const names = Array.from(checkedBoxes).map(cb => {
-                // チェックボックスの隣のlabel要素のテキストを取得
                 return cb.nextElementSibling.textContent.trim();
             });
             textSpan.textContent = names.join(', ');
@@ -280,9 +291,8 @@
         }
     }
 
-    // 画面読み込み時
     window.onload = function() {
-        updateSelectedText(); // 戻るボタン等で戻った時のため初期状態も反映
+        updateSelectedText(); 
     };
 </script>
 
