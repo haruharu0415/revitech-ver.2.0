@@ -1,8 +1,6 @@
 package com.example.revitech.controller;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -25,32 +23,23 @@ public class NotificationController {
         this.usersService = usersService;
     }
 
-    // ★修正: @PostMapping から @RequestMapping に変更し、GETでもPOSTでも動くようにする
-    // HTMLが <a href="..."> (GET) でも <form method="post"> (POST) でも対応可能になります
-    @SuppressWarnings("unchecked")
+    // GETとPOST両方対応
     @RequestMapping(value = "/notification/clear", method = {RequestMethod.GET, RequestMethod.POST})
     public String clearNotifications(@AuthenticationPrincipal UserDetails userDetails, HttpSession session) {
         if (userDetails != null) {
-            // ★修正: HomeControllerと合わせて findByEmail を使用 (安定性向上)
             Users user = usersService.findByEmail(userDetails.getUsername()).orElse(null);
             
             if (user != null && user.getRole() == 2) {
-                // 現在の通知一覧を取得
-                List<TeacherReview> list = usersService.getGrantedReviews(user.getUsersId());
+                // 1. 未読リストを取得
+                List<TeacherReview> unreadList = usersService.getGrantedReviews(user.getUsersId());
                 
-                // セッションから「消去済みIDセット」を取得
-                Set<Integer> readIds = (Set<Integer>) session.getAttribute("readNotificationIds");
-                if (readIds == null) {
-                    readIds = new HashSet<>();
+                // 2. DB上で「既読」に更新 (これで永続的に消える)
+                if (!unreadList.isEmpty()) {
+                    usersService.markReviewsAsChecked(unreadList);
                 }
                 
-                // 全ての通知IDを「消去済み」としてセッションに追加
-                for (TeacherReview review : list) {
-                    readIds.add(review.getReviewId());
-                }
-                
-                // セッションに保存
-                session.setAttribute("readNotificationIds", readIds);
+                // セッション削除
+                session.removeAttribute("readNotificationIds");
             }
         }
         return "redirect:/home";

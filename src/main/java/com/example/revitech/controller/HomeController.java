@@ -1,9 +1,6 @@
 package com.example.revitech.controller;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -62,20 +59,11 @@ public class HomeController {
 
         // 先生用通知 (開示許可)
         if (user.getRole() == 2) {
-            // ★★★ 修正: UsersServiceから全件取得し、セッションを使ってフィルタリング ★★★
-            List<TeacherReview> allGranted = usersService.getGrantedReviews(user.getUsersId());
+            // ★修正: Serviceが未読のみ返すので、そのまま使う
+            List<TeacherReview> unreadGranted = usersService.getGrantedReviews(user.getUsersId());
             
-            // セッションから「消去済みID」を取得して除外する
-            Set<Integer> readIds = (Set<Integer>) session.getAttribute("readNotificationIds");
-            if (readIds == null) readIds = new HashSet<>();
-            
-            final Set<Integer> finalReadIds = readIds; 
-            List<TeacherReview> displayList = allGranted.stream()
-                .filter(r -> !finalReadIds.contains(r.getReviewId()))
-                .collect(Collectors.toList());
-
-            model.addAttribute("grantedCount", !displayList.isEmpty() ? displayList.size() : null);
-            model.addAttribute("grantedDisclosures", displayList);
+            model.addAttribute("grantedCount", !unreadGranted.isEmpty() ? unreadGranted.size() : null);
+            model.addAttribute("grantedDisclosures", unreadGranted);
         }
 
         // ニュース

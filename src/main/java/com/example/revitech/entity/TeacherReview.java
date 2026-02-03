@@ -9,7 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import jakarta.persistence.Transient; // 追加
+// import jakarta.persistence.Transient; // ←削除
 
 @Entity
 @Table(name = "teacher_reviews")
@@ -29,7 +29,7 @@ public class TeacherReview {
     @Column(name = "score", nullable = false)
     private Integer score;
 
-    @Column(name = "comment", columnDefinition = "TEXT")
+    @Column(name = "comment", columnDefinition = "NVARCHAR(MAX)")
     private String comment;
 
     @Column(name = "created_at")
@@ -47,10 +47,9 @@ public class TeacherReview {
     @Column(name = "survey_id")
     private Integer surveyId;
 
-    // ★★★ 修正: @Column を削除し @Transient に変更 ★★★
-    // これによりDBの列を探さなくなり、エラーが解消します
-    @Transient
-    private Boolean isChecked = false;
+    // ★★★ 修正: ここを @Transient にすると保存されません！ @Column に戻してください ★★★
+    @Column(name = "is_checked")
+    private Boolean isChecked;
 
     @PrePersist
     public void onPrePersist() {
@@ -98,7 +97,8 @@ public class TeacherReview {
 
     public Boolean getIsChecked() { return isChecked; }
     public void setIsChecked(Boolean isChecked) { this.isChecked = isChecked; }
-
+    
+    // 互換性のため残しておきます
     public Integer getDisclosureStatus() {
         if (Boolean.TRUE.equals(this.isDisclosureGranted)) return 2;
         if (Boolean.TRUE.equals(this.isDisclosureRequested)) return 1;

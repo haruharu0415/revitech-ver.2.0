@@ -285,15 +285,26 @@ public class UsersService {
             .collect(Collectors.toList());
     }
 
-    // ★★★ 追加: 先生への開示許可済みレビューを全て取得するメソッド ★★★
+    // ★★★ 修正: 「許可済み」かつ「未読」を取得 ★★★
     public List<TeacherReview> getGrantedReviews(Integer teacherId) {
         List<TeacherReview> allReviews = teacherReviewRepository.findAll();
         
         return allReviews.stream()
             .filter(r -> r.getTeacherId().equals(teacherId)) // 自分宛て
             .filter(r -> Boolean.TRUE.equals(r.getIsDisclosureGranted())) // 許可されたもの
+            // ★重要: DBの isChecked カラムを見てフィルタリング
+            .filter(r -> r.getIsChecked() == null || !r.getIsChecked())
             .sorted(Comparator.comparing(TeacherReview::getCreatedAt).reversed())
             .collect(Collectors.toList());
+    }
+
+    // ★★★ 追加: 通知を既読にするメソッド ★★★
+    @Transactional
+    public void markReviewsAsChecked(List<TeacherReview> reviews) {
+        for (TeacherReview review : reviews) {
+            review.setIsChecked(true); // 既読にする
+            teacherReviewRepository.save(review); // DB更新
+        }
     }
 
     public String getTeacherSubjectNames(Integer teacherId) {
