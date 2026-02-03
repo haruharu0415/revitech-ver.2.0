@@ -23,7 +23,8 @@ public class BanWord {
     @Column(name = "teacher_id", nullable = false)
     private Integer teacherId;
 
-    @Column(name = "word", nullable = false)
+    // ★★★ 修正箇所: NVARCHAR対応 ★★★
+    @Column(name = "word", nullable = false, columnDefinition = "NVARCHAR(255)")
     private String word;
 
     @Column(name = "created_at")

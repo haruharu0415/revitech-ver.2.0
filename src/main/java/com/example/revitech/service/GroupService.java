@@ -19,7 +19,7 @@ import com.example.revitech.repository.UsersRepository;
 public class GroupService {
 
     private final GroupMemberRepository groupMemberRepository;
-    private final ChatMemberRepository chatMemberRepository; // ★ここが重要
+    private final ChatMemberRepository chatMemberRepository; // ★必須
     private final UsersRepository usersRepository;
 
     public GroupService(GroupMemberRepository groupMemberRepository,
@@ -46,7 +46,7 @@ public class GroupService {
      * メンバーを追加する
      */
     public void addMember(Integer groupId, Integer userId) {
-        // 1. グループ管理用のテーブルに追加
+        // 1. 旧グループ管理用のテーブルに追加 (念のため維持)
         if (!groupMemberRepository.existsByGroupIdAndUserId(groupId, userId)) {
             GroupMember gm = new GroupMember();
             gm.setGroupId(groupId);
@@ -54,11 +54,12 @@ public class GroupService {
             groupMemberRepository.save(gm);
         }
 
-        // 2. ★★★ チャット機能用のテーブル(chat_members)にも追加！ ★★★
-        // これがないとチャットが見れません
+        // 2. ★★★ 重要: チャット機能用のテーブル(chat_members)にも追加！ ★★★
+        // これがないとチャット一覧に表示されません
         if (!chatMemberRepository.existsById_UserIdAndId_RoomId(userId, groupId)) {
             ChatMember cm = new ChatMember();
-            ChatMemberId cmId = new ChatMemberId(groupId, userId); // 引数の順番に注意(roomId, userId)
+            // 引数の順序に注意: (roomId, userId)
+            ChatMemberId cmId = new ChatMemberId(groupId, userId);
             cm.setId(cmId);
             chatMemberRepository.save(cm);
         }

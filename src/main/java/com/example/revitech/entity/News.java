@@ -24,10 +24,12 @@ public class News {
     @Column(name = "news_id")
     private Integer newsId;
 
-    @Column(name = "title", nullable = false)
+    // ★★★ 修正箇所: NVARCHAR対応 ★★★
+    @Column(name = "title", nullable = false, columnDefinition = "NVARCHAR(255)")
     private String title;
 
-    @Column(name = "news_body", nullable = false, columnDefinition = "TEXT")
+    // ★★★ 修正箇所: NVARCHAR対応 (MAX) ★★★
+    @Column(name = "news_body", nullable = false, columnDefinition = "NVARCHAR(MAX)")
     private String newsBody;
 
     @Column(name = "news_datetime")
@@ -39,15 +41,12 @@ public class News {
     @Column(name = "sender_id")
     private Integer senderId;
 
-    // ★★★ 修正: DBに存在するカラム「recipient_ids」をマッピング ★★★
-    // ここには "1,2,3" のような文字列が入ります
     @Column(name = "recipient_ids")
     private String recipientIds;
 
     @OneToMany(mappedBy = "news", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<NewsImage> images = new ArrayList<>();
 
-    // ★★★ 修正: フォームからの入力受け取り用 (DBには保存しない) ★★★
     @Transient
     private List<Integer> recipientUserIds;
 
@@ -85,11 +84,9 @@ public class News {
     public List<NewsImage> getImages() { return images; }
     public void setImages(List<NewsImage> images) { this.images = images; }
 
-    // ★★★ 追加: DB用カラムのGetter/Setter ★★★
     public String getRecipientIds() { return recipientIds; }
     public void setRecipientIds(String recipientIds) { this.recipientIds = recipientIds; }
 
-    // ★★★ 追加: フォーム用リストのGetter/Setter ★★★
     public List<Integer> getRecipientUserIds() { return recipientUserIds; }
     public void setRecipientUserIds(List<Integer> recipientUserIds) { this.recipientUserIds = recipientUserIds; }
 }

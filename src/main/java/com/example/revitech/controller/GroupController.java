@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.example.revitech.dto.ChatRoomWithNotificationDto; // ★追加
 import com.example.revitech.dto.DmDisplayDto;
 import com.example.revitech.entity.ChatGroup;
 import com.example.revitech.entity.ChatRoom;
@@ -59,9 +60,11 @@ public class GroupController {
         }
 
         List<ChatRoom> groups = new ArrayList<>();
+        Integer userId = 0;
+
         if (loginUser != null) {
             model.addAttribute("user", loginUser);
-            Integer userId = loginUser.getUsersId();
+            userId = loginUser.getUsersId();
             Integer role = loginUser.getRole();
             Integer sortOrder = loginUser.getChatSortOrder() != null ? loginUser.getChatSortOrder() : 1;
             boolean isNameSort = (sortOrder == 2);
@@ -96,7 +99,19 @@ public class GroupController {
             List<DmDisplayDto> dmList = chatRoomService.getDmListForUser(userId, sortOrder);
             model.addAttribute("dmList", dmList);
         }
-        model.addAttribute("groups", groups);
+        
+        // ★★★ 修正: 取得したEntityのリストを、HTMLが期待するDTOのリストに変換する ★★★
+        List<ChatRoomWithNotificationDto> groupDtos = new ArrayList<>();
+        if (loginUser != null) {
+            for (ChatRoom room : groups) {
+                // 公開したメソッドを使って未読チェック
+                boolean hasUnread = chatRoomService.hasUnreadMessages(room.getRoomId(), userId);
+                // DTOに詰め替え (room.getName() -> roomNameプロパティにマッピングされる)
+                groupDtos.add(new ChatRoomWithNotificationDto(room.getRoomId(), room.getName(), hasUnread));
+            }
+        }
+
+        model.addAttribute("groups", groupDtos); // EntityではなくDTOを渡す
         return "group-list";
     }
 
@@ -113,7 +128,7 @@ public class GroupController {
         return "redirect:/group/list";
     }
 
-    // --- ★★★ グループ作成機能 ★★★ ---
+    // --- グループ作成機能 ---
 
     @GetMapping("/group/create")
     public String showCreateGroupForm(Model model) {
@@ -142,10 +157,7 @@ public class GroupController {
         ChatRoom room = new ChatRoom();
         room.setName(groupName);
         room.setType(2); // 2 = GROUP
-        
-        // ★★★ ここを追加: DBエラー回避のため、作成者のIDをセット ★★★
-        room.setUsersId(creator.getUsersId()); 
-        
+        room.setUsersId(creator.getUsersId()); // 作成者ID (必須)
         chatRoomRepository.save(room);
 
         // 2. ChatGroup作成
@@ -177,7 +189,7 @@ public class GroupController {
         return "redirect:/group/list";
     }
 
-    // --- ★★★ 管理画面用 ★★★ ---
+    // --- 管理画面用 ---
 
     @GetMapping("/group/manage/{groupId}")
     public String manageGroup(@PathVariable("groupId") Integer groupId, Model model) {

@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import com.example.revitech.entity.News;
 import com.example.revitech.entity.NewsImage;
@@ -66,9 +67,6 @@ public class NewsController {
         }
         
         model.addAttribute("news", new News());
-        
-        // ★★★ 修正: findAllStudents() ではなく、register.html が必要としている subjectUserMap を渡す ★★★
-        // SurveyManagementControllerですでに実装済みのメソッドを利用
         model.addAttribute("subjectUserMap", usersService.findAllStudentsGroupedBySubject());
         
         return "news/register";
@@ -112,18 +110,48 @@ public class NewsController {
     }
     
     @GetMapping("/{id}")
-    public String detail(@PathVariable Integer id, Model model) {
+    public String detail(@PathVariable Integer id, Model model, @AuthenticationPrincipal UserDetails userDetails) {
         Optional<News> news = newsService.findById(id);
+        
         if (news.isPresent()) {
             model.addAttribute("news", news.get());
+
+            // ★★★ 修正: 削除権限のチェックロジックを追加 ★★★
+            boolean canDelete = false;
+            if (userDetails != null) {
+                Users user = usersService.findByEmail(userDetails.getUsername()).orElse(null);
+                // Role 2(先生) または Role 3(管理者) なら true
+                if (user != null && (user.getRole() == 2 || user.getRole() == 3)) {
+                    canDelete = true;
+                }
+            }
+            model.addAttribute("canDelete", canDelete);
+            
             return "news/detail";
         }
         return "redirect:/news";
     }
 
+    // ★★★ 修正: 削除機能に権限チェックを追加 ★★★
     @PostMapping("/delete/{id}")
-    public String deleteNews(@PathVariable Integer id) {
+    public String deleteNews(@PathVariable Integer id, 
+                             @AuthenticationPrincipal UserDetails userDetails,
+                             RedirectAttributes redirectAttributes) {
+        
+        if (userDetails == null) {
+            return "redirect:/login";
+        }
+
+        Users user = usersService.findByEmail(userDetails.getUsername()).orElse(null);
+
+        // 権限チェック (Role 2:先生, Role 3:管理者 のみが削除可能)
+        if (user == null || (user.getRole() != 2 && user.getRole() != 3)) {
+            redirectAttributes.addFlashAttribute("errorMessage", "この操作を行う権限がありません。");
+            return "redirect:/news";
+        }
+
         newsService.deleteNews(id);
+        redirectAttributes.addFlashAttribute("successMessage", "お知らせを削除しました。");
         return "redirect:/news";
     }
 }

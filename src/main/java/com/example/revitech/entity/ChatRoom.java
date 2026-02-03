@@ -9,110 +9,34 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
+import lombok.Data;
 
 @Entity
 @Table(name = "chat_rooms")
+@Data
 public class ChatRoom {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "room_id")
     private Integer roomId;
 
-    @Column(name = "name")
+    @Column(name = "name", nullable = false)
     private String name;
 
-    // ★★★ 修正: DBに列がないため @Transient に変更 ★★★
-    @Transient
-    private Integer usersId;
-
-    // ★★★ 修正: DBに列がないため @Transient に変更 ★★★
-    // 代わりに type カラムの値を使って判定します
-    @Transient
-    private Integer isDm;
-
-    // DBにある type カラム (1=DM, 2=グループ と仮定)
-    @Column(name = "type")
-    private Integer type;
+    @Column(name = "type", nullable = false)
+    private Integer type; // 1:DM, 2:GROUP
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
+    
+    // ★★★ 修正: このフィールドがないとグループ作成時にエラーになります ★★★
+    @Column(name = "users_id")
+    private Integer usersId;
 
     @PrePersist
     public void onPrePersist() {
         if (this.createdAt == null) {
             this.createdAt = LocalDateTime.now();
         }
-        // typeが未設定ならデフォルトでグループ(2)にする
-        if (this.type == null) {
-            this.type = 2;
-        }
-    }
-
-    // --- Getters and Setters ---
-
-    public Integer getRoomId() {
-        return roomId;
-    }
-
-    public void setRoomId(Integer roomId) {
-        this.roomId = roomId;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public Integer getUsersId() {
-        return usersId;
-    }
-
-    public void setUsersId(Integer usersId) {
-        this.usersId = usersId;
-    }
-
-    // ★★★ isDm の Getter: typeを見て判定する ★★★
-    public Integer getIsDm() {
-        if (this.type != null && this.type == 1) {
-            return 1; // DM
-        }
-        return 0; // グループ
-    }
-
-    // ★★★ isDm の Setter: typeに値をセットする ★★★
-    public void setIsDm(Integer isDm) {
-        this.isDm = isDm;
-        if (isDm != null && isDm == 1) {
-            this.type = 1; // DM
-        } else {
-            this.type = 2; // グループ
-        }
-    }
-
-    public Integer getType() {
-        return type;
-    }
-
-    public void setType(Integer type) {
-        this.type = type;
-        // typeがセットされたら isDm も更新しておく（内部的な整合性のため）
-        if (type != null && type == 1) {
-            this.isDm = 1;
-        } else {
-            this.isDm = 0;
-        }
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
     }
 }

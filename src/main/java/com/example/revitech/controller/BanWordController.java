@@ -1,7 +1,7 @@
 package com.example.revitech.controller;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,27 +30,42 @@ public class BanWordController {
     @PostMapping("/add")
     public String addWord(@RequestParam("teacherId") Integer teacherId,
                           @RequestParam("word") String word,
-                          @AuthenticationPrincipal User loginUser,
+                          // ★★★ 修正箇所: UserDetails に変更して安全性を向上 ★★★
+                          @AuthenticationPrincipal UserDetails loginUser,
                           RedirectAttributes redirectAttributes) {
+        
+        if (loginUser == null) {
+             return "redirect:/login";
+        }
         
         Users currentUser = usersService.findByEmail(loginUser.getUsername()).orElseThrow();
 
-        // ★★★ 権限チェック: Role=2 (先生) かつ 本人であること ★★★
+        // 権限チェック: Role=2 (先生) かつ 本人であること
         if (currentUser.getRole() != 2 || !currentUser.getUsersId().equals(teacherId)) {
             redirectAttributes.addFlashAttribute("errorMessage", "権限がありません。");
             return "redirect:/review/" + teacherId;
         }
 
-        banWordService.addBanWord(teacherId, word);
-        redirectAttributes.addFlashAttribute("successMessage", "NGワードを登録しました。");
+        try {
+            banWordService.addBanWord(teacherId, word);
+            redirectAttributes.addFlashAttribute("successMessage", "NGワードを登録しました。");
+        } catch (Exception e) {
+            e.printStackTrace();
+            redirectAttributes.addFlashAttribute("errorMessage", "登録中にエラーが発生しました。");
+        }
         return "redirect:/review/" + teacherId;
     }
 
     // NGワード削除
     @PostMapping("/delete/{banId}")
     public String deleteWord(@PathVariable("banId") Integer banId,
-                             @AuthenticationPrincipal User loginUser,
+                             // ★★★ 修正箇所: UserDetails に変更 ★★★
+                             @AuthenticationPrincipal UserDetails loginUser,
                              RedirectAttributes redirectAttributes) {
+        
+        if (loginUser == null) {
+             return "redirect:/login";
+        }
         
         Users currentUser = usersService.findByEmail(loginUser.getUsername()).orElseThrow();
         BanWord bw = banWordService.findById(banId);
@@ -59,7 +74,7 @@ public class BanWordController {
             return "redirect:/home";
         }
 
-        // ★★★ 権限チェック ★★★
+        // 権限チェック
         if (currentUser.getRole() != 2 || !currentUser.getUsersId().equals(bw.getTeacherId())) {
             redirectAttributes.addFlashAttribute("errorMessage", "権限がありません。");
             return "redirect:/review/" + bw.getTeacherId();

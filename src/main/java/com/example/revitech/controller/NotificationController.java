@@ -7,7 +7,8 @@ import java.util.Set;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 
 import com.example.revitech.entity.TeacherReview;
 import com.example.revitech.entity.Users;
@@ -24,11 +25,14 @@ public class NotificationController {
         this.usersService = usersService;
     }
 
+    // ★修正: @PostMapping から @RequestMapping に変更し、GETでもPOSTでも動くようにする
+    // HTMLが <a href="..."> (GET) でも <form method="post"> (POST) でも対応可能になります
     @SuppressWarnings("unchecked")
-    @PostMapping("/notification/clear")
+    @RequestMapping(value = "/notification/clear", method = {RequestMethod.GET, RequestMethod.POST})
     public String clearNotifications(@AuthenticationPrincipal UserDetails userDetails, HttpSession session) {
         if (userDetails != null) {
-            Users user = usersService.findByNameOrEmail(userDetails.getUsername()).orElse(null);
+            // ★修正: HomeControllerと合わせて findByEmail を使用 (安定性向上)
+            Users user = usersService.findByEmail(userDetails.getUsername()).orElse(null);
             
             if (user != null && user.getRole() == 2) {
                 // 現在の通知一覧を取得

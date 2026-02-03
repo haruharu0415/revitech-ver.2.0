@@ -56,19 +56,24 @@ public class ChatRoomService {
     public ChatRoom createGroupChat(String groupName, Integer creatorId, List<Integer> memberIds) {
         ChatRoom room = new ChatRoom();
         room.setName(groupName);
-        room.setIsDm(0); // グループ
         room.setType(2); // GroupControllerに合わせてType=2を設定
-        room.setUsersId(creatorId); // 作成者ID
+        room.setUsersId(creatorId); // 作成者ID (必須)
         room.setCreatedAt(LocalDateTime.now());
         ChatRoom savedRoom = chatRoomRepository.save(room);
 
         // 作成者をメンバーに追加
-        chatMemberRepository.save(new ChatMember(new ChatMemberId(savedRoom.getRoomId(), creatorId)));
+        ChatMember creatorMember = new ChatMember();
+        creatorMember.setId(new ChatMemberId(savedRoom.getRoomId(), creatorId));
+        chatMemberRepository.save(creatorMember);
 
         // 招待メンバーを追加
-        for (Integer mId : memberIds) {
-            if (!mId.equals(creatorId)) {
-                chatMemberRepository.save(new ChatMember(new ChatMemberId(savedRoom.getRoomId(), mId)));
+        if (memberIds != null) {
+            for (Integer mId : memberIds) {
+                if (!mId.equals(creatorId)) {
+                    ChatMember member = new ChatMember();
+                    member.setId(new ChatMemberId(savedRoom.getRoomId(), mId));
+                    chatMemberRepository.save(member);
+                }
             }
         }
         return savedRoom;
@@ -89,14 +94,20 @@ public class ChatRoomService {
         
         ChatRoom newRoom = new ChatRoom();
         newRoom.setName("DM");
-        newRoom.setIsDm(1); 
         newRoom.setType(1); // DMはType=1
-        newRoom.setUsersId(myUserId); // 作成者
+        newRoom.setUsersId(myUserId); // 作成者 (必須)
         newRoom.setCreatedAt(LocalDateTime.now());
         ChatRoom savedRoom = chatRoomRepository.save(newRoom);
         
-        chatMemberRepository.save(new ChatMember(new ChatMemberId(savedRoom.getRoomId(), myUserId)));
-        chatMemberRepository.save(new ChatMember(new ChatMemberId(savedRoom.getRoomId(), partnerId)));
+        // 自分を追加
+        ChatMember me = new ChatMember();
+        me.setId(new ChatMemberId(savedRoom.getRoomId(), myUserId));
+        chatMemberRepository.save(me);
+
+        // 相手を追加
+        ChatMember partner = new ChatMember();
+        partner.setId(new ChatMemberId(savedRoom.getRoomId(), partnerId));
+        chatMemberRepository.save(partner);
         
         return savedRoom;
     }
@@ -153,7 +164,9 @@ public class ChatRoomService {
                     }
                 }
                 // アイコンURLを含むコンストラクタを使用
-                resultList.add(new DmDisplayDto(room.getRoomId(), partnerId, partnerName, iconUrl));
+                if (partnerId != null) {
+                    resultList.add(new DmDisplayDto(room.getRoomId(), partnerId, partnerName, iconUrl));
+                }
             }
         }
         return resultList;
@@ -200,8 +213,9 @@ public class ChatRoomService {
 
     /**
      * ルーム内の未読メッセージがあるか判定
+     * ★修正: private -> public に変更し、Controllerから利用可能にする
      */
-    private boolean hasUnreadMessages(Integer roomId, Integer userId) {
+    public boolean hasUnreadMessages(Integer roomId, Integer userId) {
         LocalDateTime lastReadAt = chatReadStatusRepository.findByUserIdAndRoomId(userId, roomId)
                 .map(ChatReadStatus::getLastReadAt)
                 .orElse(LocalDateTime.MIN); 
@@ -209,7 +223,6 @@ public class ChatRoomService {
         Optional<ChatMessage> latestMsg = chatMessageRepository.findTopByRoomIdOrderByCreatedAtDesc(roomId);
         
         if (latestMsg.isPresent()) {
-            // ChatMessageエンティティの getUserId() を使用
             if (latestMsg.get().getUserId().equals(userId)) {
                 return false;
             }
