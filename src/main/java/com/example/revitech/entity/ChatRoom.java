@@ -23,16 +23,15 @@ public class ChatRoom {
     @Column(name = "name")
     private String name;
 
-    // ★★★ 修正: DBに列がないため @Transient に変更 ★★★
-    @Transient
+    // ★★★ 修正: DBに列が存在するため、@Column に戻しました ★★★
+    @Column(name = "users_id")
     private Integer usersId;
 
-    // ★★★ 修正: DBに列がないため @Transient に変更 ★★★
-    // 代わりに type カラムの値を使って判定します
+    // isDm は計算項目なので @Transient のままでOK
     @Transient
     private Integer isDm;
 
-    // DBにある type カラム (1=DM, 2=グループ と仮定)
+    // DBにある type カラム
     @Column(name = "type")
     private Integer type;
 
@@ -76,7 +75,7 @@ public class ChatRoom {
         this.usersId = usersId;
     }
 
-    // ★★★ isDm の Getter: typeを見て判定する ★★★
+    // isDm の Getter
     public Integer getIsDm() {
         if (this.type != null && this.type == 1) {
             return 1; // DM
@@ -84,7 +83,7 @@ public class ChatRoom {
         return 0; // グループ
     }
 
-    // ★★★ isDm の Setter: typeに値をセットする ★★★
+    // isDm の Setter
     public void setIsDm(Integer isDm) {
         this.isDm = isDm;
         if (isDm != null && isDm == 1) {
@@ -100,7 +99,7 @@ public class ChatRoom {
 
     public void setType(Integer type) {
         this.type = type;
-        // typeがセットされたら isDm も更新しておく（内部的な整合性のため）
+        // typeがセットされたら isDm も更新しておく
         if (type != null && type == 1) {
             this.isDm = 1;
         } else {

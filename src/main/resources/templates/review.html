@@ -114,7 +114,7 @@
                         </div>
                         <div class="card-body">
                             <p class="small text-muted mb-3">ここで設定した言葉を含むコメントは、投稿できなくなります。</p>
-                            <form th:action="@{/teacher/ban/register}" method="post" class="row g-2 mb-4">
+                            <form th:action="@{/teacher/ban/add}" method="post" class="row g-2 mb-4">
                                 <input type="hidden" name="teacherId" th:value="${teacher.usersId}">
                                 <div class="col-auto flex-grow-1">
                                     <input type="text" name="word" class="form-control" placeholder="禁止する言葉を入力" required>
@@ -128,7 +128,7 @@
                                 <div class="d-flex flex-wrap gap-2">
                                     <div th:each="bw : ${banWords}" class="badge bg-secondary d-flex align-items-center p-2">
                                         <span th:text="${bw.word}" class="me-2 fs-6">言葉</span>
-                                        <form th:action="@{/teacher/ban/remove/{id}(id=${bw.banId})}" method="post" style="display:inline;">
+                                        <form th:action="@{/teacher/ban/delete/{id}(id=${bw.banId})}" method="post" style="display:inline;">
                                             <button type="submit" class="btn-close btn-close-white" aria-label="Close" style="width: 0.5em; height: 0.5em;"></button>
                                         </form>
                                     </div>
