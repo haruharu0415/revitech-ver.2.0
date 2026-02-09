@@ -1,0 +1,39 @@
+plugins {
+	id 'war'
+}
+
+sourceCompatibility = 21
+tasks.withType(JavaCompile) {options.encoding = 'UTF-8'}
+repositories.mavenCentral()
+
+dependencies {
+
+	// Tomcat 9.0, EE 8, javax Servlet 4.0, JSP 2.3, EL 3.0, Java 8+
+	//compileOnly 'jakarta.servlet:jakarta.servlet-api:4.0.+'
+	//compileOnly 'jakarta.servlet.jsp:jakarta.servlet.jsp-api:2.3.+'
+	//runtimeOnly 'jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api:1.2.+'
+	//runtimeOnly 'org.apache.taglibs:taglibs-standard-impl:1.2.+'
+	
+	// Tomcat 10.0, EE 9, Jakarta Servlet 5.0, JSP 3.0, EL 4.0, Java 8+
+	//compileOnly 'jakarta.servlet:jakarta.servlet-api:5.0.+'
+	//compileOnly 'jakarta.servlet.jsp:jakarta.servlet.jsp-api:3.0.+'
+	//runtimeOnly 'jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api:2.0.+'
+	//runtimeOnly 'org.glassfish.web:jakarta.servlet.jsp.jstl:2.0.+'
+	
+	// Tomcat 10.1, EE 10, Jakarta Servlet 6.0, JSP 3.1, EL 5.0, Java 11+
+	compileOnly 'jakarta.servlet:jakarta.servlet-api:6.0.+'
+	//compileOnly 'jakarta.servlet.jsp:jakarta.servlet.jsp-api:3.1.+'
+	//runtimeOnly 'jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api:3.0.+'
+	//runtimeOnly 'org.glassfish.web:jakarta.servlet.jsp.jstl:3.0.+'
+	
+	// Tomcat 11.0, EE 11, Jakarta Servlet 6.1, JSP 4.0, EL 6.0, Java 21+
+	//compileOnly 'jakarta.servlet:jakarta.servlet-api:6.1.+'
+	//compileOnly 'jakarta.servlet.jsp:jakarta.servlet.jsp-api:4.0.+'
+	
+	// その他
+	implementation 'org.eclipse:yasson:3.0.+' // jakarta.json.bind 公式リファレンス実装
+	implementation 'org.hibernate.validator:hibernate-validator:8.0.+' // jakarta.validation 公式リファレンス実装
+	implementation 'commons-beanutils:commons-beanutils:1.9.+' // Commons BeanUtils (リクエストから Bean へコピー)
+	compileOnly 'org.projectlombok:lombok:1.18.+' // Lombok @Data アノテーションなど
+	annotationProcessor 'org.projectlombok:lombok:1.18.+' // Lombok アノテーション処理
+}
